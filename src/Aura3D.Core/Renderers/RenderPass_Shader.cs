@@ -294,13 +294,8 @@ public partial class RenderPass
 
     public unsafe void UniformColor(string name, Color color)
     {
-        if (CurrentShader == null)
-            return;
-        var location = CurrentShader.GetUniformLocation(name, gl);
-        if (location == -1)
-            return;
         Vector4 vector4 = color.ToVector4();
-        gl.Uniform4(location, 1, (float*)&vector4);
+        UniformVector3(name, new Vector3(vector4.X, vector4.Y, vector4.Z));
     }
 
     public unsafe void UniformMatrix4Array(string name, Span<Matrix4x4> values)
