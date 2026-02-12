@@ -176,17 +176,17 @@ namespace Aura3D.Core {
         ///
         /////{{defines}}
         ///
-        ///uniform sampler2d Texture_BaseColor;
-        ///uniform sampler2d Texture_Normal;
-        ///uniform sampler2d Texture_Metalness;
-        ///uniform sampler2d Texture_Roughness;
-        ///uniform sampler2d Texture_Emissive;
-        ///uniform sampler2d Texture_Occlusion;
+        ///uniform sampler2D Texture_BaseColor;
+        ///uniform sampler2D Texture_Normal;
+        ///uniform sampler2D Texture_MetallicRoughness;
+        ///uniform sampler2D Texture_Emissive;
+        ///uniform sampler2D Texture_Occlusion;
         ///
         ///
         ///in vec2 vTexCoord;
         ///in vec3 vFragPosition;
-        ///in [字符串的其余部分被截断]&quot;; 的本地化字符串。
+        ///in mat3 vTBN;
+        ///in vec3 vNormal;  [字符串的其余部分被截断]&quot;; 的本地化字符串。
         /// </summary>
         public static string DeferredMeshFrag {
             get {
@@ -378,6 +378,24 @@ namespace Aura3D.Core {
         public static string OutlineVert {
             get {
                 return ResourceManager.GetString("OutlineVert", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string pbr_directionallight_lighting_pass_frag {
+            get {
+                return ResourceManager.GetString("pbr_directionallight_lighting_pass_frag", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string pbr_directionallight_lighting_pass_vert {
+            get {
+                return ResourceManager.GetString("pbr_directionallight_lighting_pass_vert", resourceCulture);
             }
         }
         

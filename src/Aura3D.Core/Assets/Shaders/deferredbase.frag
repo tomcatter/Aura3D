@@ -8,8 +8,7 @@ layout (location = 2) out vec4 Buffer_Emissive_Occlusion;
 
 uniform sampler2D Texture_BaseColor;
 uniform sampler2D Texture_Normal;
-uniform sampler2D Texture_Metalness;
-uniform sampler2D Texture_Roughness;
+uniform sampler2D Texture_MetallicRoughness;
 uniform sampler2D Texture_Emissive;
 uniform sampler2D Texture_Occlusion;
 
@@ -23,8 +22,7 @@ void main()
 {
     vec4 baseColor = texture(Texture_BaseColor, vTexCoord);
     vec3 normal = texture(Texture_Normal, vTexCoord).xyz;
-    vec4 metalness = texture(Texture_Metalness, vTexCoord);
-    vec4 roughness = texture(Texture_Roughness, vTexCoord);
+    vec4 metalness_roughness = texture(Texture_MetallicRoughness, vTexCoord);
     vec4 emissive = texture(Texture_Emissive, vTexCoord);
     vec4 occlusion = texture(Texture_Occlusion, vTexCoord);
 
@@ -32,8 +30,10 @@ void main()
     normal = normalize(normal.xyz * 2.0 - 1.0);
     normal = normalize(vTBN * normal);
 
-    Buffer_BaseColor_Metalness = vec4(baseColor.rgb, metalness.r);
-    Buffer_Normal_Roughness = vec4(normal, roughness.r);
+    normal = normal * 0.5 + 0.5;
+
+    Buffer_BaseColor_Metalness = vec4(baseColor.rgb, metalness_roughness.x);
+    Buffer_Normal_Roughness = vec4(normal, metalness_roughness.y);
     Buffer_Emissive_Occlusion = vec4(emissive.rgb, occlusion.r);
 
 }

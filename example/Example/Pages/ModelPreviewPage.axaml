@@ -5,6 +5,7 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              xmlns:a="https://sunce.tech/aura3d"
              xmlns:vm="clr-namespace:Example.ViewModels"
+             xmlns:acr="clr-namespace:Aura3D.Core.Renderers.PBRDeferred;assembly=Aura3D.Core"
              x:DataType="vm:ModelPreviewViewModel"
              x:Class="Example.Pages.ModelPreviewPage">
   <DockPanel>
@@ -43,6 +44,6 @@
 			</StackPanel>
 
         </StackPanel>
-    <a:Aura3DView x:Name="aura3d" SceneInitialized="Aura3DView_SceneInitialized" SceneUpdated="Aura3DView_SceneUpdated"></a:Aura3DView>
+    <a:Aura3DView x:TypeArguments="acr:PBRDeferredPipeline"  x:Name="aura3d" SceneInitialized="Aura3DView_SceneInitialized" SceneUpdated="Aura3DView_SceneUpdated"></a:Aura3DView>
   </DockPanel>
 </UserControl>

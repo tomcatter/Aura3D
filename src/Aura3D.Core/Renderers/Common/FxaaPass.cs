@@ -257,7 +257,7 @@ void main() {
         var rt = GetRenderTarget(inputRenderTargetName, size);
 
         gl.Disable(EnableCap.DepthTest);
-        gl.Enable(EnableCap.Blend); 
+        gl.Disable(EnableCap.Blend); 
         UseShader();
         ClearTextureUnit();
         UseShader_Internal(null);

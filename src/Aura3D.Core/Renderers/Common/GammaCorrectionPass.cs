@@ -66,7 +66,7 @@ void main()
             new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height));
 
         gl.Disable(EnableCap.DepthTest);
-        gl.Enable(EnableCap.Blend);
+        gl.Disable(EnableCap.Blend);
         UseShader();
         ClearTextureUnit();
         UseShader_Internal(null);

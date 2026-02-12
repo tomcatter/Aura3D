@@ -18,7 +18,7 @@ namespace Example.Desktop
                 .UsePlatformDetect()
                 .WithInterFont()
                 .LogToTrace()
-                //.With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Wgl] })
+                .With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Wgl] })
                 ;
     }
 }

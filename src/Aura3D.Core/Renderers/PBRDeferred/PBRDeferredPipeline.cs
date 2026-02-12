@@ -1,4 +1,5 @@
-﻿using Aura3D.Core.Scenes;
+﻿using Aura3D.Core.Nodes;
+using Aura3D.Core.Scenes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,4 +40,13 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
     }
 
     public static RenderPipeline CreateInstance(Scene scene) => new PBRDeferredPipeline(scene);
+
+    public override void BeforeCameraRender(Camera camera)
+    {
+        base.BeforeCameraRender(camera);
+        if (gl == null)
+            return;
+        SortMeshes(VisibleMeshesInCamera, camera);
+        gl.Viewport(0, 0, camera.RenderTarget.Width, camera.RenderTarget.Height);
+    }
 }
