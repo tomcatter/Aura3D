@@ -28,11 +28,11 @@ public class CelTranslucentPass : LightPass
         gl.BindFramebuffer(GLEnum.Framebuffer, rt.FrameBufferId);
 
         UseShader("BLENDMODE_TRANSLUCENT");
-        RenderMeshes(mesh => mesh.IsSkinnedMesh == false && (mesh.Material != null && mesh.Material.BlendMode == BlendMode.Translucent), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsStaticMesh && IsMaterialBlendMode(mesh, BlendMode.Translucent), camera.View, camera.Projection);
         
 
         UseShader("SKINNED_MESH", "BLENDMODE_TRANSLUCENT");
-        RenderMeshes(mesh => mesh.IsSkinnedMesh && (mesh.Material != null && mesh.Material.BlendMode == BlendMode.Translucent), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Translucent), camera.View, camera.Projection);
 
     }
 }

@@ -2,15 +2,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Aura3D.Core.Renderers.PBRDeferred;
 
-internal class LightingPass : RenderPass
+internal class DirectionalLightingPass : RenderPass
 {
     string GbufferRenderTargetName;
-    public LightingPass(RenderPipeline renderPipeline, string gbufferRendertarget) : base(renderPipeline)
+    public DirectionalLightingPass(RenderPipeline renderPipeline, string gbufferRendertarget) : base(renderPipeline)
     {
         GbufferRenderTargetName = gbufferRendertarget;
     }
@@ -22,7 +23,7 @@ internal class LightingPass : RenderPass
 
     public override void Render(Camera camera)
     {
-        base.Render(camera);
+        RenderQuad();
     }
 
     public override void AfterRender(Camera camera)

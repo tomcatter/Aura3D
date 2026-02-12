@@ -33,7 +33,10 @@ public class Mesh : Node, IOctreeObject
 
     [MemberNotNullWhen(returnValue: true, nameof(Model), nameof(Skeleton))]
     public bool IsSkinnedMesh => Model != null && Model.Skeleton != null;
-    
+
+    [MemberNotNullWhen(returnValue: false, nameof(Model), nameof(Skeleton))]
+    public bool IsStaticMesh => !IsSkinnedMesh;
+
     private bool _enbaleSkeletonBoudingBox = false;
     public bool EnableSkeletonBoudingBox
     {

@@ -1,8 +1,8 @@
+using Aura3D.Core.Math;
 using Aura3D.Core.Nodes;
+using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
 using System.Numerics;
-using Aura3D.Core.Resources;
-using Aura3D.Core.Math;
 
 namespace Aura3D.Core.Renderers;
 
@@ -130,14 +130,19 @@ public class ShadowMapPass : RenderPass
         }
     }
 
+    List<Mesh> meshes = new List<Mesh>();
     public void RenderMesh(Matrix4x4 view, Matrix4x4 projection)
     {
+        meshes.Clear();
+
+        renderPipeline.UpdateVisibleMeshesInCamera(view, projection, meshes);
+
         UseShader();
 
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
 
-        RenderStaticMeshes(mesh =>  IsMaterialBlendMode(mesh, BlendMode.Opaque), view, projection);
+        RenderMeshesFromList(meshes, mesh => mesh.IsStaticMesh && IsMaterialBlendMode(mesh, BlendMode.Opaque), view, projection);
 
 
         UseShader("BLENDMODE_MASKED");
@@ -145,14 +150,14 @@ public class ShadowMapPass : RenderPass
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
 
-        RenderStaticMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked), view, projection);
+        RenderMeshesFromList(meshes, mesh => mesh.IsStaticMesh && IsMaterialBlendMode(mesh, BlendMode.Masked), view, projection);
 
 
         UseShader("SKINNED_MESH");
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
 
-        RenderSkinnedMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque), view, projection);
+        RenderMeshesFromList(meshes, mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Opaque), view, projection);
 
 
 
@@ -161,7 +166,7 @@ public class ShadowMapPass : RenderPass
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
 
-        RenderSkinnedMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked), view, projection);
+        RenderMeshesFromList(meshes, mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Masked), view, projection);
 
     }
 

@@ -28,16 +28,16 @@ public class NoLightPass : RenderPass
     public override void Render(Camera camera)
     {
         UseShader();
-        RenderStaticMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsStaticMesh && IsMaterialBlendMode(mesh, BlendMode.Opaque), camera.View, camera.Projection);
 
         UseShader("BLENDMODE_MASKED");
-        RenderStaticMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsStaticMesh && IsMaterialBlendMode(mesh, BlendMode.Masked), camera.View, camera.Projection);
 
         UseShader("SKINNED_MESH");
-        RenderSkinnedMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Opaque), camera.View, camera.Projection);
 
         UseShader("SKINNED_MESH", "BLENDMODE_MASKED");
-        RenderSkinnedMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Masked), camera.View, camera.Projection);
 
 
         gl.Enable(EnableCap.Blend);
@@ -45,11 +45,11 @@ public class NoLightPass : RenderPass
         gl.DepthMask(false);
 
         UseShader("BLENDMODE_TRANSLUCENT");
-        RenderStaticMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Translucent), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsStaticMesh && IsMaterialBlendMode(mesh, BlendMode.Translucent), camera.View, camera.Projection);
 
 
         UseShader("SKINNED_MESH", "BLENDMODE_TRANSLUCENT");
-        RenderSkinnedMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Translucent), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Translucent), camera.View, camera.Projection);
 
     }
 

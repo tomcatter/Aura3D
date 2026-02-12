@@ -1,4 +1,4 @@
-﻿#version 300 es
+#version 300 es
 precision mediump float;
 layout (location = 0) out vec4 Buffer_BaseColor_Metalness;
 layout (location = 1) out vec4 Buffer_Normal_Roughness;
@@ -6,18 +6,18 @@ layout (location = 2) out vec4 Buffer_Emissive_Occlusion;
 
 //{{defines}}
 
-uniform sampler2d Texture_BaseColor;
-uniform sampler2d Texture_Normal;
-uniform sampler2d Texture_Metalness;
-uniform sampler2d Texture_Roughness;
-uniform sampler2d Texture_Emissive;
-uniform sampler2d Texture_Occlusion;
+uniform sampler2D Texture_BaseColor;
+uniform sampler2D Texture_Normal;
+uniform sampler2D Texture_Metalness;
+uniform sampler2D Texture_Roughness;
+uniform sampler2D Texture_Emissive;
+uniform sampler2D Texture_Occlusion;
 
 
 in vec2 vTexCoord;
 in vec3 vFragPosition;
 in mat3 vTBN;
-in vec3 vNormal;
+in vec3 vNormal; 
 
 void main() 
 {

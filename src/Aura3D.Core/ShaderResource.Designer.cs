@@ -168,12 +168,29 @@ namespace Aura3D.Core {
         }
         
         /// <summary>
-        ///   查找 System.Byte[] 类型的本地化资源。
+        ///   查找类似 #version 300 es
+        ///precision mediump float;
+        ///layout (location = 0) out vec4 Buffer_BaseColor_Metalness;
+        ///layout (location = 1) out vec4 Buffer_Normal_Roughness;
+        ///layout (location = 2) out vec4 Buffer_Emissive_Occlusion;
+        ///
+        /////{{defines}}
+        ///
+        ///uniform sampler2d Texture_BaseColor;
+        ///uniform sampler2d Texture_Normal;
+        ///uniform sampler2d Texture_Metalness;
+        ///uniform sampler2d Texture_Roughness;
+        ///uniform sampler2d Texture_Emissive;
+        ///uniform sampler2d Texture_Occlusion;
+        ///
+        ///
+        ///in vec2 vTexCoord;
+        ///in vec3 vFragPosition;
+        ///in [字符串的其余部分被截断]&quot;; 的本地化字符串。
         /// </summary>
-        public static byte[] DeferredMeshFrag {
+        public static string DeferredMeshFrag {
             get {
-                object obj = ResourceManager.GetObject("DeferredMeshFrag", resourceCulture);
-                return ((byte[])(obj));
+                return ResourceManager.GetString("DeferredMeshFrag", resourceCulture);
             }
         }
         

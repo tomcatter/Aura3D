@@ -63,18 +63,18 @@ public class LightPass : RenderPass
         ClearTextureUnit();
 
         UseShader();
-        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && !mesh.IsSkinnedMesh, camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && mesh.IsStaticMesh, camera.View, camera.Projection);
 
         UseShader("BLENDMODE_MASKED");
-        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && !mesh.IsSkinnedMesh, camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && mesh.IsStaticMesh, camera.View, camera.Projection);
         
 
         UseShader("SKINNED_MESH");
-        RenderSkinnedMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque), camera.View, camera.Projection);
-        
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
+
 
         UseShader("SKINNED_MESH", "BLENDMODE_MASKED");
-        RenderSkinnedMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
     }
 
     protected void SetupUniform(Matrix4x4 view, Matrix4x4 projection)

@@ -11,13 +11,30 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
 {
     public PBRDeferredPipeline(Scene scene) : base(scene)
     {
-        this.RegisterRenderPass(new BasePass(this).SetOutPutRenderTarget("GBuffer"), RenderPassGroup.EveryCamera);
+        RegisterRenderPass(new BasePass(this).SetOutPutRenderTarget("GBuffer"), RenderPassGroup.EveryCamera);
 
-        this.RegisterRenderPass(new LightingPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
+        RegisterRenderPass(new DirectionalLightingPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
 
-        this.RegisterRenderTarget("GBuffer")
+        RegisterRenderPass(new SpotLightingPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
+
+        RegisterRenderPass(new PointLightingPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
+
+        RegisterRenderPass(new GammaCorrectionPass(this, "BaseRenderTarget", "Color").SetOutPutRenderTarget("GammaOutput"), RenderPassGroup.EveryCamera);
+
+        RegisterRenderPass(new FxaaPass(this, "GammaOutput", "Color"), RenderPassGroup.EveryCamera);
+
+        RegisterRenderTarget("GBuffer")
             .AddTexture("BaseColorMetallic", TextureFormat.Rgba8)
             .AddTexture("NormalRoughness", TextureFormat.Rgba8)
+            .AddTexture("EmissiveOcclusion", TextureFormat.Rgba8)
+            .SetDepthTexture(TextureFormat.DepthComponent16);
+
+        RegisterRenderTarget("GammaOutput")
+            .AddTexture("Color", TextureFormat.Rgb16f)
+            .SetDepthTexture(TextureFormat.DepthComponent16);
+
+        RegisterRenderTarget("BaseRenderTarget")
+            .AddTexture("Color", TextureFormat.Rgba16f)
             .SetDepthTexture(TextureFormat.DepthComponent16);
     }
 

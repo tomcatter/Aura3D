@@ -27,11 +27,11 @@ public class TranslucentPass : LightPass
         gl.BindFramebuffer(GLEnum.Framebuffer, rt.FrameBufferId);
 
         UseShader("BLENDMODE_TRANSLUCENT");
-        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Translucent) && !mesh.IsSkinnedMesh, camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Translucent) && mesh.IsStaticMesh, camera.View, camera.Projection);
         
 
         UseShader("SKINNED_MESH", "BLENDMODE_TRANSLUCENT");
-        RenderSkinnedMeshes(mesh => IsMaterialBlendMode(mesh, BlendMode.Translucent), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Translucent) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
         
    
     }

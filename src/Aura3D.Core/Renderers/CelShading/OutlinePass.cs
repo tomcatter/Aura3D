@@ -45,19 +45,19 @@ public class OutlinePass : RenderPass
         ClearTextureUnit();
 
         UseShader();
-        RenderMeshes(mesh => mesh.IsSkinnedMesh == false && (mesh.Material == null || mesh.Material.BlendMode == BlendMode.Opaque), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsStaticMesh && IsMaterialBlendMode(mesh, BlendMode.Opaque), camera.View, camera.Projection);
         
 
         UseShader("BLENDMODE_MASKED");
-        RenderMeshes(mesh => mesh.IsSkinnedMesh == false && (mesh.Material != null && mesh.Material.BlendMode == BlendMode.Masked), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsStaticMesh && IsMaterialBlendMode(mesh, BlendMode.Masked), camera.View, camera.Projection);
         
 
         UseShader("SKINNED_MESH");
-        RenderMeshes(mesh => mesh.IsSkinnedMesh && (mesh.Material == null || mesh.Material.BlendMode == BlendMode.Opaque), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Opaque), camera.View, camera.Projection);
         
 
         UseShader("SKINNED_MESH", "BLENDMODE_MASKED");
-        RenderMeshes(mesh => mesh.IsSkinnedMesh && (mesh.Material != null && mesh.Material.BlendMode == BlendMode.Masked), camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Masked), camera.View, camera.Projection);
     }
 
     protected void SetupUniform(Matrix4x4 view, Matrix4x4 projection)
