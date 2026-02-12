@@ -43,6 +43,7 @@ internal class DirectionalLightingPass : RenderPass
         var depthTexture = rt.DepthStencilTexture;
 
 
+        UseShader("ENABLE_DIR_LIGHT");
         UseShader_Internal(null);
 
         foreach (var dl in renderPipeline.DirectionalLights)

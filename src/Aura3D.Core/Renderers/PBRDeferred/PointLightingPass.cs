@@ -13,11 +13,15 @@ public class PointLightingPass : RenderPass
     public PointLightingPass(RenderPipeline renderPipeline, string gbufferRendertarget) : base(renderPipeline)
     {
         GbufferRenderTargetName = gbufferRendertarget;
+
+        this.VertexShader = ShaderResource.pbr_directionallight_lighting_pass_vert;
+
+        this.FragmentShader = ShaderResource.pbr_directionallight_lighting_pass_frag;
     }
 
     public override void BeforeRender(Camera camera)
     {
-        base.BeforeRender(camera);
+        BindOutPutRenderTarget(camera);
     }
 
     public override void Render(Camera camera)

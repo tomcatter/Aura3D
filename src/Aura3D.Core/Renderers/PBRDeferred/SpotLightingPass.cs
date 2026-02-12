@@ -16,7 +16,7 @@ internal class SpotLightingPass : RenderPass
     }
     public override void BeforeRender(Camera camera)
     {
-        base.BeforeRender(camera);
+        BindOutPutRenderTarget(camera);
     }
 
     public override void Render(Camera camera)
