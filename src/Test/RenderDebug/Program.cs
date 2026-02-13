@@ -81,7 +81,7 @@ window.Load += () =>
     mesh.RotationDegrees = new Vector3(90, 0, 0);
 
 
-    AddNode(mesh);
+    // AddNode(mesh);
 
     DirectionalLight dl = new DirectionalLight();
 

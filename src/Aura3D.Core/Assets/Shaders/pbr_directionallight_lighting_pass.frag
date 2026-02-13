@@ -9,8 +9,9 @@ layout (location = 0) out vec4 FragColor;
 #ifdef ENBALE_DEFERRED_SHADING
 
 in vec2 TexCoords;
-uniform sampler2D gBufferBaseColorMetalness;
+uniform sampler2D gBufferBaseColor;
 uniform sampler2D gBufferNormalRoughness;
+uniform sampler2D gBufferMetalnessEmissiveOcclusion;
 uniform sampler2D depthTexture;
 
 uniform mat4 invProjection;
@@ -268,9 +269,10 @@ vec3 calcSingleSpotLight(vec3 N, vec3 V, vec3 fragPos, vec3 albedo, float metaln
 
 void main() {
 #ifdef ENBALE_DEFERRED_SHADING
-    vec4 baseColorMetal = texture(gBufferBaseColorMetalness, TexCoords);
-    vec3 albedo = baseColorMetal.xyz;
-    float metalness = baseColorMetal.a;
+    vec4 baseColor = texture(gBufferBaseColor, TexCoords);
+    vec4 metalnessEmissiveOcclusion = texture(gBufferMetalnessEmissiveOcclusion, TexCoords);
+    vec3 albedo = baseColor.xyz;
+    float metalness = metalnessEmissiveOcclusion.x;
 
     vec4 normalRough = texture(gBufferNormalRoughness, TexCoords);
     vec3 N = normalize(normalRough.rgb * 2.0 - 1.0);
@@ -311,7 +313,7 @@ void main() {
     lightContribution = calcSingleSpotLight(N, V, fragPosWorld, albedo, metalness, roughness);
     #endif
 #ifdef ENBALE_DEFERRED_SHADING
-    float alpha = 1.0;
+    float alpha = baseColor.a;
 #endif
 
 #ifdef BLENDMODE_TRANSLUCENT

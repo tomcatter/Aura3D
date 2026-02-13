@@ -26,6 +26,7 @@ internal class BasePass : RenderPass
     public BasePass(RenderPipeline renderPipeline) : base(renderPipeline)
     {
         VertexShader = ShaderResource.MeshVert;
+
         FragmentShader = ShaderResource.DeferredMeshFrag;
 
         defaultBaseColor = Resources.Texture.CreateFromColor(Color.White);
@@ -37,11 +38,11 @@ internal class BasePass : RenderPass
         defaultMetallicRoughness = Resources.Texture.CreateFromColor(Color.FromArgb(255, 0, 127, 0));
 
 
-
         defaultEmissive = Resources.Texture.CreateFromColor(Color.Black);
 
-
         defaultOcclusion = Resources.Texture.CreateFromColor(Color.White);
+
+        ShaderName = nameof(BasePass);
 
     }
 

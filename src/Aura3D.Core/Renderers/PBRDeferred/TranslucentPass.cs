@@ -41,6 +41,9 @@ internal class TranslucentPass : RenderPass
 
 
         defaultOcclusion = Resources.Texture.CreateFromColor(Color.White);
+
+
+        ShaderName = nameof(TranslucentPass);
     }
     public override void Setup()
     {

@@ -15,6 +15,8 @@ internal class DirectionalLightingPass : RenderPass
         this.VertexShader = ShaderResource.pbr_directionallight_lighting_pass_vert;
 
         this.FragmentShader = ShaderResource.pbr_directionallight_lighting_pass_frag;
+
+        ShaderName = nameof(DirectionalLightingPass);
     }
 
     public override void BeforeRender(Camera camera)
@@ -38,9 +40,9 @@ internal class DirectionalLightingPass : RenderPass
         var size = new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height);
         var rt = GetRenderTarget(GbufferRenderTargetName, size);
 
-        var gBufferBaseColorMetalness = rt.GetTexture("BaseColorMetallic");
+        var gBufferBaseColor = rt.GetTexture("BaseColor");
         var gBufferNormalRoughness = rt.GetTexture("NormalRoughness");
-        var gBufferEmissiveOcclusion = rt.GetTexture("EmissiveOcclusion");
+        var gBufferMetallicEmissive = rt.GetTexture("MetallicEmissive");
         var depthTexture = rt.DepthStencilTexture;
 
 
@@ -56,9 +58,9 @@ internal class DirectionalLightingPass : RenderPass
 
             UseShader_Internal(null);
             ClearTextureUnit();
-            UniformTexture(nameof(gBufferBaseColorMetalness), gBufferBaseColorMetalness);
+            UniformTexture(nameof(gBufferBaseColor), gBufferBaseColor);
             UniformTexture(nameof(gBufferNormalRoughness), gBufferNormalRoughness);
-            UniformTexture(nameof(gBufferEmissiveOcclusion), gBufferEmissiveOcclusion);
+            UniformTexture(nameof(gBufferMetallicEmissive), gBufferMetallicEmissive);
             UniformTexture(nameof(depthTexture), depthTexture);
 
             UniformVector3("viewPos", camera.WorldTransform.Translation);

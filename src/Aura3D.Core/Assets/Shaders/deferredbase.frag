@@ -1,8 +1,8 @@
 #version 300 es
 precision mediump float;
-layout (location = 0) out vec4 Buffer_BaseColor_Metalness;
+layout (location = 0) out vec4 Buffer_BaseColor;
 layout (location = 1) out vec4 Buffer_Normal_Roughness;
-layout (location = 2) out vec4 Buffer_Emissive_Occlusion;
+layout (location = 2) out vec4 Buffer_Metalness_Emissive;
 
 //{{defines}}
 
@@ -36,8 +36,8 @@ void main()
     
     normal = normal * 0.5 + 0.5;
 
-    Buffer_BaseColor_Metalness = vec4(baseColor.rgb, metalness_roughness.x);
+    Buffer_BaseColor = baseColor;
     Buffer_Normal_Roughness = vec4(normal, metalness_roughness.y);
-    Buffer_Emissive_Occlusion = vec4(emissive.rgb, occlusion.r);
+    Buffer_Metalness_Emissive = vec4(metalness_roughness.x, emissive.rgb);
 
 }

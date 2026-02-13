@@ -1,4 +1,5 @@
 ﻿using Aura3D.Core.Nodes;
+using Aura3D.Core.Renderers.Common;
 using Aura3D.Core.Scenes;
 using System;
 using System.Collections.Generic;
@@ -25,22 +26,38 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
 
         RegisterRenderPass(new TranslucentPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
 
-        RegisterRenderPass(new GammaCorrectionPass(this, "BaseRenderTarget", "Color").SetOutPutRenderTarget("GammaOutput"), RenderPassGroup.EveryCamera);
+
+        RegisterRenderPass(new BackgroundPass(this).SetOutPutRenderTarget("BackgroundRenderTarget"), RenderPassGroup.EveryCamera);
+
+        RegisterRenderPass(new CopyPass(this, "BaseRenderTarget", "Color").SetOutPutRenderTarget("BackgroundRenderTarget"), RenderPassGroup.EveryCamera);
+
+        RegisterRenderPass(new GammaCorrectionPass(this, "BackgroundRenderTarget", "Color").SetOutPutRenderTarget("GammaOutput"), RenderPassGroup.EveryCamera);
+
+
+
+
+
+
 
         RegisterRenderPass(new FxaaPass(this, "GammaOutput", "Color"), RenderPassGroup.EveryCamera);
 
         RegisterRenderTarget("GBuffer")
-            .AddTexture("BaseColorMetallic", TextureFormat.Rgba8)
+            .AddTexture("BaseColor", TextureFormat.Rgba8)
             .AddTexture("NormalRoughness", TextureFormat.Rgba8)
-            .AddTexture("EmissiveOcclusion", TextureFormat.Rgba8)
+            .AddTexture("MetallicEmissive", TextureFormat.Rgba8)
+            .SetDepthTexture(TextureFormat.DepthComponent16);
+
+
+        RegisterRenderTarget("BaseRenderTarget")
+            .AddTexture("Color", TextureFormat.Rgba16f)
+            .SetDepthTexture(TextureFormat.DepthComponent16);
+
+        RegisterRenderTarget("BackgroundRenderTarget")
+            .AddTexture("Color", TextureFormat.Rgba16f)
             .SetDepthTexture(TextureFormat.DepthComponent16);
 
         RegisterRenderTarget("GammaOutput")
             .AddTexture("Color", TextureFormat.Rgb16f)
-            .SetDepthTexture(TextureFormat.DepthComponent16);
-
-        RegisterRenderTarget("BaseRenderTarget")
-            .AddTexture("Color", TextureFormat.Rgba16f)
             .SetDepthTexture(TextureFormat.DepthComponent16);
     }
 
