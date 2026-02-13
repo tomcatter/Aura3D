@@ -2,20 +2,18 @@
 using Silk.NET.OpenGLES;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Aura3D.Core.Renderers.Common;
 
-public class CopyPass : RenderPass
+public class ToneMappingPass : RenderPass
 {
     string _inputRenderTargetName;
 
     string _inputRenderTargetTextureName;
-    public CopyPass(RenderPipeline renderPipeline, string inputRenderTargetName, string inputRenderTargetTextureName) : base(renderPipeline)
+    public ToneMappingPass(RenderPipeline renderPipeline, string inputRenderTargetName, string inputRenderTargetTextureName) : base(renderPipeline)
     {
         _inputRenderTargetName = inputRenderTargetName;
         _inputRenderTargetTextureName = inputRenderTargetTextureName;
@@ -36,41 +34,63 @@ precision mediump float;
 
 in vec2 v_texCoord;
 
-uniform sampler2D u_texture;
+uniform sampler2D u_texture;  
+uniform float u_exposure;       
+uniform float u_brightnessClamp;
 
 out vec4 outColor;
 
+vec3 acesToneMappingMobile(vec3 color) {
+    const float a = 1.8;    
+    const float b = 0.02;   
+    const float c = 2.0;    
+    const float d = 0.6;    
+    const float e = 0.12;   
+    color = clamp((color * (a * color + b)) / (color * (c * color + d) + e), 0.0, 1.0);
+    return color;
+}
+
+vec3 applyExposureMobile(vec3 hdrColor, float exposure) {
+    hdrColor = clamp(hdrColor, 0.0, u_brightnessClamp); 
+    return 1.0 - exp(-hdrColor * exposure);
+}
+
 void main()
 {
-    vec4 color  = texture(u_texture, v_texCoord);
-    color.a = min(color.a, 1.0);
-    outColor = color;
+    vec4 hdrColor = texture(u_texture, v_texCoord);
+    
+    vec3 ldrColor = applyExposureMobile(hdrColor.rgb, u_exposure); 
+    ldrColor = acesToneMappingMobile(ldrColor);                   
+    ldrColor = clamp(ldrColor, 0.0, 1.0);
+    
+    float finalAlpha = min(hdrColor.a, 1.0);
+    
+    outColor = vec4(ldrColor, finalAlpha);
 }
 ";
     }
 
-
     public override void BeforeRender(Camera camera)
     {
-        gl.Enable(EnableCap.Blend);
         gl.Disable(EnableCap.DepthTest);
-        gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha)  ;
-        gl.BlendEquation(BlendEquationModeEXT.FuncAdd);
-
+        gl.Disable(EnableCap.Blend);
 
     }
     public override void Render(Camera camera)
     {
-        BindOutPutRenderTarget(camera);
 
         var inputrt = GetRenderTarget(_inputRenderTargetName, new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height));
         var source = inputrt.GetTexture(_inputRenderTargetTextureName);
         if (source == null)
             throw new Exception();
-        
+
+        BindOutPutRenderTarget(camera);
+
         UseShader_Internal(null);
-        ClearTextureUnit(); 
+        ClearTextureUnit();
         UniformTexture("u_texture", source);
+        UniformFloat("u_exposure", 0.7f);
+        UniformFloat("u_brightnessClamp", 4.0f);
         RenderQuad();
     }
 }

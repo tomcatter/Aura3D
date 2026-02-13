@@ -22,17 +22,6 @@ internal class DirectionalLightingPass : RenderPass
     public override void BeforeRender(Camera camera)
     {
         BindOutPutRenderTarget(camera);
-
-        gl.Disable(EnableCap.DepthTest);
-
-        gl.Enable(EnableCap.Blend);
-
-        gl.BlendFunc(BlendingFactor.One, BlendingFactor.One);
-
-        gl.BlendEquation(BlendEquationModeEXT.FuncAdd);
-
-        gl.ClearColor(0, 0, 0, 0);
-        gl.Clear(ClearBufferMask.ColorBufferBit);
     }
 
     public override void Render(Camera camera)

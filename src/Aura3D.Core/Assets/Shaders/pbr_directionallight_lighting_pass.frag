@@ -11,7 +11,7 @@ layout (location = 0) out vec4 FragColor;
 in vec2 TexCoords;
 uniform sampler2D gBufferBaseColor;
 uniform sampler2D gBufferNormalRoughness;
-uniform sampler2D gBufferMetalnessEmissiveOcclusion;
+uniform sampler2D gBufferMetallicEmissive;
 uniform sampler2D depthTexture;
 
 uniform mat4 invProjection;
@@ -270,9 +270,9 @@ vec3 calcSingleSpotLight(vec3 N, vec3 V, vec3 fragPos, vec3 albedo, float metaln
 void main() {
 #ifdef ENBALE_DEFERRED_SHADING
     vec4 baseColor = texture(gBufferBaseColor, TexCoords);
-    vec4 metalnessEmissiveOcclusion = texture(gBufferMetalnessEmissiveOcclusion, TexCoords);
+    vec4 metallicEmissive = texture(gBufferMetallicEmissive, TexCoords);
     vec3 albedo = baseColor.xyz;
-    float metalness = metalnessEmissiveOcclusion.x;
+    float metalness = metallicEmissive.x;
 
     vec4 normalRough = texture(gBufferNormalRoughness, TexCoords);
     vec3 N = normalize(normalRough.rgb * 2.0 - 1.0);

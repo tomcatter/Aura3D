@@ -18,28 +18,26 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
         RegisterRenderPass(shadowPass, RenderPassGroup.Once);
         RegisterRenderPass(new BasePass(this).SetOutPutRenderTarget("GBuffer"), RenderPassGroup.EveryCamera);
 
+        RegisterRenderPass(new ConstantAmbientPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
+
         RegisterRenderPass(new DirectionalLightingPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
 
         RegisterRenderPass(new SpotLightingPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
 
         RegisterRenderPass(new PointLightingPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
 
-        RegisterRenderPass(new TranslucentPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
-
-
         RegisterRenderPass(new BackgroundPass(this).SetOutPutRenderTarget("BackgroundRenderTarget"), RenderPassGroup.EveryCamera);
 
         RegisterRenderPass(new CopyPass(this, "BaseRenderTarget", "Color").SetOutPutRenderTarget("BackgroundRenderTarget"), RenderPassGroup.EveryCamera);
 
-        RegisterRenderPass(new GammaCorrectionPass(this, "BackgroundRenderTarget", "Color").SetOutPutRenderTarget("GammaOutput"), RenderPassGroup.EveryCamera);
+        RegisterRenderPass(new TranslucentPass(this, "GBuffer").SetOutPutRenderTarget("BackgroundRenderTarget"), RenderPassGroup.EveryCamera);
+
+        RegisterRenderPass(new ToneMappingPass(this, "BackgroundRenderTarget", "Color").SetOutPutRenderTarget("GammaOutput"), RenderPassGroup.EveryCamera);
+
+        RegisterRenderPass(new GammaCorrectionPass(this, "GammaOutput", "Color").SetOutPutRenderTarget("BackgroundRenderTarget"), RenderPassGroup.EveryCamera);
 
 
-
-
-
-
-
-        RegisterRenderPass(new FxaaPass(this, "GammaOutput", "Color"), RenderPassGroup.EveryCamera);
+        RegisterRenderPass(new FxaaPass(this, "BackgroundRenderTarget", "Color"), RenderPassGroup.EveryCamera);
 
         RegisterRenderTarget("GBuffer")
             .AddTexture("BaseColor", TextureFormat.Rgba8)
@@ -55,6 +53,7 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
         RegisterRenderTarget("BackgroundRenderTarget")
             .AddTexture("Color", TextureFormat.Rgba16f)
             .SetDepthTexture(TextureFormat.DepthComponent16);
+
 
         RegisterRenderTarget("GammaOutput")
             .AddTexture("Color", TextureFormat.Rgb16f)

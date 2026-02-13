@@ -61,12 +61,12 @@ void main()
     public override void Render(Camera camera)
     {
         BindOutPutRenderTarget(camera);
-
         var rt = GetRenderTarget(inputRenderTargetName,
             new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height));
 
         gl.Disable(EnableCap.DepthTest);
         gl.Disable(EnableCap.Blend);
+
         UseShader();
         ClearTextureUnit();
         UseShader_Internal(null);
