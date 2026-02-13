@@ -116,7 +116,7 @@ public partial class FrustumCullingPage : UserControl
                         new Channel()
                         {
                             Name = "BaseColor",
-                            Color = Color.White,
+                            Texture = Texture.CreateFromColor(Color.White),
                         }
                     }
             };

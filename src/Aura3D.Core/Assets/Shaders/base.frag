@@ -100,12 +100,6 @@ in vec3 vNormal;
 uniform sampler2D BaseColorTexture;
 uniform sampler2D NormalTexture;
 
-uniform int HasNormalTexture;
-
-uniform vec4 BaseColor;
-
-uniform int HasBaseColorTexture;
-
 uniform float ambientIntensity;
 
 uniform vec3 cameraPosition;
@@ -135,27 +129,20 @@ float CalculatePointLightShadow(vec3 position, mat4 shadowMapMatrices[6], sample
 
 void main()
 {
-	vec4 baseColor = BaseColor;
-
-	if (HasBaseColorTexture == 1)
-	{
-		baseColor = texture(BaseColorTexture, vTexCoord);
-	}
+	vec4 baseColor = texture(BaseColorTexture, vTexCoord);
 
 
 	vec3 normal = vNormal;
 
-	if (HasNormalTexture == 1)
-	{
-		normal = texture(NormalTexture, vTexCoord).xyz;
-		normal = normalize(normal * 2.0 - 1.0);
-		normal = normalize(vTBN * normal);
-	}
+	normal = texture(NormalTexture, vTexCoord).xyz;
+	normal = normalize(normal * 2.0 - 1.0);
+	normal = normalize(vTBN * normal);
 	
 	if (!gl_FrontFacing) 
 	{
 		normal = -normal;
 	}
+
 	#if defined(BLENDMODE_MASKED) || defined(BLENDMODE_TRANSLUCENT)
 		if (baseColor.a <= alphaCutoff)
 			discard;

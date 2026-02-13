@@ -1,12 +1,14 @@
     using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
+using System.Drawing;
 using System.Numerics;
 
 namespace Aura3D.Core.Renderers;
 
 public class NoLightPass : RenderPass
 {
+    Resources.Texture defaultBaseColor;
     public NoLightPass(RenderPipeline renderPipeline) : base(renderPipeline)
     {
         this.FragmentShader = ShaderResource.NoLightFrag;
@@ -23,7 +25,13 @@ public class NoLightPass : RenderPass
 
         gl.DepthMask(true);
         gl.DepthFunc(DepthFunction.Less);
+        defaultBaseColor = Resources.Texture.CreateFromColor(Color.White);
 
+    }
+
+    public override void Setup()
+    {
+        defaultBaseColor.Upload(gl);
     }
     public override void Render(Camera camera)
     {
@@ -63,26 +71,11 @@ public class NoLightPass : RenderPass
         ClearTextureUnit();
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
+
+        UniformTexture("BaseColorTexture", mesh.Material?.GetTexture("BaseColor") ?? defaultBaseColor);
+
         if (mesh.Material != null)
         {
-
-            foreach (var channel in mesh.Material.Channels)
-            {
-                if (channel.Name == "BaseColor")
-                {
-                    if (channel.Texture != null)
-                    {
-                        UniformTexture("BaseColorTexture", channel.Texture);
-                        UniformInt("HasBaseColorTexture", 1);
-                    }
-                    else
-                    {
-                        UniformInt("HasBaseColorTexture", 0);
-                        UniformTexture("BaseColorTexture", 0);
-                        UniformColor("BaseColor", channel.Color);
-                    }
-                }
-            }
 
             if (mesh.Material.DoubleSided == false)
             {
@@ -94,6 +87,12 @@ public class NoLightPass : RenderPass
             }
 
             UniformFloat("alphaCutoff", mesh.Material.AlphaCutoff);
+        }
+        else
+        {
+            gl.Enable(EnableCap.CullFace);
+            UniformFloat("alphaCutoff", 0.0f);
+
         }
 
         if (mesh.IsSkinnedMesh)

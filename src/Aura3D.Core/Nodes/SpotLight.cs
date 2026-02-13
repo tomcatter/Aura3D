@@ -22,6 +22,7 @@ public class SpotLight : Light
     public float OuterAngleDegree { get; set; } = 15;
 
     public float AttenuationRadius { get; set; } = 10f; // 光照衰减半径
+    public float SoftRatio { get; set; } = 0.9f; // 阴影柔化半径
 
     public override List<IGpuResource> GetGpuResources()
     {

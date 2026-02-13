@@ -1,10 +1,32 @@
 using Silk.NET.OpenGLES;
+using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace Aura3D.Core.Resources;
 
 public class Texture : BaseTexture<Texture>, IClone<Texture>, IGpuResource, ITexture
 {
+    public static Texture CreateFromColor(Color color)
+    {
+        var texture = new Resources.Texture();
+        texture.SetLdrData(new List<byte> 
+        { 
+            color.R, color.G, color.B, 255,
+            color.R, color.G, color.B,255,
+            color.R, color.G, color.B,255,
+            color.R, color.G, color.B,255,
+        }, 2, 2);
+        texture.SetIsGammaSpace(false);
+        texture.SetColorFormat(ColorFormat.RGBA);
+        texture.MagFilter = TextureFilterMode.Nearest;
+        texture.MinFilter = TextureFilterMode.Nearest;
+        texture.WrapS = TextureWrapMode.Repeat;
+        texture.WrapT = TextureWrapMode.Repeat;
+
+        return texture;
+
+
+    }
     public bool NeedsUpload { get; set; } = true;
     public uint TextureId { get; set; }
 

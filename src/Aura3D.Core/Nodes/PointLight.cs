@@ -21,6 +21,8 @@ public class PointLight : Light
 
     public float AttenuationRadius { get; set; } = 10f; // 光照衰减半径
 
+    public float SoftRatio { get; set; } = 0.9f; // 阴影柔化半径
+
     public CubeRenderTarget ShadowMapRenderTarget { get; private set; }
 
     public override List<IGpuResource> GetGpuResources()

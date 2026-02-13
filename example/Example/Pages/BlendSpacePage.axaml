@@ -6,7 +6,7 @@
              xmlns:u="https://irihi.tech/ursa"
              xmlns:vm="clr-namespace:Example.ViewModels"
              x:DataType="vm:BlendSpaceViewModel"
-             xmlns:acr="clr-namespace:Aura3D.Core.Renderers;assembly=Aura3D.Core"
+             xmlns:acr="clr-namespace:Aura3D.Core.Renderers.PBRDeferred;assembly=Aura3D.Core"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Example.Pages.BlendSpacePage">
   <DockPanel>
@@ -30,7 +30,7 @@
 
       
         <Border  Theme="{StaticResource CardBorder}" Padding="8">
-            <a:Aura3DView x:Name="aura3Dview" SceneInitialized="aura3Dview_SceneInitialized" SceneUpdated="aura3Dview_SceneUpdated" >
+            <a:Aura3DView x:Name="aura3Dview" x:TypeArguments="acr:PBRDeferredPipeline" SceneInitialized="aura3Dview_SceneInitialized" SceneUpdated="aura3Dview_SceneUpdated" >
 				
             </a:Aura3DView>
         </Border>

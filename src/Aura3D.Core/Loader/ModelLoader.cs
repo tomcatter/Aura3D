@@ -285,13 +285,6 @@ public static class ModelLoader
                 }
                 channel = new Channel();
                 channel.Name = gltfChannel.Key;
-                try
-                {
-                    channel.Color = gltfChannel.Color.ToColor();
-                }
-                catch
-                {
-                }
                 if (gltfChannel.Texture != null && textureMap.ContainsKey(gltfChannel.Texture))
                 {
                     channel.Texture = textureMap[gltfChannel.Texture];
@@ -339,6 +332,17 @@ public static class ModelLoader
                             });
                         }
 
+                    }
+                }
+                else
+                {
+
+                    try
+                    {
+                        channel.Texture = Texture.CreateFromColor(gltfChannel.Color.ToColor());
+                    }
+                    catch
+                    {
                     }
                 }
                 mat.Channels.Add(channel);

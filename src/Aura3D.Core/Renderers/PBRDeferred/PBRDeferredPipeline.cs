@@ -12,6 +12,9 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
 {
     public PBRDeferredPipeline(Scene scene) : base(scene)
     {
+        var shadowPass = new ShadowMapPass(this);
+        shadowPass.UpdateLightNumLimit(10, 10, 10);
+        RegisterRenderPass(shadowPass, RenderPassGroup.Once);
         RegisterRenderPass(new BasePass(this).SetOutPutRenderTarget("GBuffer"), RenderPassGroup.EveryCamera);
 
         RegisterRenderPass(new DirectionalLightingPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);

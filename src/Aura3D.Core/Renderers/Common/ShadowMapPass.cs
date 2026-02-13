@@ -37,6 +37,11 @@ public class ShadowMapPass : RenderPass
         gl.Enable(EnableCap.DepthTest);
         gl.DepthMask(true);
         gl.DepthFunc(DepthFunction.Less);
+        gl.CullFace(TriangleFace.Front);
+    }
+    public override void AfterRender()
+    {
+        gl.CullFace(TriangleFace.Back);
     }
 
 

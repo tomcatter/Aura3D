@@ -2,12 +2,18 @@ using Aura3D.Core.Math;
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
+using System.Drawing;
 using System.Numerics;
+using System.Threading.Channels;
 
 namespace Aura3D.Core.Renderers;
 
 public class LightPass : RenderPass
 {
+    Resources.Texture defaultBaseColor;
+
+    Resources.Texture defaultNormal;
+
     private int directionalLightLimit;
     private int pointLightLimit;
     private int spotLightLimit;
@@ -37,13 +43,19 @@ public class LightPass : RenderPass
     public LightPass(RenderPipeline renderPipeline) : base(renderPipeline)
     {
         VertexShader = ShaderResource.MeshVert;
+
         FragmentShader = ShaderResource.MeshFrag;
+
         ShaderName = nameof(LightPass);
+
+        defaultBaseColor = Resources.Texture.CreateFromColor(Color.White);
+
+        defaultNormal = Resources.Texture.CreateFromColor(Color.FromArgb(255, 128, 128, 255));
     }
     public override void Setup()
     {
-        // Setup logic for the base pass
-        // This can include setting up shaders, buffers, etc.
+        defaultBaseColor.Upload(gl);
+        defaultNormal.Upload(gl);
     }
     public override void BeforeRender(Camera camera)
     {
@@ -232,52 +244,30 @@ public class LightPass : RenderPass
     {
         ClearTextureUnit();
         SetupUniform(view, projection);
+
+
+        UniformTexture("BaseColorTexture", mesh.Material?.GetTexture("BaseColor") ?? defaultBaseColor);
+        UniformTexture("NormalTexture", mesh.Material?.GetTexture("Normal") ?? defaultNormal);
+
         if (mesh.Material != null)
         {
 
-            foreach(var channel in mesh.Material.Channels)
+            if (mesh.Material.DoubleSided == false)
             {
-                if (channel.Name == "BaseColor")
-                {
-                    if (channel.Texture != null)
-                    {
-                        UniformTexture("BaseColorTexture", channel.Texture);
-                        UniformInt("HasBaseColorTexture", 1);
-                    }
-                    else
-                    {
-                        UniformInt("HasBaseColorTexture", 0);
-                        UniformTexture("BaseColorTexture", 0);
-                        UniformColor("BaseColor", channel.Color);
-                    }
-                }
-                else if (channel.Name == "Normal")
-                {
-
-
-                    if (channel.Texture != null)
-                    {
-                        UniformTexture("NormalTexture", channel.Texture);
-                        UniformInt("HasNormalTexture", 1);
-                    }
-                    else
-                    {
-                        UniformTexture("NormalTexture", 0);
-                        UniformInt("HasNormalTexture", 0);
-                    }
-                }
-
-                if (mesh.Material.DoubleSided == false)
-                {
-                    gl.Enable(EnableCap.CullFace);
-                }
-                else
-                {
-                    gl.Disable(EnableCap.CullFace);
-                }
-
+                gl.Enable(EnableCap.CullFace);
             }
+            else
+            {
+                gl.Disable(EnableCap.CullFace);
+            }
+
             UniformFloat("alphaCutoff", mesh.Material.AlphaCutoff);
+        }
+        else
+        {
+            gl.Enable(EnableCap.CullFace);
+            UniformFloat("alphaCutoff", 0.0f);
+
         }
 
         var normalMatrix = mesh.WorldTransform.Inverse();

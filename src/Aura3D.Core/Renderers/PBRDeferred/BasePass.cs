@@ -2,6 +2,7 @@
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
+using System.Drawing;
 using System.Numerics;
 using System.Threading.Channels;
 
@@ -27,35 +28,20 @@ internal class BasePass : RenderPass
         VertexShader = ShaderResource.MeshVert;
         FragmentShader = ShaderResource.DeferredMeshFrag;
 
-        defaultBaseColor = new Resources.Texture();
-        defaultBaseColor.SetLdrData(new List<byte> { 255, 255, 255}, 1, 1);
-        defaultBaseColor.SetIsGammaSpace(false);
-        defaultBaseColor.SetColorFormat(ColorFormat.RGB);
+        defaultBaseColor = Resources.Texture.CreateFromColor(Color.White);
 
 
-        defaultNormal = new Resources.Texture();
-        defaultNormal.SetLdrData(new List<byte> { 0, 0, 255 }, 1, 1);
-        defaultNormal.SetIsGammaSpace(false);
-        defaultNormal.SetColorFormat(ColorFormat.RGB);
+        defaultNormal = Resources.Texture.CreateFromColor(Color.FromArgb(255, 128, 128, 255));
 
 
-        defaultMetallicRoughness = new Resources.Texture();
-        defaultMetallicRoughness.SetLdrData(new List<byte> { 0, 127, 0 }, 1, 1);
-        defaultMetallicRoughness.SetIsGammaSpace(false);
-        defaultMetallicRoughness.SetColorFormat(ColorFormat.RGB);
+        defaultMetallicRoughness = Resources.Texture.CreateFromColor(Color.FromArgb(255, 0, 127, 0));
 
 
 
-        defaultEmissive = new Resources.Texture();
-        defaultEmissive.SetLdrData(new List<byte> { 0, 0, 0 }, 1, 1);
-        defaultEmissive.SetIsGammaSpace(false);
-        defaultEmissive.SetColorFormat(ColorFormat.RGB);
+        defaultEmissive = Resources.Texture.CreateFromColor(Color.Black);
 
 
-        defaultOcclusion = new Resources.Texture();
-        defaultOcclusion.SetLdrData(new List<byte> { 255, 255, 255 }, 1, 1);
-        defaultOcclusion.SetIsGammaSpace(false);
-        defaultOcclusion.SetColorFormat(ColorFormat.RGB);
+        defaultOcclusion = Resources.Texture.CreateFromColor(Color.White);
 
     }
 
@@ -78,6 +64,7 @@ internal class BasePass : RenderPass
     public override void Render(Camera camera)
     {
         BindOutPutRenderTarget(camera);
+        gl.DepthMask(true);
 
         gl.ClearDepth(1.0f);
         gl.ClearColor(0, 0, 0, 0);

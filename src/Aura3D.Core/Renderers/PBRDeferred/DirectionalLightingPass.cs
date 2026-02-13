@@ -1,6 +1,7 @@
 ﻿using Aura3D.Core.Math;
 using Aura3D.Core.Nodes;
 using Silk.NET.OpenGLES;
+using System.Numerics;
 
 namespace Aura3D.Core.Renderers.PBRDeferred;
 
@@ -43,11 +44,15 @@ internal class DirectionalLightingPass : RenderPass
         var depthTexture = rt.DepthStencilTexture;
 
 
-        UseShader("ENABLE_DIR_LIGHT");
-        UseShader_Internal(null);
 
         foreach (var dl in renderPipeline.DirectionalLights)
         {
+            if (dl.CastShadow == false)
+                UseShader("ENABLE_DIR_LIGHT");
+            else
+                UseShader("ENABLE_DIR_LIGHT", "ENABLE_SHADOWS");
+
+            UseShader_Internal(null);
             ClearTextureUnit();
             UniformTexture(nameof(gBufferBaseColorMetalness), gBufferBaseColorMetalness);
             UniformTexture(nameof(gBufferNormalRoughness), gBufferNormalRoughness);
@@ -62,8 +67,18 @@ internal class DirectionalLightingPass : RenderPass
             UniformMatrix4("invProjection", camera.Projection.Inverse());
             UniformMatrix4("invView", camera.View.Inverse());
 
+            if (dl.CastShadow == true)
+            {
+                var shadowView = Matrix4x4.CreateLookAt(dl.WorldTransform.Translation, dl.WorldTransform.Translation + dl.WorldTransform.ForwardVector(), dl.WorldTransform.UpVector());
+                var shadowProjection = Matrix4x4.CreateOrthographic(dl.ShadowConfig.Width, dl.ShadowConfig.Height, dl.ShadowConfig.NearPlane, dl.ShadowConfig.FarPlane);
+
+                UniformTexture($"dirLightshadowMap", dl.ShadowMapRenderTarget.DepthStencilTexture);
+                UniformMatrix4($"dirLightshadowMapMatrix", shadowView * shadowProjection);
+
+            }
             RenderQuad();
         }
+
     }
 
     public override void AfterRender(Camera camera)

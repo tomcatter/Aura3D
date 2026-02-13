@@ -159,7 +159,7 @@ public class CelLightPass : RenderPass
                         {
                             UniformInt("HasBaseColorTexture", 0);
                             UniformTexture("BaseColorTexture", 0);
-                            UniformColor("BaseColor", channel.Color);
+                            //UniformColor("BaseColor", channel.Color);
                         }
                         break;
                     case "Normal":

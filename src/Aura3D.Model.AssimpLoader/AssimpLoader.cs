@@ -320,30 +320,43 @@ public static class AssimpLoader
                 texture = processTexture(scene, slot, path, loadTextureFunc);
 
             }
-            if (texture != null)
+            if (texture == null)
             {
-                texture.IsGammaSpace = true;
+                texture = Texture.CreateFromColor(Color.White);
             }
+
+            texture.IsGammaSpace = true;
+
             material.Channels.Add(new Channel
             {
                 Name = "BaseColor",
                 Texture = texture,
-                Color = Color.White,
             });
 
+            Core.Resources.Texture? normalTexture = null  ;
             if (assimpMaterial.HasTextureNormal && assimpMaterial.TextureNormal.FilePath != null)
             {
                 var slot = assimpMaterial.TextureNormal;
-                texture = processTexture(scene, slot, path, loadTextureFunc);
+                normalTexture = processTexture(scene, slot, path, loadTextureFunc);
 
                 material.Channels.Add(new Channel
                 {
                     Name = "Normal",
                     Texture = texture,
-                    Color = Color.Blue,
                 });
 
             }
+
+            if (normalTexture == null)
+            {
+                normalTexture = Texture.CreateFromColor(Color.FromArgb(255, 128, 128, 255));
+            }
+            
+            material.Channels.Add(new Channel
+            {
+                Name = "Normal",
+                Texture = normalTexture,
+            });
 
 
             materialsMap.Add(i, material);

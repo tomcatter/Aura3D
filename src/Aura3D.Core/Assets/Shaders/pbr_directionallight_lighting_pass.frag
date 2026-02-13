@@ -2,10 +2,6 @@
 precision highp float;
 //{{defines}}
 
-#define ENABLE_DIR_LIGHT 0
-#define ENABLE_POINT_LIGHT 0
-#define ENABLE_SPOT_LIGHT 1
-
 in vec2 TexCoords;
 
 layout (location = 0) out vec4 FragColor;
@@ -19,31 +15,35 @@ uniform mat4 invView;
 
 uniform vec3 viewPos;
 
-#if ENABLE_DIR_LIGHT
+#ifdef ENABLE_DIR_LIGHT
 uniform vec3 dirLightDirection;
 uniform vec3 dirLightColor;
 uniform float dirLightIntensity;
+uniform mat4 dirLightshadowMapMatrix;
+uniform sampler2D dirLightshadowMap;
 #endif
 
-#if ENABLE_POINT_LIGHT
+#ifdef ENABLE_POINT_LIGHT
 uniform vec3 pointLightPosition;
 uniform vec3 pointLightColor;
+uniform float radius;
+uniform float softRadius;
 uniform float pointLightIntensity;
-uniform float pointLightConstant;
-uniform float pointLightLinear;
-uniform float pointLightQuadratic;
+uniform mat4 pointShadowMapMatrices[6];
+uniform samplerCube pointLightShadowMap;
 #endif
 
-#if ENABLE_SPOT_LIGHT
+#ifdef ENABLE_SPOT_LIGHT
 uniform vec3 spotLightPosition;
 uniform vec3 spotLightDirection;
 uniform vec3 spotLightColor;
 uniform float spotLightIntensity;
-uniform float spotLightConstant;
-uniform float spotLightLinear;
-uniform float spotLightQuadratic;
 uniform float spotLightCutOff;
+uniform float radius;
+uniform float softRadius;
 uniform float spotLightOuterCutOff;
+uniform mat4 spotLightshadowMapMatrix;
+uniform sampler2D spotLightshadowMap;
 #endif
 
 const float PI = 3.14159265359;
@@ -91,7 +91,75 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-#if ENABLE_DIR_LIGHT
+float CalcPointLightAttenuation(float d, float r, float softRatio) {
+    if (d > r) return 0.0;
+    
+    float nd = d / r;
+    float atten = 1.0 / (1.0 + 25.0 * nd * nd);
+    float softThresh = r * softRatio;
+    float soft = smoothstep(r, softThresh, d);
+    return atten * soft;
+}
+
+float CalculateShadow(vec3 fragPos, mat4 shadowMatrix, sampler2D shadowMap)
+{
+	vec4 shadowCoord = shadowMatrix * vec4(fragPos, 1.0);
+	
+
+	if (shadowCoord.x < -shadowCoord.w || shadowCoord.x > shadowCoord.w ||
+        shadowCoord.y < -shadowCoord.w || shadowCoord.y > shadowCoord.w ||
+        shadowCoord.z < -shadowCoord.w || shadowCoord.z > shadowCoord.w)
+        return 1.0;
+		
+    shadowCoord /= shadowCoord.w;
+
+	shadowCoord.xyz = shadowCoord.xyz * 0.5 + 0.5;
+
+
+	float shadowValue = texture(shadowMap, shadowCoord.xy).x;
+	float bias = 0.001;
+	if (shadowValue < shadowCoord.z - bias)
+		return 0.0;
+	else
+		return 1.0;
+}
+
+float CalculatePointLightShadow(vec3 fragPos, vec3 lightPos, mat4 shadowMapMatrices[6], samplerCube shadowMapTexture)
+{
+    vec3 fragToLight = fragPos - lightPos;
+    int face = 0;
+    float maxComp = 0.0;
+    if(abs(fragToLight.x) > maxComp) {
+        face = fragToLight.x > 0.0 ? 0 : 1;
+        maxComp = abs(fragToLight.x);
+    }
+    if(abs(fragToLight.y) > maxComp) {
+        face = fragToLight.y > 0.0 ? 2 : 3;
+        maxComp = abs(fragToLight.y);
+    }
+    if(abs(fragToLight.z) > maxComp) {
+        face = fragToLight.z > 0.0 ? 4 : 5;
+        maxComp = abs(fragToLight.z);
+    }
+
+    vec4 shadowCoord = shadowMapMatrices[face] * vec4(fragPos, 1.0);
+    shadowCoord /= shadowCoord.w;
+    shadowCoord.xyz = shadowCoord.xyz * 0.5 + 0.5;
+
+    vec3 sampleDir = normalize(fragToLight);
+    float shadowValue = texture(shadowMapTexture, sampleDir).r;
+
+    float bias = 0.001;
+
+    if (shadowValue < shadowCoord.z - bias)
+        return 0.0;
+    else
+        return 1.0;
+
+}
+
+
+#ifdef ENABLE_DIR_LIGHT
 vec3 calcSingleDirLight(vec3 N, vec3 V, vec3 fragPos, vec3 albedo, float metalness, float roughness) {
     vec3 L = normalize(-dirLightDirection);
     vec3 H = normalize(V + L);
@@ -105,18 +173,22 @@ vec3 calcSingleDirLight(vec3 N, vec3 V, vec3 fragPos, vec3 albedo, float metalne
     vec3 kS = F;
     vec3 kD = (vec3(1.0) - kS) * (1.0 - metalness);
     vec3 diffuse = kD * albedo / PI;
+    float shadow = 1.0;
 
+#ifdef ENABLE_SHADOWS
+    shadow = CalculateShadow(fragPos, dirLightshadowMapMatrix, dirLightshadowMap);
+#endif
     float NdotL = max(dot(N, L), 0.0);
-    return (diffuse + specular) * dirLightColor * dirLightIntensity * NdotL;
+    return (diffuse + specular) * dirLightColor * dirLightIntensity * NdotL * shadow;
 }
 #endif
 
-#if ENABLE_POINT_LIGHT
+#ifdef ENABLE_POINT_LIGHT
 vec3 calcSinglePointLight(vec3 N, vec3 V, vec3 fragPos, vec3 albedo, float metalness, float roughness) {
     vec3 L = normalize(pointLightPosition - fragPos);
     float distance = length(pointLightPosition - fragPos);
-    float attenuation = 1.0 / (pointLightConstant + pointLightLinear * distance + pointLightQuadratic * (distance * distance));
-    
+    float attenuation = CalcPointLightAttenuation(distance, radius, softRadius); 
+
     vec3 H = normalize(V + L);
     vec3 F0 = mix(vec3(0.04), albedo, metalness);
 
@@ -131,15 +203,22 @@ vec3 calcSinglePointLight(vec3 N, vec3 V, vec3 fragPos, vec3 albedo, float metal
 
     float NdotL = max(dot(N, L), 0.0);
     vec3 radiance = pointLightColor * pointLightIntensity * attenuation;
-    return (diffuse + specular) * radiance * NdotL;
+
+    float shadow = 1.0;
+    
+#ifdef ENABLE_SHADOWS
+    shadow = CalculatePointLightShadow(fragPos, pointLightPosition, pointShadowMapMatrices, pointLightShadowMap);
+#endif
+
+    return (diffuse + specular) * radiance * NdotL * shadow;
 }
 #endif
 
-#if ENABLE_SPOT_LIGHT
+#ifdef ENABLE_SPOT_LIGHT
 vec3 calcSingleSpotLight(vec3 N, vec3 V, vec3 fragPos, vec3 albedo, float metalness, float roughness) {
     vec3 L = normalize(spotLightPosition - fragPos);
     float distance = length(spotLightPosition - fragPos);
-    float distanceAttenuation = 1.0 / (spotLightConstant + spotLightLinear * distance + spotLightQuadratic * (distance * distance));
+    float distanceAttenuation = CalcPointLightAttenuation(distance, radius, softRadius); 
     
     float theta = dot(L, normalize(-spotLightDirection));
     float epsilon = spotLightCutOff - spotLightOuterCutOff;
@@ -160,14 +239,17 @@ vec3 calcSingleSpotLight(vec3 N, vec3 V, vec3 fragPos, vec3 albedo, float metaln
     float totalAttenuation = distanceAttenuation * angleAttenuation;
     float NdotL = max(dot(N, L), 0.0);
     vec3 radiance = spotLightColor * spotLightIntensity * totalAttenuation;
-    
-    return (diffuse + specular) * radiance * NdotL;
+    float shadow = 1.0;
+#ifdef ENABLE_SHADOWS
+    shadow = CalculateShadow(fragPos, spotLightshadowMapMatrix, spotLightshadowMap);
+#endif
+    return (diffuse + specular) * radiance * NdotL * shadow;;
 }
 #endif
 
 void main() {
     vec4 baseColorMetal = texture(gBufferBaseColorMetalness, TexCoords);
-    vec3 albedo = pow(baseColorMetal.rgb, vec3(2.2));
+    vec3 albedo = baseColorMetal.xyz;
     float metalness = baseColorMetal.a;
 
     vec4 normalRough = texture(gBufferNormalRoughness, TexCoords);
@@ -178,13 +260,13 @@ void main() {
     vec3 V = normalize(viewPos - fragPosWorld);
 
     vec3 lightContribution = vec3(0.0);
-    #if ENABLE_DIR_LIGHT
+    #ifdef ENABLE_DIR_LIGHT
     lightContribution = calcSingleDirLight(N, V, fragPosWorld, albedo, metalness, roughness);
     #endif
-    #if ENABLE_POINT_LIGHT
+    #ifdef ENABLE_POINT_LIGHT
     lightContribution = calcSinglePointLight(N, V, fragPosWorld, albedo, metalness, roughness);
     #endif
-    #if ENABLE_SPOT_LIGHT
+    #ifdef ENABLE_SPOT_LIGHT
     lightContribution = calcSingleSpotLight(N, V, fragPosWorld, albedo, metalness, roughness);
     #endif
 

@@ -1,5 +1,6 @@
 // See https://aka.ms/new-console-template for more information
 using Aura3D.Core;
+using Aura3D.Core.Geometries;
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Renderers;
 using Aura3D.Core.Renderers.PBRDeferred;
@@ -14,7 +15,7 @@ using System.Numerics;
 var window = Window.Create(WindowOptions.Default);
 ControlRenderTarget controlRenderTarget = new ControlRenderTarget();
 Camera.ControlRenderTarget = controlRenderTarget;
-Scene scene = new Scene(scene => new PBRDeferredPipeline(scene));
+Scene scene = new Scene(scene => new BlinnPhongPipeline(scene));
 window.Load += () =>
 {
     controlRenderTarget.Width = (uint)(window.Size.X);
@@ -64,15 +65,64 @@ window.Load += () =>
 
     AddNode(model);
 
-    camera.FitToBoundingBox(model.BoundingBox);
+    camera.FitToBoundingBox(model.BoundingBox, 1);
 
-    DirectionalLight dl = new DirectionalLight();
+    //DirectionalLight dl = new DirectionalLight();
 
-    dl.CastShadow = true;
+    //dl.CastShadow = true;
 
-    dl.RotationDegrees = new Vector3(-45, 45, 0);
+    //dl.RotationDegrees = new Vector3(-45, 45, 0);
 
-    AddNode(dl);
+    //dl.ShadowConfig.Width = 2;
+    //dl.ShadowConfig.Height = 2;
+    //dl.ShadowConfig.NearPlane = 0.001f;
+    //dl.ShadowConfig.FarPlane = 1;
+    //AddNode(dl);
+
+    SpotLight sp = new SpotLight();
+
+    sp.Position = model.Position + model.Right;
+
+    sp.Rotation = new Vector3(0, 90, 0);
+
+
+    sp.LightColor = Color.White;
+
+    sp.CastShadow = false;
+
+    sp.InnerConeAngleDegree = 50;
+
+    sp.OuterAngleDegree = 55;
+
+    sp.AttenuationRadius = 2;
+
+    AddNode(sp);
+
+    var mesh = new Mesh();
+
+    mesh.Geometry = new PlaneGeometry();
+
+    mesh.Material = new Material();
+
+    mesh.Material.BaseColor = Texture.CreateFromColor(Color.Blue);
+
+    mesh.Material.Normal = Texture.CreateFromColor(Color.FromArgb(128, 128, 255));
+
+    mesh.Position = model.Position      ;
+
+    AddNode(mesh);
+
+
+
+    //var pl = new PointLight();
+
+    //pl.Position = camera.Position;
+
+    //pl.AttenuationRadius = 1;
+
+    //pl.CastShadow = true;
+
+    //AddNode(pl);
 };
 
 

@@ -138,7 +138,7 @@ public partial class BlendSpacePage : UserControl
             Channels = [
             new Channel(){
                 Name = "BaseColor",
-                Color = Color.Blue
+                Texture = Texture.CreateFromColor(Color.Blue),
             }
              ]
         };

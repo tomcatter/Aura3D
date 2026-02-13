@@ -52,7 +52,6 @@ public class Material : IClone<Material>, IGpuResource
             var newChannel = new Channel
             {
                 Name = channel.Name,
-                Color = channel.Color,
                 Texture = channel.Texture is Texture texture? texture.Clone() : null
             };
             material.Channels.Add(newChannel);
@@ -198,8 +197,6 @@ public class Channel
     public string Name { get; set; } = string.Empty;
 
     public ITexture? Texture { get; set; }
-
-    public Color Color { get; set; } = Color.White;
 }
 
 public enum BlendMode

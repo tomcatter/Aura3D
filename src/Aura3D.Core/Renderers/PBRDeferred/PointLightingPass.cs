@@ -1,7 +1,9 @@
-﻿using Aura3D.Core.Nodes;
+﻿using Aura3D.Core.Math;
+using Aura3D.Core.Nodes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,7 +28,66 @@ public class PointLightingPass : RenderPass
 
     public override void Render(Camera camera)
     {
-        base.Render(camera);
+        var size = new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height);
+        var rt = GetRenderTarget(GbufferRenderTargetName, size);
+
+        var gBufferBaseColorMetalness = rt.GetTexture("BaseColorMetallic");
+        var gBufferNormalRoughness = rt.GetTexture("NormalRoughness");
+        var gBufferEmissiveOcclusion = rt.GetTexture("EmissiveOcclusion");
+        var depthTexture = rt.DepthStencilTexture;
+
+
+        Span<Matrix4x4> ShadowViews = stackalloc Matrix4x4[6];
+        foreach (var pl in renderPipeline.PointLights)
+        {
+            if (pl.CastShadow == false)
+                UseShader("ENABLE_POINT_LIGHT");
+            else
+                UseShader("ENABLE_POINT_LIGHT", "ENABLE_SHADOWS");
+            UseShader_Internal(null);
+
+
+            ClearTextureUnit();
+            UniformTexture(nameof(gBufferBaseColorMetalness), gBufferBaseColorMetalness);
+            UniformTexture(nameof(gBufferNormalRoughness), gBufferNormalRoughness);
+            UniformTexture(nameof(gBufferEmissiveOcclusion), gBufferEmissiveOcclusion);
+            UniformTexture(nameof(depthTexture), depthTexture);
+
+            UniformVector3("viewPos", camera.WorldTransform.Translation);
+            UniformMatrix4("invProjection", camera.Projection.Inverse());
+            UniformMatrix4("invView", camera.View.Inverse());
+
+            UniformVector3("pointLightPosition", pl.WorldTransform.Translation);
+            UniformColor("pointLightColor", pl.LightColor);
+            UniformFloat("pointLightIntensity", 1.0f);
+            UniformFloat("radius", pl.AttenuationRadius);
+            UniformFloat("softRatio", pl.SoftRatio);
+
+            if (pl.CastShadow)
+            {
+                var position = pl.WorldTransform.Translation;
+
+                ShadowViews[0] = Matrix4x4.CreateLookAt(position, position + new Vector3(1, 0, 0), new Vector3(0, -1, 0));
+                ShadowViews[1] = Matrix4x4.CreateLookAt(position, position + new Vector3(-1, 0, 0), new Vector3(0, -1, 0));
+                ShadowViews[2] = Matrix4x4.CreateLookAt(position, position + new Vector3(0, 1, 0), new Vector3(0, 0, 1));
+                ShadowViews[3] = Matrix4x4.CreateLookAt(position, position + new Vector3(0, -1, 0), new Vector3(0, 0, -1));
+                ShadowViews[4] = Matrix4x4.CreateLookAt(position, position + new Vector3(0, 0, 1), new Vector3(0, -1, 0));
+                ShadowViews[5] = Matrix4x4.CreateLookAt(position, position + new Vector3(0, 0, -1), new Vector3(0, -1, 0));
+
+
+                var shadowProjection = Matrix4x4.CreatePerspectiveFieldOfView(90f.DegreeToRadians(), pl.ShadowMapRenderTarget.Width / (float)pl.ShadowMapRenderTarget.Height, pl.ShadowConfig.NearPlane, pl.ShadowConfig.FarPlane);
+
+
+                UniformTextureCubeMap("pointLightShadowMap", pl.ShadowMapRenderTarget.DepthStencilTexture);
+                for (int i = 0; i < 6; i++)
+                {
+                    UniformMatrix4($"pointShadowMapMatrices[{i}]", ShadowViews[i] * shadowProjection);
+                }
+            }
+
+
+            RenderQuad();
+        }
 
     }
 
