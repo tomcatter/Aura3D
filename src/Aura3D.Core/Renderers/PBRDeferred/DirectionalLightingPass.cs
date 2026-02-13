@@ -55,7 +55,7 @@ internal class DirectionalLightingPass : RenderPass
             UniformVector3("viewPos", camera.WorldTransform.Translation);
             UniformVector3("dirLightDirection", dl.Forward);
             UniformColor("dirLightColor", dl.LightColor);
-            UniformFloat("dirLightIntensity", 1.0f);
+            UniformFloat("dirLightIntensity", dl.Intensity);
 
             UniformMatrix4("invProjection", camera.Projection.Inverse());
             UniformMatrix4("invView", camera.View.Inverse());

@@ -21,6 +21,10 @@ public class SpotLight : Light
     public float InnerConeAngleDegree { get; set; } = 10;
     public float OuterAngleDegree { get; set; } = 15;
 
+    public float LuminousIntensity { get; set; } = 1000;
+
+    public float Intensity => LuminousIntensity * 0.001f;
+
     public float AttenuationRadius { get; set; } = 10f; // 光照衰减半径
     public float SoftRatio { get; set; } = 0.9f; // 阴影柔化半径
 

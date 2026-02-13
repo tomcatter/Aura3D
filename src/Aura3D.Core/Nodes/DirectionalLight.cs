@@ -25,6 +25,9 @@ public class DirectionalLight : Light
     {
         return [ShadowMapRenderTarget];
     }
+
+    public float Irradiance { get; set; } = 80000;
+    public float Intensity => Irradiance * 0.00001f;
 }
 
 public class DirectionalLightShadowMapConfig

@@ -63,7 +63,7 @@ public class PointLightingPass : RenderPass
 
             UniformVector3("pointLightPosition", pl.WorldTransform.Translation);
             UniformColor("pointLightColor", pl.LightColor);
-            UniformFloat("pointLightIntensity", 1.0f);
+            UniformFloat("pointLightIntensity", pl.Intensity);
             UniformFloat("radius", pl.AttenuationRadius);
             UniformFloat("softRatio", pl.SoftRatio);
 

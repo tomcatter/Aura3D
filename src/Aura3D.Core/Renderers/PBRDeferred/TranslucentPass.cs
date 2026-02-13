@@ -139,7 +139,7 @@ internal class TranslucentPass : RenderPass
             UniformVector3("viewPos", view.Inverse().Translation);
             UniformVector3("dirLightDirection", dl.Forward);
             UniformColor("dirLightColor", dl.LightColor);
-            UniformFloat("dirLightIntensity", 1.0f);
+            UniformFloat("dirLightIntensity", dl.Intensity);
 
             if (dl.CastShadow == true)
             {
@@ -179,7 +179,7 @@ internal class TranslucentPass : RenderPass
 
             UniformVector3("pointLightPosition", pl.WorldTransform.Translation);
             UniformColor("pointLightColor", pl.LightColor);
-            UniformFloat("pointLightIntensity", 1.0f);
+            UniformFloat("pointLightIntensity", pl.Intensity);
             UniformFloat("radius", pl.AttenuationRadius);
             UniformFloat("softRatio", pl.SoftRatio);
 
@@ -231,7 +231,7 @@ internal class TranslucentPass : RenderPass
             UniformVector3("spotLightPosition", sl.WorldTransform.Translation);
             UniformVector3("spotLightDirection", sl.Forward);
             UniformColor("spotLightColor", sl.LightColor);
-            UniformFloat("spotLightIntensity", 1.0f);
+            UniformFloat("spotLightIntensity", sl.Intensity);
             UniformFloat("spotLightCutOff", MathF.Cos(sl.InnerConeAngleDegree.DegreeToRadians()));
             UniformFloat("spotLightOuterCutOff", MathF.Cos(sl.OuterAngleDegree.DegreeToRadians()));
             UniformFloat("radius", sl.AttenuationRadius);

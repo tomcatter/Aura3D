@@ -23,6 +23,9 @@ public class PointLight : Light
 
     public float SoftRatio { get; set; } = 0.9f; // 阴影柔化半径
 
+    public float LuminousIntensity { get; set; } = 1000;
+
+    public float Intensity => LuminousIntensity * 0.001f;
     public CubeRenderTarget ShadowMapRenderTarget { get; private set; }
 
     public override List<IGpuResource> GetGpuResources()

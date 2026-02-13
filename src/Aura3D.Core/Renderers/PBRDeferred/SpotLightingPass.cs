@@ -61,7 +61,7 @@ internal class SpotLightingPass : RenderPass
             UniformVector3("spotLightPosition", sl.WorldTransform.Translation);
             UniformVector3("spotLightDirection", sl.Forward);
             UniformColor("spotLightColor", sl.LightColor);
-            UniformFloat("spotLightIntensity", 1.0f);
+            UniformFloat("spotLightIntensity", sl.Intensity);
             UniformFloat("spotLightCutOff", MathF.Cos(sl.InnerConeAngleDegree.DegreeToRadians()));
             UniformFloat("spotLightOuterCutOff", MathF.Cos(sl.OuterAngleDegree.DegreeToRadians()));
             UniformFloat("radius", sl.AttenuationRadius);
