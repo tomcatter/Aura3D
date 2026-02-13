@@ -142,41 +142,32 @@ public class ShadowMapPass : RenderPass
 
         renderPipeline.UpdateVisibleMeshesInCamera(view, projection, meshes);
 
+        if (meshes.Count == 0)
+            return;
+
         UseShader();
-
-        UniformMatrix4("viewMatrix", view);
-        UniformMatrix4("projectionMatrix", projection);
-
         RenderMeshesFromList(meshes, mesh => mesh.IsStaticMesh && IsMaterialBlendMode(mesh, BlendMode.Opaque), view, projection);
 
 
         UseShader("BLENDMODE_MASKED");
-
-        UniformMatrix4("viewMatrix", view);
-        UniformMatrix4("projectionMatrix", projection);
-
         RenderMeshesFromList(meshes, mesh => mesh.IsStaticMesh && IsMaterialBlendMode(mesh, BlendMode.Masked), view, projection);
 
 
         UseShader("SKINNED_MESH");
-        UniformMatrix4("viewMatrix", view);
-        UniformMatrix4("projectionMatrix", projection);
-
         RenderMeshesFromList(meshes, mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Opaque), view, projection);
 
 
 
         UseShader("SKINNED_MESH", "BLENDMODE_MASKED");
-
-        UniformMatrix4("viewMatrix", view);
-        UniformMatrix4("projectionMatrix", projection);
-
         RenderMeshesFromList(meshes, mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Masked), view, projection);
 
     }
 
     public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
     {
+
+        UniformMatrix4("viewMatrix", view);
+        UniformMatrix4("projectionMatrix", projection);
 
         if (mesh.Material != null && mesh.Material.BlendMode == BlendMode.Masked)
         {

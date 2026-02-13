@@ -144,6 +144,7 @@ public class LightPass : RenderPass
                 UniformVector3($"PointLights[{i}].color", Vector3.Zero);
                 UniformVector3($"PointLights[{i}].position", Vector3.Zero);
                 UniformFloat($"PointLights[{i}].radius", 0.0f);
+                UniformFloat($"PointLights[{i}].softRatio",0.1f);
                 UniformTextureCubeMap($"PointLightShadowMaps[{i}]", 0);
                 for (int j = 0; j < 6; j++)
                 {
@@ -158,6 +159,7 @@ public class LightPass : RenderPass
                 UniformVector3($"PointLights[{i}].color", new Vector3(pointLight.LightColor.R / 255f, pointLight.LightColor.G / 255f, pointLight.LightColor.B / 255f));
                 UniformVector3($"PointLights[{i}].position", pointLight.WorldTransform.Translation);
                 UniformFloat($"PointLights[{i}].radius", pointLight.AttenuationRadius);
+                UniformFloat($"PointLights[{i}].softRatio", pointLight.SoftRatio);
                 UniformFloat($"PointLights[{i}].castShadow", pointLight.CastShadow ? 1.0f : 0.0f);
                 if (pointLight.CastShadow)
                 {
@@ -201,8 +203,9 @@ public class LightPass : RenderPass
                 UniformFloat($"SpotLights[{i}].inner_cone_cos", 0.0f);
                 UniformFloat($"SpotLights[{i}].outer_cone_cos", 0.0f);
                 UniformFloat($"SpotLights[{i}].radius", 0.0f);
-                UniformTexture($"SpotLightShadowMaps[{i}]", 0);
+                UniformFloat($"SpotLights[{i}].softRatio", 0.1f);
                 UniformMatrix4($"SpotLights[{i}].shadowMapMatrix", Matrix4x4.Identity);
+                UniformTexture($"SpotLightShadowMaps[{i}]", 0);
 
             }
             else
@@ -214,7 +217,7 @@ public class LightPass : RenderPass
                 UniformFloat($"SpotLights[{i}].inner_cone_cos", MathF.Cos(spotLight.InnerConeAngleDegree.DegreeToRadians()));
                 UniformFloat($"SpotLights[{i}].outer_cone_cos", MathF.Cos(spotLight.OuterAngleDegree.DegreeToRadians()));
                 UniformFloat($"SpotLights[{i}].radius", spotLight.AttenuationRadius);
-
+                UniformFloat($"SpotLights[{i}].softRatio", spotLight.SoftRatio);
                 UniformFloat($"SpotLights[{i}].castShadow", spotLight.CastShadow ? 1.0f : 0.0f);
 
                 if (spotLight.CastShadow)

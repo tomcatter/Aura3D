@@ -74,6 +74,7 @@ struct s_point_light_info
 	vec3 color;
 	vec3 position;
 	float radius; 
+	float softRatio;
 	float castShadow;
 	mat4 shadowMapMatrices[6];
 };
@@ -84,6 +85,7 @@ struct s_spot_light_info
 	vec3 position;
 	vec3 direction;
 	float radius; 
+	float softRatio;
 	float inner_cone_cos;
 	float outer_cone_cos;
 	float castShadow;
@@ -120,12 +122,21 @@ uniform samplerCube PointLightShadowMaps[MAX_POINT_LIGHTS];
 uniform sampler2D SpotLightShadowMaps[MAX_SPOT_LIGHTS];
 
 vec3 CalculateDirectionalLight(vec3 lightDirection, vec3 lightColor, vec3 baseColor, vec3 normal);
-vec3 CalculatePointLight(vec3 lightPosition, vec3 lightColor, float radius, vec3 baseColor, vec3 normal);
-vec3 CalculateSpotLight(vec3 lightPosition, vec3 lightColor, vec3 lightDirection, float radius, float inner_cone_cos, float outer_cone_cos, vec3 baseColor, vec3 normal);
+vec3 CalculatePointLight(vec3 lightPosition, vec3 lightColor, float radius,float softRatio, vec3 baseColor, vec3 normal);
+vec3 CalculateSpotLight(vec3 lightPosition, vec3 lightColor, vec3 lightDirection, float radius, float softRatio,float inner_cone_cos, float outer_cone_cos, vec3 baseColor, vec3 normal);
 float CalculateShadow(mat4 shadowMatrix, sampler2D shadowMap);
 float CalculatePointLightShadow(vec3 position, mat4 shadowMapMatrices[6], samplerCube shadowMapTexture);
 
 
+float CalcPointLightAttenuation(float d, float r, float softRatio) {
+    if (d > r) return 0.0;
+    
+    float nd = d / r;
+    float atten = 1.0 / (1.0 + 25.0 * nd * nd);
+    float softThresh = r * softRatio;
+    float soft = smoothstep(r, softThresh, d);
+    return atten * soft;
+}
 
 void main()
 {
@@ -167,7 +178,7 @@ void main()
 	REPEAT_PL_SHADOW_ASSIGN_4//
 	for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
 	{
-		vec3 color = CalculatePointLight(PointLights[i].position, PointLights[i].color,PointLights[i].radius, baseColor.xyz, normal);
+		vec3 color = CalculatePointLight(PointLights[i].position, PointLights[i].color,PointLights[i].radius,PointLights[i].softRatio, baseColor.xyz, normal);
 
 		if (PointLights[i].castShadow == 0.0)
 			shadows[i] = 1.0;
@@ -178,7 +189,7 @@ void main()
 	REPEAT_SP_SHADOW_ASSIGN_4//
 	for(int i = 0; i < MAX_SPOT_LIGHTS; ++i)
 	{
-		vec3 color = CalculateSpotLight(SpotLights[i].position, SpotLights[i].color, SpotLights[i].direction, SpotLights[i].radius, SpotLights[i].inner_cone_cos, SpotLights[i].outer_cone_cos, baseColor.xyz, normal);
+		vec3 color = CalculateSpotLight(SpotLights[i].position, SpotLights[i].color, SpotLights[i].direction, SpotLights[i].radius, SpotLights[i].softRatio, SpotLights[i].inner_cone_cos, SpotLights[i].outer_cone_cos, baseColor.xyz, normal);
 		
 		if (SpotLights[i].castShadow == 0.0)
 			shadows[i] = 1.0;
@@ -212,7 +223,7 @@ vec3 CalculateDirectionalLight(vec3 lightDirection, vec3 lightColor, vec3 baseCo
 	return (diff + specular) * lightColor * baseColor;
 }
 
-vec3 CalculatePointLight(vec3 lightPosition, vec3 lightColor, float radius, vec3 baseColor, vec3 normal)
+vec3 CalculatePointLight(vec3 lightPosition, vec3 lightColor, float radius, float softRatio, vec3 baseColor, vec3 normal)
 {
 	vec3 lightDir = normalize(lightPosition - vFragPosition);
 
@@ -220,7 +231,7 @@ vec3 CalculatePointLight(vec3 lightPosition, vec3 lightColor, float radius, vec3
 
 	float distance = length(lightPosition - vFragPosition);
 	
-	float attenuation = 1.0 / (distance * (1.0/radius) * distance* (1.0/radius));
+	float attenuation = CalcPointLightAttenuation(distance, radius, softRatio);
 
 	
 	vec3 viewDir = normalize(cameraPosition - vFragPosition);
@@ -232,7 +243,7 @@ vec3 CalculatePointLight(vec3 lightPosition, vec3 lightColor, float radius, vec3
 	return (diff + specular) * attenuation * lightColor * baseColor;
 }
 
-vec3 CalculateSpotLight(vec3 lightPosition, vec3 lightColor, vec3 lightDirection, float radius, float inner_cone_cos, float outer_cone_cos, vec3 baseColor, vec3 normal)
+vec3 CalculateSpotLight(vec3 lightPosition, vec3 lightColor, vec3 lightDirection, float radius, float softRatio, float inner_cone_cos, float outer_cone_cos, vec3 baseColor, vec3 normal)
 {
 	vec3 lightDir = normalize(lightPosition - vFragPosition);
 
@@ -240,7 +251,7 @@ vec3 CalculateSpotLight(vec3 lightPosition, vec3 lightColor, vec3 lightDirection
 
 	float distance = length(lightPosition - vFragPosition);
 	
-	float attenuation = 1.0 / (distance * (1.0/radius) * distance* (1.0/radius));
+	float attenuation = CalcPointLightAttenuation(distance, radius, softRatio);
 
 
     float theta = dot(lightDir, normalize(-lightDirection)); 
