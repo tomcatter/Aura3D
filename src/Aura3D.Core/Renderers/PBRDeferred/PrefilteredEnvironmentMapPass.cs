@@ -99,7 +99,7 @@ internal class PrefilteredEnvironmentMapPass : RenderPass
         {
             perfilteredEnvMap = new CubeRenderTarget();
 
-            perfilteredEnvMap.AddRenderTexture("perfilteredEnv", TextureFormat.Rgb8);
+            perfilteredEnvMap.AddRenderTexture("perfilteredEnv", TextureFormat.Rgb16f);
 
             perfilteredEnvMap.SetMipMapLevel(MAX_MIP_LEVELS);
 
