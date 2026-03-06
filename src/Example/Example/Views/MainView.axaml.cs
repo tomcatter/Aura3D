@@ -23,6 +23,8 @@ namespace Example.Views
 
         Avalonia.Point point = new(-1, -1);
 
+        DirectionalLight dl;
+
         public MainView()
         {
             InitializeComponent();
@@ -143,22 +145,23 @@ namespace Example.Views
 
             //view.AddNode(pl2);
 
-            DirectionalLight dl = new DirectionalLight();
+            dl = new DirectionalLight();
 
             dl.RotationDegrees = new Vector3(-45, 45, 0);
 
-            dl.CastShadow = true;
+            dl.CastShadow = false;
 
             view.AddNode(dl);
 
 
             // using (var s = AssetLoader.Open(new Uri("avares://Example/Assets/Models/Soldier.glb")))
-            using (var s = AssetLoader.Open(new Uri("avares://Example/Assets/Models/Soldier.glb")))
+            using (var s = AssetLoader.Open(new Uri("avares://Example/Assets/Models/NPC_Avatar_Girl_Sword_Nilou.glb")))
             {
 
-                var (model, animations) = ModelLoader.LoadGlbModelAndAnimations(s);
+                //var (model, animations) = ModelLoader.LoadGlbModelAndAnimations(s);
+                var model = ModelLoader.LoadGlbModel(s);
 
-                model.AnimationSampler = new AnimationSampler(animations.First());
+                //model.AnimationSampler = new AnimationSampler(animations.First());
 
                 view.AddNode(model);
 
@@ -166,9 +169,9 @@ namespace Example.Views
 
                 model.Position += model.Up * 0.5f;
 
-                // model.Scale = Vector3.One * 2f;
+                 model.Scale = Vector3.One * 2f;
                 // model.Scale = Vector3.One * 0.03f;
-                model.RotationDegrees = new Vector3(0, 180, 0);
+                model.RotationDegrees = new Vector3(0, 0, 0);
 
                 pl.Position = model.Position + pl.Up * 2 + pl.Left * 2f;
 
@@ -203,6 +206,8 @@ namespace Example.Views
         double deltaTime = 0;
         public void SceneUpdated(object sender, UpdateRoutedEventArgs args)
         {
+            dl.RotationDegrees = dl.RotationDegrees + (new Vector3(0, 30, 0) * (float)args.DeltaTime);
+
             var view = (Aura3DView)sender;
             deltaTime = args.DeltaTime;
         }

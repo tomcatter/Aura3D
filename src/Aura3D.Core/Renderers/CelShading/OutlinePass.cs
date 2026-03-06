@@ -11,6 +11,7 @@ namespace Aura3D.Core.Renderers;
 public class OutlinePass : RenderPass
 {
     private float outlineWidth = 2f;
+    private float widthOffset = 1.5f;
     private Vector4 outlineColor = new Vector4(0.0f, 0.0f, 0.0f, 1f);
 
     public float AmbientIntensity = 0.1f;
@@ -83,6 +84,7 @@ public class OutlinePass : RenderPass
         UniformFloat("ambientIntensity", AmbientIntensity);
         UniformVector3("cameraPosition", camera.WorldTransform.Translation);
         UniformFloat("outlineWidth", outlineWidth);
+        UniformFloat("widthOffset", widthOffset);
         UniformVector4("BaseColor", outlineColor);
         
 
@@ -94,7 +96,6 @@ public class OutlinePass : RenderPass
 
     public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
     {
-
         var normalMatrix = mesh.WorldTransform.Inverse();
         normalMatrix = Matrix4x4.Transpose(normalMatrix);
         UniformMatrix4("normalMatrix", normalMatrix);

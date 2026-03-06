@@ -1,12 +1,25 @@
-﻿using Aura3D.Core.Nodes;
+﻿using Aura3D.Core.Math;
+using Aura3D.Core.Nodes;
+using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
 using System.Numerics;
-using Aura3D.Core.Resources;
-using Aura3D.Core.Math;
-using Texture = Aura3D.Core.Resources.Texture;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using Texture = Aura3D.Core.Resources.Texture;
+
 
 namespace Aura3D.Core.Renderers;
+
+public enum CelShadingTextureBit
+{
+    None = 0,
+    BaseColorBit = 1,
+    NormalBit = 2,
+    ILMBit = 4,
+    SDFBit = 8,
+    ShadowRampBit = 16,
+    SpecularRampBit = 32,
+}
 
 public class CelLightPass : RenderPass
 {
@@ -40,8 +53,8 @@ public class CelLightPass : RenderPass
     {
         VertexShader = ShaderResource.MeshVert;
         FragmentShader = ShaderResource.CelFrag;
-        rampTexture = TextureLoader.LoadTexture(ShaderResource.CelRamp2);
-        renderPipeline.AddGpuResource(rampTexture);
+        //rampTexture = TextureLoader.LoadTexture(ShaderResource.CelRamp2);
+        //renderPipeline.AddGpuResource(rampTexture);
     }
 
     public override void BeforeRender(Camera camera)
@@ -99,7 +112,7 @@ public class CelLightPass : RenderPass
         UniformFloat("ambientIntensity", AmbientIntensity);
         UniformVector3("cameraPosition", camera.WorldTransform.Translation);
 
-        UniformTexture("RampTexture", rampTexture);
+        UniformTexture("ShadowamRamp", rampTexture);
 
         for(int i = 0; i < directionalLightLimit; i++)
         {
@@ -145,30 +158,92 @@ public class CelLightPass : RenderPass
 
     public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
     {
+        //gl.Enable(EnableCap.CullFace);
+        //gl.CullFace(TriangleFace.Back);
+
+        // 控制昼夜
+        UniformInt("_UseCoolShadowColorOrTex", 1);
+
+        ClearTextureUnit();
+        int textureFlags = 0;
+
         if (mesh.Material != null)
         {
-            ClearTextureUnit();
+            // 处理卡通渲染扩展参数以及扩展贴图
+            //Aura3DCelMaterialExtension matExt = (Aura3DCelMaterialExtension)outVal;
+            float tempValue = 0;
+            if(mesh.Material.TryGetParameterValue<float>("_RampIndex0", out tempValue))
+                UniformFloat("_RampIndex0", tempValue);
+            if (mesh.Material.TryGetParameterValue<float>("_RampIndex1", out tempValue))
+                UniformFloat("_RampIndex1", tempValue);
+            if(mesh.Material.TryGetParameterValue<float>("_RampIndex2", out tempValue))
+                UniformFloat("_RampIndex2", tempValue);
+            if(mesh.Material.TryGetParameterValue<float>("_RampIndex3", out tempValue))
+                UniformFloat("_RampIndex3", tempValue);
+            if(mesh.Material.TryGetParameterValue<float>("_RampIndex4", out tempValue))
+                UniformFloat("_RampIndex4", tempValue);
 
-            foreach(var channel in mesh.Material.Channels)
+            if(mesh.Material.TryGetParameterValue<float>("_BrightFac", out tempValue))
+                UniformFloat("_BrightFac", tempValue);
+            if(mesh.Material.TryGetParameterValue<float>("_GreyFac", out tempValue))
+                UniformFloat("_GreyFac", tempValue);
+            if(mesh.Material.TryGetParameterValue<float>("_DarkFac", out tempValue))
+                UniformFloat("_DarkFac", tempValue);
+
+            if(mesh.Material.TryGetParameterValue<float>("_FaceShadowOffset", out tempValue))
+                UniformFloat("_FaceShadowOffset", tempValue);
+            if(mesh.Material.TryGetParameterValue<float>("_BrightAreaShadowFac", out tempValue))
+                UniformFloat("_BrightAreaShadowFac", tempValue);
+            if(mesh.Material.TryGetParameterValue<float>("_FaceShadowTransitionSoftness", out tempValue))
+                UniformFloat("_FaceShadowTransitionSoftness", tempValue);
+
+            Vector4 tempVector4;
+            if(mesh.Material.TryGetParameterValue<Vector4>("_LightAreaColorTint", out tempVector4))
+                UniformVector4("_LightAreaColorTint", tempVector4);
+            if(mesh.Material.TryGetParameterValue<Vector4>("_DarkShadowColor", out tempVector4))
+                UniformVector4("_DarkShadowColor", tempVector4);
+            if(mesh.Material.TryGetParameterValue<Vector4>("_CoolDarkShadowColor", out tempVector4))
+                UniformVector4("_CoolDarkShadowColor", tempVector4);
+
+            foreach (var channel in mesh.Material.Channels)
             {
                 switch(channel.Name){
                     case "ILM":
+                        if (channel.Texture != null)
+                        {
+                            UniformTexture("ILMTextures", channel.Texture);
+                            textureFlags |= (int)CelShadingTextureBit.ILMBit;
+                        }
                         break;
                     case "SDF":
+                        if (channel.Texture != null)
+                        {
+                            UniformTexture("SDFTextures", channel.Texture);
+                            textureFlags |= (int)CelShadingTextureBit.SDFBit;
+                        }
                         break;
                     case "ShadowRamp":
+                        if (channel.Texture != null)
+                        {
+                            UniformTexture("ShadowRamp", channel.Texture);
+                            textureFlags |= (int)CelShadingTextureBit.ShadowRampBit;
+                        }
                         break;
                     case "SpecularRamp":
+                        if (channel.Texture != null)
+                        {
+                            UniformTexture("SpecularRamp", channel.Texture);
+                            textureFlags |= (int)CelShadingTextureBit.SpecularRampBit;
+                        }
                         break;
                     case "BaseColor":
                         if (channel.Texture != null)
                         {
                             UniformTexture("BaseColorTexture", channel.Texture);
-                            UniformInt("HasBaseColorTexture", 1);
+                            textureFlags |= (int)CelShadingTextureBit.BaseColorBit;
                         }
                         else
                         {
-                            UniformInt("HasBaseColorTexture", 0);
                             UniformTexture("BaseColorTexture", 0);
                             UniformColor("BaseColor", channel.Color);
                         }
@@ -177,26 +252,24 @@ public class CelLightPass : RenderPass
                         if (channel.Texture != null)
                         {
                             UniformTexture("NormalTexture", channel.Texture);
-                            UniformInt("HasNormalTexture", 1);
+                            textureFlags |= (int)CelShadingTextureBit.NormalBit;
                         }
                         else
                         {
                             UniformTexture("NormalTexture", 0);
-                            UniformInt("HasNormalTexture", 0);
                         }
                         break;
-                }
-
-                if (mesh.Material.DoubleSided == false)
-                {
-                    gl.Enable(EnableCap.CullFace);
-                }
-                else
-                {
-                    gl.Disable(EnableCap.CullFace);
-                }
-
+                }  
             }
+            if (mesh.Material.DoubleSided == false)
+            {
+                gl.Enable(EnableCap.CullFace);
+            }
+            else
+            {
+                gl.Disable(EnableCap.CullFace);
+            }
+            UniformInt("TexturesFlags", textureFlags);
             UniformFloat("alphaCutoff", mesh.Material.AlphaCutoff);
         }
 
@@ -226,5 +299,6 @@ public class CelLightPass : RenderPass
         }
         base.RenderMesh(mesh, view, projection);
     }
+
 
 }
