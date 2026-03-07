@@ -46,6 +46,7 @@ void main() {
 
     // Sample normal and roughness
     vec3 normal = normalize(texture(gBufferNormalRoughness, v_texCoord).rgb);
+	normal = normalize(normal * 2.0 - 1.0);
     float roughness = texture(gBufferNormalRoughness, v_texCoord).a;
 
     // Sample metallic and emissive
@@ -59,13 +60,14 @@ void main() {
     // Clamp parameters to valid range
     roughness = clamp(roughness, 0.01, 1.0);
     metallic = clamp(metallic, 0.0, 1.0);
-    normal = normalize(normal);
 
     // Convert normal to world space if stored in view space
     vec3 worldNormal = normal;
+    /*
     if (u_viewMatrix[0][0] != 0.0) {
         worldNormal = normalize(mat3(inverse(u_viewMatrix)) * normal);
     }
+    */
 
     // Calculate view direction and reflection vector
     vec3 V = normalize(u_cameraPos - worldPos);
