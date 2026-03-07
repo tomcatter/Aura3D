@@ -42,7 +42,6 @@ void main() {
     // Sample base color (albedo)
     vec4 basecolor = texture(gBufferBaseColor, v_texCoord);
     vec3 albedo = basecolor.rgb;
-    albedo = pow(albedo, vec3(2.2));
 
     // Sample normal and roughness
     vec3 normal = normalize(texture(gBufferNormalRoughness, v_texCoord).rgb);
