@@ -70,50 +70,14 @@ public class Camera : Node
 
     public IRenderTarget RenderTarget { get; set; } = new ControlRenderTarget();
 
-    public ClearType ClearType { get; set; } = ClearType.Color; // 清除类型
-
-
-    private CubeTexture? skyboxTexture = null;
-
-    public  CubeTexture? SkyboxTexture
-    {
-        get => skyboxTexture;
-        set
-        {
-            if (value != null && CurrentScene != null)
-            {
-                CurrentScene.RenderPipeline.AddGpuResource(value);
-            }
-            skyboxTexture = value;
-        }
-    }
-
-    private Texture? backgroundTexture = null;
-    public Texture? BackgroundTexture 
-    { 
-        get => backgroundTexture;
-        set
-        {
-            if (value != null && CurrentScene != null)
-            {
-                CurrentScene.RenderPipeline.AddGpuResource(value);
-            }
-            backgroundTexture = value;
-        }
-    }
+    public bool IsRenderBackground = true;
 
     public override List<IGpuResource> GetGpuResources()
     {
         var list = new List<IGpuResource>();
 
-        if (SkyboxTexture != null)
-        {
-            list.Add(SkyboxTexture);
-        }
-        if (BackgroundTexture != null)
-        {
-            list.Add(BackgroundTexture);
-        }
+        list.Add(RenderTarget);
+
         return list;
     }
 

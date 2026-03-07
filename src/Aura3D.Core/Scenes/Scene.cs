@@ -1,6 +1,8 @@
 using Aura3D.Core.Math;
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Renderers;
+using Aura3D.Core.Resources;
+using OneOf;
 using System.Drawing;
 
 namespace Aura3D.Core.Scenes;
@@ -19,6 +21,37 @@ public class Scene
 
     public RenderPipeline RenderPipeline { get; set; }
 
+    public OneOf<CubeTexture, Texture> Background
+    {
+        get => _background;
+        set
+        {
+            var oldValue = _background;
+
+            if (oldValue.IsT0 && oldValue.AsT0 != null)
+            {
+                this.RenderPipeline.RemoveGpuResource(oldValue.AsT0);
+            }
+            else if (oldValue.IsT1 && oldValue.AsT1 != null)
+            {
+                this.RenderPipeline.RemoveGpuResource(oldValue.AsT1);
+            }
+
+            _background = value;
+
+            if (value.IsT0 && value.AsT0 != null)
+            {
+                this.RenderPipeline.AddGpuResource(value.AsT0);
+            }
+            else if (value.IsT1 && value.AsT1 != null)
+            {
+                this.RenderPipeline.AddGpuResource(value.AsT1);
+            }
+        }
+    }
+
+    private OneOf<CubeTexture, Texture> _background;
+
     public Scene(Func<Scene, RenderPipeline> createRenderPipeline)
     {
         RenderPipeline = createRenderPipeline(this);
@@ -27,9 +60,7 @@ public class Scene
 
         MainCamera = new Camera();
 
-        MainCamera.ClearColor = Color.AliceBlue;
-
-        MainCamera.ClearType = ClearType.Color;
+        Background = Texture.CreateFromColor(Color.AliceBlue);
 
         AddNode(MainCamera);
     }

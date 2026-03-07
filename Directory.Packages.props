@@ -18,6 +18,7 @@
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="Irihi.Ursa" Version="1.13.0" />
     <PackageVersion Include="Irihi.Ursa.Themes.Semi" Version="1.13.0" />
+    <PackageVersion Include="OneOf" Version="3.0.271" />
     <PackageVersion Include="Semi.Avalonia" Version="11.2.1.10" />
     <PackageVersion Include="Silk.NET" Version="2.22.0" />
     <PackageVersion Include="Silk.NET.Assimp" Version="2.22.0" />

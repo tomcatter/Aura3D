@@ -47,16 +47,15 @@ void main() {
 
         gl.BlendEquation(BlendEquationModeEXT.FuncAdd);
 
+        BindOutPutRenderTarget(camera);
+        gl.ClearColor(0, 0, 0, 0);
+        gl.Clear(ClearBufferMask.ColorBufferBit);
     }
 
     public override void Render(Camera camera)
     {
-        if (camera.ClearType != ClearType.Skybox)
+        if (Scene.Background.IsT0 == false || Scene.Background.AsT0 == null)
             return;
-
-        BindOutPutRenderTarget(camera);
-        gl.ClearColor(0, 0, 0, 0);
-        gl.Clear(ClearBufferMask.ColorBufferBit);
 
         var size = new Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height);
         var rt = GetRenderTarget(gbufferRenderTargetName, size);

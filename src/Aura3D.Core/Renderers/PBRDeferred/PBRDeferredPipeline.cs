@@ -50,7 +50,6 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
 
         RegisterRenderPass(new BasePass(this).SetOutPutRenderTarget("GBuffer"), RenderPassGroup.EveryCamera);
 
-        // RegisterRenderPass(new ConstantAmbientPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
         RegisterRenderPass(new IBLAmbientPass(this, "GBuffer", _brdfLutRenderTarget).SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
 
         RegisterRenderPass(new DirectionalLightingPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
@@ -90,7 +89,7 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
 
 
         RegisterRenderTarget("GammaOutput")
-            .AddTexture("Color", TextureFormat.Rgb16f)
+            .AddTexture("Color", TextureFormat.Rgba16f)
             .SetDepthTexture(TextureFormat.DepthComponent16);
 
         DefaultBaseColor = Resources.Texture.CreateFromColor(Color.White);

@@ -92,6 +92,9 @@ internal class PrefilteredEnvironmentMapPass : RenderPass
 
     public override void Render(Camera camera)
     {
+        if (this.Scene.Background.IsT0 == false || Scene.Background.AsT0 == null)
+            return;
+        var iblTexture = Scene.Background.AsT0;
         var perfilteredEnvMap = camera.GetPipelineGpuResource<CubeRenderTarget>("PrefilteredEnvironmentMap");
         if (perfilteredEnvMap != null)
             return;
@@ -137,7 +140,7 @@ internal class PrefilteredEnvironmentMapPass : RenderPass
 
         gl.ActiveTexture(TextureUnit.Texture0);
 
-        gl.BindTexture(TextureTarget.TextureCubeMap, camera.SkyboxTexture!.TextureId);
+        gl.BindTexture(TextureTarget.TextureCubeMap, iblTexture.TextureId);
 
         UniformMatrix4("projection", projection);
 

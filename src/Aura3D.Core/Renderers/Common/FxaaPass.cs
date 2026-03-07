@@ -28,23 +28,6 @@ void main() {
         var fs = @"#version 300 es
 precision mediump float;
 
-in vec2 v_texCoord;
-
-uniform sampler2D u_texture;
-
-uniform vec2 u_textureSize;
-
-out vec4 outColor;
-
-void main()
-{
-   outColor = texture(u_texture, v_texCoord);
-}
-";
-
-        var fs1 = @"#version 300 es
-precision mediump float;
-
 uniform sampler2D u_texture;
 uniform vec2 u_textureSize;
 in vec2 v_texCoord;
@@ -245,7 +228,7 @@ void main() {
 }
 
 ";
-        FragmentShader = fs1;
+        FragmentShader = fs;
     }
 
 

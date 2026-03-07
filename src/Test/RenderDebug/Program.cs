@@ -32,6 +32,7 @@ window.Load += () =>
 
     camera.ClearColor = Color.Gray;
     camera.NearPlane = 1;
+    camera.IsRenderBackground = false;
 
     var list = new List<Stream>();
     List<string> name =
@@ -56,10 +57,8 @@ window.Load += () =>
         stream.Dispose();
     }
 
-    camera.ClearType = ClearType.Skybox;
 
-    camera.SkyboxTexture = cubeTexture;
-
+    scene.Background = cubeTexture;
 
     var (model, animations) = ModelLoader.LoadGlbModelAndAnimations($"../../../../../../example/Example/Assets/Models/wooden_stool_02_1k.glb");
 

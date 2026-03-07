@@ -75,7 +75,7 @@ void main()
 
     public override void Render(Camera camera)
     {
-        if (camera.ClearType != ClearType.Skybox)
+        if (Scene.Background.IsT0 == false || Scene.Background.AsT0 == null)
             return;
 
         var irradianceMap = camera.GetPipelineGpuResource<CubeRenderTarget>("IrradianceMap");
@@ -134,7 +134,7 @@ void main()
             
             gl.ActiveTexture(TextureUnit.Texture0);
             
-            gl.BindTexture(TextureTarget.TextureCubeMap, camera.SkyboxTexture!.TextureId);
+            gl.BindTexture(TextureTarget.TextureCubeMap, Scene.Background.AsT0.TextureId);
 
             RenderCube();
 

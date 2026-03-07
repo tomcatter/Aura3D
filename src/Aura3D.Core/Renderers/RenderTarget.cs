@@ -3,7 +3,7 @@ using Silk.NET.OpenGLES;
 
 namespace Aura3D.Core.Renderers;
 
-public class RenderTarget : IGpuResource, IRenderTarget
+public class RenderTarget : IRenderTarget
 {
     public RenderTarget()
     {

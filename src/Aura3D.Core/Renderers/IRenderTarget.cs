@@ -1,6 +1,8 @@
+using Aura3D.Core.Resources;
+
 namespace Aura3D.Core.Renderers;
 
-public interface IRenderTarget
+public interface IRenderTarget : IGpuResource
 {
     uint FrameBufferId { get; }
     uint Height { get;}

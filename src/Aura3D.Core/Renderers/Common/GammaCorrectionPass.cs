@@ -47,11 +47,12 @@ void main()
 {
     float gamma = 2.2;
     float exposure = 1.0;
-    vec3 color = texture(colorTexture, TexCoords).rgb;
+    vec4 color = texture(colorTexture, TexCoords);
+    vec3 rgb = color.rgb;
 
-    color = pow(color, vec3(1.0 / 2.2));
+    rgb = pow(rgb, vec3(1.0 / 2.2));
 
-    FragColor = vec4(color, 1.0);
+    FragColor = vec4(rgb, color.a);
 }
      
 ";
@@ -61,6 +62,7 @@ void main()
     public override void Render(Camera camera)
     {
         BindOutPutRenderTarget(camera);
+
         var rt = GetRenderTarget(inputRenderTargetName,
             new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height));
 

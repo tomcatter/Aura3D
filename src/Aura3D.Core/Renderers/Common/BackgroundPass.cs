@@ -1,5 +1,6 @@
 using Aura3D.Core.Math;
 using Aura3D.Core.Nodes;
+using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using System.Drawing;
 using System.Numerics;
@@ -25,13 +26,9 @@ public class BackgroundPass: RenderPass
 
         gl.DepthMask(true);
 
-        if (camera.ClearType != ClearType.Color)
-            gl.ClearColor(Color.Black);
+        gl.ClearColor(0, 0, 0, 0);
 
-        if (camera.ClearType != ClearType.OnlyDepth)
-            gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-        else
-            gl.Clear(ClearBufferMask.DepthBufferBit);
+        gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
         gl.DepthMask(false);
         gl.Disable(EnableCap.DepthTest);
@@ -40,11 +37,19 @@ public class BackgroundPass: RenderPass
     }
     public override void Render(Camera camera)
     {
+        if (camera.IsRenderBackground == false)
+            return;
+
         ClearTextureUnit(); 
         UseShader_Internal(null);
-        if (camera.ClearType == ClearType.Skybox && camera.SkyboxTexture != null)
+        if (Scene.Background.IsT0 && Scene.Background.AsT0 != null)
         {
             Matrix4x4 projection = default;
+
+            var worldTransform = camera.WorldTransform;
+
+            var view = Matrix4x4.CreateLookAt(Vector3.Zero, Vector3.Zero + worldTransform.ForwardVector(), worldTransform.UpVector());
+
             if (camera.ProjectionType == ProjectionType.Orthographic)
             {
                 UseShader("SKYBOX", "ORTHOGRAPHIC");
@@ -66,14 +71,14 @@ public class BackgroundPass: RenderPass
                 projection = Matrix4x4.CreatePerspectiveFieldOfView(fovRadians, aspectRatio, 10, 100);
 
             }
-            UniformMatrix4("invViewProj", (camera.View * projection).Inverse());
-            UniformTextureCubeMap("uSkybox", camera.SkyboxTexture);
+            UniformMatrix4("invViewProj", (view * projection).Inverse());
+            UniformTextureCubeMap("uSkybox", Scene.Background.AsT0);
             RenderQuad();
         }
-        else if (camera.ClearType == ClearType.Texture && camera.BackgroundTexture != null)
+        else if (Scene.Background.IsT1 && Scene.Background.AsT1 != null)
         {
             UseShader("BACKGROUND_TEXTURE");
-            UniformTexture("uBackgroundTexture", camera.BackgroundTexture);
+            UniformTexture("uBackgroundTexture", Scene.Background.AsT1);
             RenderQuad();
         }
     }

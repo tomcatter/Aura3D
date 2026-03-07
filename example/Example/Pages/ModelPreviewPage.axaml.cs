@@ -257,9 +257,7 @@ public partial class ModelPreviewPage : UserControl
             stream.Dispose();
         }
 
-        camera.ClearType = ClearType.Skybox;
-
-        camera.SkyboxTexture = cubeTexture;
+        view.Scene.Background = cubeTexture;
 
         view.AddNode(dl);
     }
