@@ -97,7 +97,6 @@ struct s_spot_light_info
 in vec2 vTexCoord;
 in vec3 vFragPosition;
 in mat3 vTBN;
-in vec3 vNormal;
 
 
 uniform sampler2D BaseColorTexture;
@@ -137,22 +136,12 @@ float mapToDiscreteLevels(float value) {
 
 void main()
 {
-	vec4 baseColor = BaseColor;
-
-	if (HasBaseColorTexture == 1)
-	{
-		baseColor = texture(BaseColorTexture, vTexCoord);
-	}
+	vec4 baseColor = texture(BaseColorTexture, vTexCoord);
 
 
-	vec3 normal = vNormal;
-
-	if (HasNormalTexture == 1)
-	{
-		normal = texture(NormalTexture, vTexCoord).xyz;
-		normal = normalize(normal * 2.0 - 1.0);
-		normal = normalize(vTBN * normal);
-	}
+	vec3 normal =  texture(NormalTexture, vTexCoord).xyz;
+	normal = normalize(normal * 2.0 - 1.0);
+	normal = normalize(vTBN * normal);
 	
 	if (!gl_FrontFacing) 
 	{
