@@ -17,6 +17,7 @@
   <ItemGroup>
     <PackageReference Include="Silk.NET" />
 	<ProjectReference Include="..\..\Aura3D.Core\Aura3D.Core.csproj" />
+	<ProjectReference Include="..\RenderDebug\RenderDebug.csproj" />
   </ItemGroup>
 	
   <ItemGroup>

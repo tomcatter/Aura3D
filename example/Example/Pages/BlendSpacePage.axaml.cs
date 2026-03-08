@@ -120,7 +120,7 @@ public partial class BlendSpacePage : UserControl
 
         aura3Dview.MainCamera.FitToBoundingBox(model.BoundingBox, 0.5f);
 
-        aura3Dview.MainCamera.ClearColor = Color.FromArgb(255, 100, 100, 100);
+        aura3Dview.Scene.Background = Texture.CreateFromColor(Color.FromArgb(255, 100, 100, 100));
 
         aura3Dview.MainCamera.Position += aura3Dview.MainCamera.Up * 100 ;
 

@@ -35,7 +35,6 @@ public class MainActivity : SilkActivity
 
             var camera = scene.MainCamera;
 
-            camera.ClearColor = Color.Gray;
             camera.NearPlane = 1;
 
 

@@ -64,8 +64,6 @@ public class Camera : Node
 
     public Matrix4x4 ViewProjection => View * Projection;
 
-    public Color ClearColor { get; set; } = Color.FromArgb(0, 0, 0, 0); // 清除颜色
-
     public ProjectionType ProjectionType { get; set; } = ProjectionType.Perspective; // 投影类型
 
     public IRenderTarget RenderTarget { get; set; } = new ControlRenderTarget();

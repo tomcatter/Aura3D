@@ -22,8 +22,6 @@ public class BackgroundPass: RenderPass
 
         BindOutPutRenderTarget(camera);
 
-        gl.ClearColor(camera.ClearColor);
-
         gl.DepthMask(true);
 
         gl.ClearColor(0, 0, 0, 0);
