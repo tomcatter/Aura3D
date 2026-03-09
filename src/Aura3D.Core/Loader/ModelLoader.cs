@@ -307,15 +307,15 @@ public static class ModelLoader
                         {
                             if (texture.IsHdr == true)
                             {
-                                var r = texture.HdrData[i];
-                                texture.HdrData[i] = r * metallicFactor;
+                                var r = texture.HdrData[i + 2];
+                                texture.HdrData[i + 2] = r * metallicFactor;
                                 var g = texture.HdrData[i + 1];
                                 texture.HdrData[i + 1] = g * roughnessFactor;
                             }
                             else
                             {
-                                var r = texture.LdrData[i];
-                                texture.LdrData[i] = (byte)(r * metallicFactor);
+                                var r = texture.LdrData[i + 2];
+                                texture.LdrData[i + 2] = (byte)(r * metallicFactor);
 
                                 var g = texture.LdrData[i + 1];
                                 texture.LdrData[i + 1] = (byte)(g * roughnessFactor);

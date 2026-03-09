@@ -37,7 +37,7 @@ void main()
     normal = normal * 0.5 + 0.5;
 
     Buffer_BaseColor = baseColor;
-    Buffer_Normal_Roughness = vec4(normal, metalness_roughness.y);
-    Buffer_Metalness_Emissive = vec4(metalness_roughness.x, emissive.rgb);
+    Buffer_Normal_Roughness = vec4(normal, metalness_roughness.g);
+    Buffer_Metalness_Emissive = vec4(metalness_roughness.b, emissive.rgb);
 
 }

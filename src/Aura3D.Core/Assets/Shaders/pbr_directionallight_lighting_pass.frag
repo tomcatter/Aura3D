@@ -294,8 +294,8 @@ void main() {
 	}
     vec3 N = normal;
     vec3 albedo = baseColor.rgb;
-    float metalness = metalness_roughness.x;
-    float roughness = metalness_roughness.y;
+    float metalness = metalness_roughness.b;
+    float roughness = metalness_roughness.g;
 
     vec3 fragPosWorld = vFragPosition;
 

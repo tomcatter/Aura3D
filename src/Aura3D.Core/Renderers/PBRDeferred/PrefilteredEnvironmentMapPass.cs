@@ -106,14 +106,14 @@ internal class PrefilteredEnvironmentMapPass : RenderPass<PBRDeferredPipeline>
 
         var perfilteredEnvMap = camera.GetPipelineGpuResource<CubeRenderTarget>("PrefilteredEnvironmentMap");
         if (perfilteredEnvMap != null)
-            return;
+             return;
         else
         {
             perfilteredEnvMap = new CubeRenderTarget();
 
             perfilteredEnvMap.AddRenderTexture("perfilteredEnv", TextureFormat.Rgb16f);
 
-            perfilteredEnvMap.SetMipMapLevel(MAX_MIP_LEVELS);
+            perfilteredEnvMap.SetEnableMipMapLevel(true);
 
             perfilteredEnvMap.SetSize(PREFILTER_WIDTH, PREFILTER_WIDTH);
 
@@ -153,9 +153,12 @@ internal class PrefilteredEnvironmentMapPass : RenderPass<PBRDeferredPipeline>
 
         UniformMatrix4("projection", projection);
 
-        for (int mip = 0; mip < perfilteredEnvMap.MipmapLevel; mip++)
+        int nearestPowerOfTwo = (int)MathF.Pow(2, MathF.Floor(MathF.Log2(perfilteredEnvMapTexture.Width)));
+        var mipmap = BitOperations.TrailingZeroCount((uint)nearestPowerOfTwo) + 1;
+
+        for (int mip = 0; mip < mipmap; mip++)
         {
-            var roughness = mip / (float)(MAX_MIP_LEVELS - 1);
+            var roughness = mip / (float)(mipmap - 1);
 
             var mipWidth = PREFILTER_WIDTH / (1 << mip);
 
@@ -175,6 +178,13 @@ internal class PrefilteredEnvironmentMapPass : RenderPass<PBRDeferredPipeline>
 
                 RenderCube();
 
+            }
+            if (mip == 0)
+            {
+                gl.BindTexture(TextureTarget.TextureCubeMap, perfilteredEnvMapTexture.TextureId);
+                gl.GenerateMipmap(GLEnum.TextureCubeMap);
+                gl.TexParameter(GLEnum.TextureCubeMap, GLEnum.TextureMinFilter, (int)GLEnum.LinearMipmapLinear);
+                gl.TexParameter(GLEnum.TextureCubeMap, GLEnum.TextureMagFilter, (int)GLEnum.LinearMipmapLinear);
             }
         }
 
