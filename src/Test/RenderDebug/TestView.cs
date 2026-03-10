@@ -102,11 +102,16 @@ public class TestView
 
         // scene.Background = cubeTexture;
 
-        var (model, animations) = ModelLoader.LoadGlbModelAndAnimations(loadFileFun("Models/lightbulb_01_1k.glb"));
+        var (model, animations) = ModelLoader.LoadGlbModelAndAnimations(loadFileFun("Models/lion_head_1k.glb"));
+
+
+        camera.FitToBoundingBox(model.BoundingBox, 1);
+
+
+        model.Position = model.Position;
 
         scene.AddNode(model);
 
-        camera.FitToBoundingBox(model.BoundingBox, 1);
 
 
         var mesh = new Mesh();

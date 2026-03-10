@@ -3,10 +3,14 @@ using Aura3D.Core.Nodes;
 using Aura3D.Core.Renderers;
 using Aura3D.Core.Renderers.PBRDeferred;
 using Aura3D.Core.Scenes;
+using Java.Nio.FileNio.Attributes;
+using RenderDebug;
+using Silk.NET.Input;
 using Silk.NET.Windowing;
 using Silk.NET.Windowing.Sdl.Android;
 using System.Drawing;
 using System.Numerics;
+using static Java.Util.Jar.Attributes;
 
 namespace Example.Test.Android;
 
@@ -16,14 +20,22 @@ public class MainActivity : SilkActivity
     Scene scene = null;
     protected override void OnRun()
     {
+
         ControlRenderTarget controlRenderTarget = new ControlRenderTarget();
         Camera.ControlRenderTarget = controlRenderTarget;
+        Scene scene = new Scene(scene => new PBRDeferredPipeline(scene));
+
+        TestView? testView = null;
+
         var view = Silk.NET.Windowing.Window.GetView(ViewOptions.Default with { API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 0))});
 
         scene = new Scene(scene => new PBRDeferredPipeline(scene));
 
         view.Load += () =>
         {
+            controlRenderTarget.Width = (uint)(view.Size.X);
+            controlRenderTarget.Height = (uint)(view.Size.Y);
+            controlRenderTarget.FrameBufferId = 0;
 
             scene.RenderPipeline.Initialize(str =>
             {
@@ -31,60 +43,11 @@ public class MainActivity : SilkActivity
                 return p;
             });
 
+            var inputContext = view.CreateInput();
+            testView = new TestView(scene, inputContext, name => Assets.Open($"Example/Assets/{name}"));
 
+            testView.OnInit();
 
-            var camera = scene.MainCamera;
-
-            camera.NearPlane = 1;
-
-
-            var list = new List<Stream>();
-            List<string> name =
-            [
-                "px.png",
-                "nx.png",
-                "py.png",
-                "ny.png",
-                "pz.png",
-                "nz.png",
-            ];
-            foreach (var filename in name)
-            {
-                list.Add(Assets.Open($"Example/Assets/Textures/skybox/{filename}"));
-            }
-
-            var cubeTexture = TextureLoader.LoadCubeTexture(list);
-
-            foreach (var stream in list)
-            {
-                stream.Dispose();
-            }
-
-            scene.Background = cubeTexture;
-
-            using (var stream = Assets.Open($"Example/Assets/Models/lion_head_1k.glb"))
-            {
-                var (model, animations) = ModelLoader.LoadGlbModelAndAnimations(stream);
-
-
-                model.Position = camera.Position + camera.Forward;
-
-                AddNode(model); 
-
-                // camera.FitToBoundingBox(model.BoundingBox);
-
-                DirectionalLight dl = new DirectionalLight();
-
-                dl.CastShadow = true;
-
-                //dl.RotationDegrees = new Vector3(-45, 45, 0);
-
-                AddNode(dl);
-
-            }
-
-
-           
 
 
         };
@@ -100,6 +63,8 @@ public class MainActivity : SilkActivity
 
             scene.Update(delta);
 
+
+            testView.OnUpdate(delta);
 
 
         };
