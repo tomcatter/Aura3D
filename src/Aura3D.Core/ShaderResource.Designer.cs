@@ -197,6 +197,16 @@ namespace Aura3D.Core {
         }
         
         /// <summary>
+        ///   查找 System.Byte[] 类型的本地化资源。
+        /// </summary>
+        public static byte[] lut {
+            get {
+                object obj = ResourceManager.GetObject("lut", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 #version 300 es
         ///precision mediump float;
         ///out vec4 outColor;

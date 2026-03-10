@@ -9,14 +9,14 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Texture = Aura3D.Core.Resources.Texture;
 
 namespace Aura3D.Core.Renderers.PBRDeferred;
 
 internal class IBLAmbientPass : RenderPass<PBRDeferredPipeline>
 {
     string gbufferRenderTargetName;
-    RenderTarget _brdfLutRenderTarget;
-    public IBLAmbientPass(RenderPipeline renderPipeline, string gbufferRenderTarget, RenderTarget brdfLutRenderTarget) : base(renderPipeline)
+    public IBLAmbientPass(RenderPipeline renderPipeline, string gbufferRenderTarget) : base(renderPipeline)
     {
         VertexShader = @"#version 300 es
 precision highp float;
@@ -35,7 +35,6 @@ void main() {
 
         FragmentShader = ShaderResource.pbr_ibl_ambient_frag;
         gbufferRenderTargetName = gbufferRenderTarget;
-        _brdfLutRenderTarget = brdfLutRenderTarget;
     }
 
 
@@ -64,7 +63,7 @@ void main() {
         var gBufferMetallicEmissive = rt.GetTexture("MetallicEmissive");
         var depthTexture = rt.DepthStencilTexture;
 
-        var u_brdfLUT = _brdfLutRenderTarget.GetTexture(0)!;
+        var u_brdfLUT = RenderPipeline.BrdfLutTexture;
 
 
         var irradianceMap = camera.GetPipelineGpuResource<CubeRenderTarget>("IrradianceMap");

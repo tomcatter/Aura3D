@@ -25,16 +25,14 @@ internal class TranslucentIBLAmbientPass : RenderPass<PBRDeferredPipeline>
     Resources.Texture defaultOcclusion => RenderPipeline.DefaultOcclusion;
 
     string gbufferRenderTargetName;
-    RenderTarget _brdfLutRenderTarget;
 
-    public TranslucentIBLAmbientPass(RenderPipeline renderPipeline, string gbufferRendertarget, RenderTarget brdfLutRenderTarget) : base(renderPipeline)
+    public TranslucentIBLAmbientPass(RenderPipeline renderPipeline, string gbufferRendertarget) : base(renderPipeline)
     {
         this.gbufferRenderTargetName = gbufferRendertarget;
 
         VertexShader = ShaderResource.MeshVert;
 
         FragmentShader = ShaderResource.pbr_ibl_ambient_frag;
-        this._brdfLutRenderTarget = brdfLutRenderTarget;
     }
 
     public override void BeforeRender(Camera camera)
@@ -116,7 +114,7 @@ internal class TranslucentIBLAmbientPass : RenderPass<PBRDeferredPipeline>
     public void SetupUpMeshUniforms(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
     {
 
-        var u_brdfLUT = _brdfLutRenderTarget.GetTexture(0)!;
+        var u_brdfLUT = RenderPipeline.BrdfLutTexture;
 
 
         var irradianceMap = camera.GetPipelineGpuResource<CubeRenderTarget>("IrradianceMap");

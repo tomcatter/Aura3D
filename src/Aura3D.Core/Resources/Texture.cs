@@ -86,8 +86,9 @@ public class Texture : BaseTexture<Texture>, IClone<Texture>, IGpuResource, ITex
 
         gl.BindTexture(TextureTarget.Texture2D, TextureId);
 
+        GLEnum error = GLEnum.False;
         setupParameters(gl);
-
+        error = gl.GetError();
 
         if (IsHdr == true)
         {
@@ -119,6 +120,7 @@ public class Texture : BaseTexture<Texture>, IClone<Texture>, IGpuResource, ITex
 
         }
 
+        error = gl.GetError();
         gl.BindTexture(TextureTarget.Texture2D, 0);
     }
     public Texture Clone()
