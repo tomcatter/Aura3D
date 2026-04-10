@@ -1,28 +1,26 @@
-using Aura3D.Core.Math;
+﻿using Aura3D.Core.Math;
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
+using SharpGLTF.IO;
 using SharpGLTF.Schema2;
+using System;
 using System.Numerics;
 using Material = Aura3D.Core.Resources.Material;
 using Mesh = Aura3D.Core.Nodes.Mesh;
 using Node = Aura3D.Core.Nodes.Node;
 using Texture = Aura3D.Core.Resources.Texture;
 using TextureWrapMode = Aura3D.Core.Resources.TextureWrapMode;
-using SharpGLTF.IO;
 
 
 namespace Aura3D.Core;
 
 public static class ModelLoader
 {
-    static HashSet<Func<ModelRoot, SharpGLTF.Schema2.Material, List<Channel>>> _materialExtensions = []; 
 
-    
-    public static void RegisterMaterialExtensions<TExtension>(string extensionName, Func<ModelRoot, SharpGLTF.Schema2.Material, List<Channel>> handleFunc) 
-        where TExtension : JsonSerializable, new()
+    static Dictionary<Type, Type> _materialExtensionTypes = new();
+    public static void RegisterMaterialExtensions<T1, T2>() where T1: JsonSerializable where T2: MaterialExtensionLoaderBase
     {
-        SharpGLTF.Schema2.ExtensionsFactory.RegisterExtension<SharpGLTF.Schema2.Material, TExtension>(extensionName, p => new TExtension());
-        _materialExtensions.Add(handleFunc);
+        _materialExtensionTypes[typeof(T1)] = typeof(T2);
     }
 
     public static (Model, List<Resources.Animation>) LoadGlbModelAndAnimations(Stream stream)
@@ -270,10 +268,23 @@ public static class ModelLoader
                 _ => BlendMode.Opaque,
             };
 
-            foreach(var func in _materialExtensions)
+            //foreach(var func in _materialExtensions)
+            //{
+            //    var tempList = func(modelRoot, material);
+            //    mat.Channels.AddRange(tempList);
+            //}
+
+            foreach(var ext in material.Extensions)
             {
-                var tempList = func(modelRoot, material);
-                mat.Channels.AddRange(tempList);
+                var type = ext.GetType();
+
+                _materialExtensionTypes.TryGetValue(ext.GetType(), out Type extType);
+                if (extType == null)
+                    continue;
+                MaterialExtensionLoaderBase materialExtension = (MaterialExtensionLoaderBase)Activator.CreateInstance(extType);
+                if(materialExtension == null)
+                    continue;
+                materialExtension.LoadMaterialExtension(modelRoot, material, mat);
             }
 
             foreach (var gltfChannel in material.Channels)

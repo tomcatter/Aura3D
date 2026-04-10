@@ -1,4 +1,4 @@
-using Aura3D.Core.Renderers;
+﻿using Aura3D.Core.Renderers;
 using System.Drawing;
 
 namespace Aura3D.Core.Resources;
@@ -7,7 +7,9 @@ public class Material : IClone<Material>, IGpuResource
 {
     public bool NeedsUpload { get; set; } = false;
     public List<Channel> Channels { get; set; } = [];
-    
+
+    private Dictionary<string, object> parameters  { get; set; } = new Dictionary<string, object>();
+
     public BlendMode BlendMode { get; set; } = BlendMode.Opaque;
 
     public bool DoubleSided { get; set; } = false;
@@ -24,6 +26,28 @@ public class Material : IClone<Material>, IGpuResource
     public IReadOnlyDictionary<string, string> FragmentShaders => _fragmentShaders;
 
     public Dictionary<string, Shader> Shaders { get; } = new Dictionary<string, Shader>();
+
+    // The type of the value to be retrieved must be consistent with the type of the generic; otherwise, the value cannot be retrieved.
+    public bool TryGetParameterValue<T>(string key, out T value)
+    {
+        if (parameters.TryGetValue(key, out var obj) && obj is T t)
+        {
+            value = t;
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
+    public void SetParameterValue<T>(string key, T value)
+    {
+        if(value != null)
+        {
+            parameters[key] = value;
+        }
+    }
+
 
     public Material Clone()
     {

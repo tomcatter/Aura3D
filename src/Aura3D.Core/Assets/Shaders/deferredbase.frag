@@ -16,7 +16,6 @@ uniform sampler2D Texture_Occlusion;
 in vec2 vTexCoord;
 in vec3 vFragPosition;
 in mat3 vTBN;
-in vec3 vNormal; 
 
 void main() 
 {

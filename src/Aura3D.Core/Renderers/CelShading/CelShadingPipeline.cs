@@ -39,8 +39,7 @@ public class CelShadingPipeline : RenderPipeline, IRenderPipelineCreateInstance
             .AddTexture("Color", TextureFormat.Rgba8)
             .SetDepthTexture(TextureFormat.DepthComponent16);
 
-        // Register Extension
-        ModelLoader.RegisterMaterialExtensions<Aura3DCelTextures>(Aura3DCelTextures.SCHEMANAME, Aura3DCelTextures.GetExtenionChannels);
+        
 
     }
 

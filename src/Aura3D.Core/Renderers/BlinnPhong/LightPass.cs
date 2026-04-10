@@ -79,8 +79,6 @@ public class LightPass : RenderPass
     {
         BindOutPutRenderTarget(camera);
 
-        ClearTextureUnit();
-
         UseShader();
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && mesh.IsStaticMesh, camera.View, camera.Projection);
 
