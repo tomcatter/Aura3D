@@ -46,6 +46,10 @@ namespace Example.ViewModels
                 new MenuViewModel {
                     Title = "PBR RenderPipeline",
                     ViewModel = new PbrViewModel()
+                },
+                new MenuViewModel {
+                    Title = "Cel Shading",
+                    ViewModel = new CelShadingViewModel()
                 }
             ];
             OnNavigation(this, _menus.First());
