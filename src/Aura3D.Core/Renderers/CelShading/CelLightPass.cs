@@ -54,8 +54,8 @@ public class CelLightPass : RenderPass
     {
         VertexShader = ShaderResource.MeshVert;
         FragmentShader = ShaderResource.CelFrag;
-        //rampTexture = TextureLoader.LoadTexture(ShaderResource.CelRamp2);
-        //renderPipeline.AddGpuResource(rampTexture);
+        rampTexture = TextureLoader.LoadTexture(ShaderResource.CelRamp2);
+        renderPipeline.AddGpuResource(rampTexture);
     }
 
     public override void BeforeRender(Camera camera)
@@ -96,7 +96,7 @@ public class CelLightPass : RenderPass
         UniformFloat("ambientIntensity", AmbientIntensity);
         UniformVector3("cameraPosition", view.Inverse().Translation);
 
-        UniformTexture("ShadowamRamp", rampTexture);
+        UniformTexture("ShadowRamp", rampTexture);
 
         for(int i = 0; i < directionalLightLimit; i++)
         {
@@ -137,9 +137,6 @@ public class CelLightPass : RenderPass
             }
 
         }
-    }
-    public override void AfterRender(Camera camera)
-    {
     }
 
     public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)

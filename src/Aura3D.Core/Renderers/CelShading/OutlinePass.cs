@@ -75,6 +75,10 @@ public class OutlinePass : RenderPass
 
     public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
     {
+        ClearTextureUnit();
+
+        SetupUniform(view, projection);
+
         var normalMatrix = mesh.WorldTransform.Inverse();
         normalMatrix = Matrix4x4.Transpose(normalMatrix);
         UniformMatrix4("normalMatrix", normalMatrix);
