@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Aura3D.Core.Resources;
 using Aura3D.Core.Renderers;
 using Aura3D.Core;
+using Avalonia.VisualTree;
 
 namespace Aura3D.Avalonia;
 
@@ -52,13 +53,15 @@ public abstract class Aura3DViewBase : global::Avalonia.OpenGL.Controls.OpenGlCo
     {
         if (isSizeChanged == true)
         {
+            var source = this.GetPresentationSource();
+
             uint width = (uint)Bounds.Width;
             uint height = (uint)Bounds.Height;
 
-            if (VisualRoot != null)
+            if (source != null)
             {
-                width = (uint)(Bounds.Width * VisualRoot.RenderScaling);
-                height = (uint)(Bounds.Height * VisualRoot.RenderScaling);
+                width = (uint)(Bounds.Width * source.RenderScaling);
+                height = (uint)(Bounds.Height * source.RenderScaling);
             }
 
             controlRenderTarget.Width = width;
