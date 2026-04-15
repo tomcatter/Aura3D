@@ -5,13 +5,36 @@ using System.Collections.Generic;
 
 namespace Aura3D.Core.Geometries;
 
+/// <summary>
+/// 平面几何体，用于创建矩形平面形状的网格数据。
+/// </summary>
 public class PlaneGeometry : Geometry
 {
+    /// <summary>
+    /// 获取或设置平面的宽度。
+    /// </summary>
     public float Width { get; }
+    /// <summary>
+    /// 获取或设置平面的高度。
+    /// </summary>
     public float Height { get; }
+    /// <summary>
+    /// 获取或设置平面宽度方向的分段数。
+    /// </summary>
     public int WidthSegments { get; }
+    /// <summary>
+    /// 获取或设置平面高度方向的分段数。
+    /// </summary>
     public int HeightSegments { get; }
 
+    /// <summary>
+    /// 初始化 <see cref="PlaneGeometry"/> 类的新实例。
+    /// </summary>
+    /// <param name="width">平面的宽度。</param>
+    /// <param name="height">平面的高度。</param>
+    /// <param name="widthSegments">宽度方向的分段数，必须大于等于1。</param>
+    /// <param name="heightSegments">高度方向的分段数，必须大于等于1。</param>
+    /// <exception cref="ArgumentOutOfRangeException">当 segments 参数小于 1 时抛出。</exception>
     public PlaneGeometry(float width = 1f, float height = 1f, int widthSegments = 1, int heightSegments = 1)
     {
         if (widthSegments < 1) throw new ArgumentOutOfRangeException(nameof(widthSegments));

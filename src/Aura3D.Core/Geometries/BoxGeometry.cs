@@ -3,12 +3,30 @@ using Aura3D.Core.Resources;
 
 namespace Aura3D.Core.Geometries;
 
+/// <summary>
+/// 长方体几何体，用于创建立方体形状的网格数据。
+/// </summary>
 public class BoxGeometry : Geometry
 {
+    /// <summary>
+    /// 获取或设置长方体的宽度。
+    /// </summary>
     public float Width { get; }
+    /// <summary>
+    /// 获取或设置长方体的高度。
+    /// </summary>
     public float Height { get; }
+    /// <summary>
+    /// 获取或设置长方体的深度。
+    /// </summary>
     public float Depth { get; }
 
+    /// <summary>
+    /// 初始化 <see cref="BoxGeometry"/> 类的新实例。
+    /// </summary>
+    /// <param name="width">长方体的宽度。</param>
+    /// <param name="height">长方体的高度。</param>
+    /// <param name="depth">长方体的深度。</param>
     public BoxGeometry(float width = 1f, float height = 1f, float depth = 1f)
     {
         Width = width;
