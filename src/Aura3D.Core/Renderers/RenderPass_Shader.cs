@@ -11,26 +11,43 @@ namespace Aura3D.Core.Renderers;
 
 public partial class RenderPass
 {
+    /// <summary>
+    /// 获取或设置当前渲染通道使用的着色器名称。
+    /// </summary>
     public string ShaderName { get; protected set; }
 
     protected string VertexShader = string.Empty;
 
     protected string FragmentShader = string.Empty;
+
+    /// <summary>
+    /// 获取当前渲染通道已编译的着色器程序字典，键为宏定义组合字符串。
+    /// </summary>
     public Dictionary<string, Shader> Shaders { get; } = new Dictionary<string, Shader>();
 
+    /// <summary>
+    /// 获取当前正在使用的着色器程序。
+    /// </summary>
     public Shader? CurrentShader { get; private set; } = null;
 
     List<string> defines = [];
 
+    /// <summary>
+    /// 指定后续着色器编译时要使用的宏定义。
+    /// </summary>
+    /// <param name="defines">要启用的宏定义名称列表。</param>
     public void UseShader(params string[] defines)
     {
         this.defines = new(defines);
     }
 
+    /// <summary>
+    /// 向当前宏定义列表追加额外的宏定义。
+    /// </summary>
+    /// <param name="defines">要追加的宏定义名称列表。</param>
     public void AddDefines(params string[] defines)
     {
         this.defines.AddRange(defines);
-
     }
 
     protected void UseShader_Internal(Mesh? mesh)
@@ -93,9 +110,7 @@ public partial class RenderPass
         }
 
         gl.ShaderSource(vertex, vs);
-
         gl.CompileShader(vertex);
-
 
         gl.GetShader(vertex, GLEnum.CompileStatus, out int code);
 
@@ -109,7 +124,6 @@ public partial class RenderPass
         var fragment = gl.CreateShader(ShaderType.FragmentShader);
 
         gl.ShaderSource(fragment, fs);
-
         gl.CompileShader(fragment);
 
         gl.GetShader(fragment, GLEnum.CompileStatus, out code);
@@ -124,9 +138,7 @@ public partial class RenderPass
         var programId = gl.CreateProgram();
 
         gl.AttachShader(programId, vertex);
-
         gl.AttachShader(programId, fragment);
-
         gl.LinkProgram(programId);
 
         gl.GetProgram(programId, GLEnum.LinkStatus, out int linkStatus);
@@ -137,16 +149,15 @@ public partial class RenderPass
         }
 
         gl.DeleteShader(vertex);
-
         gl.DeleteShader(fragment);
 
         shader.ProgramId = programId;
-
 
         GetAllUniformLocations(gl, shader);
 
         return shader;
     }
+
     private unsafe void GetAllUniformLocations(GL gl, Shader shader)
     {
         gl.GetProgram(shader.ProgramId, GLEnum.ActiveUniforms, out int numUniforms);
@@ -168,16 +179,23 @@ public partial class RenderPass
 
             shader.UniformLocation[uniformName.Trim()] = location;
         }
-
     }
 
-
     private int currentTextureUnit = 0;
+
+    /// <summary>
+    /// 重置纹理单元计数器为 0，通常在绑定新的一批纹理前调用。
+    /// </summary>
     public void ClearTextureUnit()
     {
         currentTextureUnit = 0;
     }
 
+    /// <summary>
+    /// 向当前着色器的指定 Uniform 变量绑定一个 2D 纹理。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="textureId">OpenGL 纹理 ID。</param>
     public void UniformTexture(string name, uint textureId)
     {
         if (CurrentShader == null)
@@ -193,6 +211,11 @@ public partial class RenderPass
         currentTextureUnit++;
     }
 
+    /// <summary>
+    /// 向当前着色器的指定 Uniform 变量绑定一个立方体贴图。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="textureId">OpenGL 立方体贴图纹理 ID。</param>
     public void UniformTextureCubeMap(string name, uint textureId)
     {
         if (CurrentShader == null)
@@ -207,6 +230,11 @@ public partial class RenderPass
         currentTextureUnit++;
     }
 
+    /// <summary>
+    /// 向当前着色器的指定 Uniform 变量绑定一个立方体贴图。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="texture">立方体贴图资源。</param>
     public void UniformTextureCubeMap(string name, ICubeTexture texture)
     {
         if (CurrentShader == null)
@@ -221,6 +249,11 @@ public partial class RenderPass
         currentTextureUnit++;
     }
 
+    /// <summary>
+    /// 向当前着色器的指定 Uniform 变量绑定一个 2D 纹理。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="texture">2D 纹理资源。</param>
     public void UniformTexture(string name, ITexture texture)
     {
         if (texture == null)
@@ -238,6 +271,11 @@ public partial class RenderPass
         currentTextureUnit++;
     }
 
+    /// <summary>
+    /// 向当前着色器设置一个整型 Uniform 变量。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="value">整型值。</param>
     public void UniformInt(string name, int value)
     {
         if (CurrentShader == null)
@@ -248,6 +286,11 @@ public partial class RenderPass
         gl.Uniform1(location, value);
     }
 
+    /// <summary>
+    /// 向当前着色器设置一个浮点型 Uniform 变量。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="value">浮点值。</param>
     public void UniformFloat(string name, float value)
     {
         if (CurrentShader == null)
@@ -258,6 +301,11 @@ public partial class RenderPass
         gl.Uniform1(location, value);
     }
 
+    /// <summary>
+    /// 向当前着色器设置一个三维向量 Uniform 变量。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="value">三维向量值。</param>
     public unsafe void UniformVector3(string name, Vector3 value)
     {
         if (CurrentShader == null)
@@ -268,6 +316,11 @@ public partial class RenderPass
         gl.Uniform3(location, 1, (float*)&value);
     }
 
+    /// <summary>
+    /// 向当前着色器设置一个 4x4 矩阵 Uniform 变量。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="value">矩阵值。</param>
     public unsafe void UniformMatrix4(string name, Matrix4x4 value)
     {
         if (CurrentShader == null)
@@ -278,6 +331,11 @@ public partial class RenderPass
         gl.UniformMatrix4(location, 1, false, (float*)&value);
     }
 
+    /// <summary>
+    /// 向当前着色器设置一个二维向量 Uniform 变量。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="value">二维向量值。</param>
     public unsafe void UniformVector2(string name, Vector2 value)
     {
         if (CurrentShader == null)
@@ -288,6 +346,11 @@ public partial class RenderPass
         gl.Uniform2(location, 1, (float*)&value);
     }
 
+    /// <summary>
+    /// 向当前着色器设置一个四维向量 Uniform 变量。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="value">四维向量值。</param>
     public unsafe void UniformVector4(string name, Vector4 value)
     {
         if (CurrentShader == null)
@@ -298,12 +361,22 @@ public partial class RenderPass
         gl.Uniform4(location, 1, (float*)&value);
     }
 
+    /// <summary>
+    /// 向当前着色器设置一个颜色 Uniform 变量（仅传递 RGB 分量）。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="color">颜色值。</param>
     public unsafe void UniformColor(string name, Color color)
     {
         Vector4 vector4 = color.ToVector4();
         UniformVector3(name, new Vector3(vector4.X, vector4.Y, vector4.Z));
     }
 
+    /// <summary>
+    /// 向当前着色器设置一个 4x4 矩阵数组 Uniform 变量。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="values">矩阵数组。</param>
     public unsafe void UniformMatrix4Array(string name, Span<Matrix4x4> values)
     {
         if (CurrentShader == null || values == null || values.Length == 0)
@@ -317,6 +390,11 @@ public partial class RenderPass
         }
     }
 
+    /// <summary>
+    /// 向当前着色器设置一个三维向量数组 Uniform 变量。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="values">三维向量数组。</param>
     public unsafe void UniformVector3Array(string name, Span<Vector3> values)
     {
         if (CurrentShader == null || values == null || values.Length == 0)
@@ -330,6 +408,11 @@ public partial class RenderPass
         }
     }
 
+    /// <summary>
+    /// 向当前着色器设置一个四维向量数组 Uniform 变量。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="values">四维向量数组。</param>
     public unsafe void UniformVector4Array(string name, Span<Vector4> values)
     {
         if (CurrentShader == null || values == null || values.Length == 0)
@@ -344,15 +427,32 @@ public partial class RenderPass
     }
 }
 
+/// <summary>
+/// 表示一个已编译链接着色器程序，包含程序 ID 和 Uniform 变量位置缓存。
+/// </summary>
 public class  Shader
 {
+    /// <summary>
+    /// 获取或设置当前着色器使用的宏定义列表。
+    /// </summary>
     public string[] Defines { get; set; } = [];
 
+    /// <summary>
+    /// 获取或设置 OpenGL 着色器程序 ID。
+    /// </summary>
     public uint ProgramId { get; set; } = 0;
 
-
+    /// <summary>
+    /// 获取 Uniform 变量名称到其位置索引的字典缓存。
+    /// </summary>
     public Dictionary<string, int> UniformLocation = new Dictionary<string, int>();
 
+    /// <summary>
+    /// 获取指定 Uniform 变量在当前着色器程序中的位置，若未缓存则向 OpenGL 查询。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="gl">OpenGL 上下文。</param>
+    /// <returns>Uniform 位置索引，若不存在则返回 -1。</returns>
     public int GetUniformLocation(string name, GL gl)
     {
         if (UniformLocation.TryGetValue(name, out int location))
@@ -370,5 +470,4 @@ public class  Shader
 
         return -1;
     }
-
 }

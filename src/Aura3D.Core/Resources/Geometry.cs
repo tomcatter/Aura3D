@@ -27,7 +27,7 @@ public class Geometry : IGpuResource, IClone<Geometry>
     public void SetVertexAttribute(string name, uint location, int size, List<float> data)
     {
         if (data.Count % size != 0)
-            throw new Exception($"The length of vertex attribute data must be a multiple of its size. Data length: {data.Count}, Size: {size}");
+            throw new ArgumentException($"The length of vertex attribute data must be a multiple of its size. Data length: {data.Count}, Size: {size}");
 
         if (VertexAttributes.TryGetValue(name, out var vertexAttribute))
         {
@@ -157,9 +157,9 @@ public enum BuildInVertexAttribute
     Normal = 2,
     Tangent = 3,
     Bitangent = 4,
-    Jonits_0 = 5,
+    Joints_0 = 5,
     Weights_0 = 6,
-    Jonits_1 = 7,
+    Joints_1 = 7,
     Weights_1 = 8,
     TexCoord_1 = 9,
     TexCoord_2 = 10,

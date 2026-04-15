@@ -22,5 +22,5 @@ public interface IOctreeObject
     /// </summary>
     List<object> BelongingNodes { get; }
 
-    event Action<IOctreeObject>? OnBoudingBoxChanged;
+    event Action<IOctreeObject>? OnBoundingBoxChanged;
 }

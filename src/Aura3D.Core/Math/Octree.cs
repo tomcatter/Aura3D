@@ -108,11 +108,11 @@ public class Octree<T> where T : IOctreeObject
                 obj2.BelongingNodes.Clear();
             }
 
-            var newBoudingBox = _rootNode.BoundingBox;
+            var newBoundingBox = _rootNode.BoundingBox;
 
             var newSize = Size;
 
-            while (newBoudingBox.Contains(obj.BoundingBox) == false)
+            while (newBoundingBox.Contains(obj.BoundingBox) == false)
             {
 
                 if (obj.BoundingBox.Max.X > newSize.X / 2 || obj.BoundingBox.Min.X < newSize.X / -2)
@@ -130,7 +130,7 @@ public class Octree<T> where T : IOctreeObject
                     newSize.Z = newSize.Z * 2;
                 }
 
-                newBoudingBox = new BoundingBox(new Vector3(newSize.X / -2, newSize.Y / -2, newSize.Z / -2), new Vector3(newSize.X / 2, newSize.Y / 2, newSize.Z / 2));
+                newBoundingBox = new BoundingBox(new Vector3(newSize.X / -2, newSize.Y / -2, newSize.Z / -2), new Vector3(newSize.X / 2, newSize.Y / 2, newSize.Z / 2));
             }
 
             Rebuild(newSize);

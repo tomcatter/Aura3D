@@ -10,12 +10,18 @@ using System.Numerics;
 
 namespace Aura3D.Core.Renderers;
 
+/// <summary>
+/// 渲染通道的基类，负责在渲染管线中执行特定阶段的绘制操作。
+/// </summary>
 public partial class RenderPass
 {
+    /// <summary>
+    /// 初始化 <see cref="RenderPass"/> 类的新实例。
+    /// </summary>
+    /// <param name="renderPipeline">所属的渲染管线。</param>
     public RenderPass(RenderPipeline renderPipeline)
     {
         this.renderPipeline = renderPipeline;
-
         ShaderName = GetType().Name;
     }
 
@@ -30,55 +36,90 @@ public partial class RenderPass
     protected List<SpotLight> SpotLights => renderPipeline.SpotLights;
     
     protected List<Mesh> VisibleMeshesInCamera => renderPipeline.VisibleMeshesInCamera;
+
     protected GL gl => renderPipeline.gl!;
+
+    /// <summary>
+    /// 设置当前渲染通道所需的着色器和其他资源。
+    /// </summary>
     public virtual void Setup()
     {
 
     }
 
-    public virtual void Destory()
-    {
-
-    }
+    /// <summary>
+    /// 获取是否启用视锥体剔除。
+    /// </summary>
     public bool EnableFrustumCulling => renderPipeline.EnableFrustumCulling;
 
+    /// <summary>
+    /// 在渲染指定相机之前执行的状态设置和准备工作。
+    /// </summary>
+    /// <param name="camera">当前要渲染的相机。</param>
     public virtual void BeforeRender(Camera camera)
     {
 
     }
+
+    /// <summary>
+    /// 执行指定相机的渲染逻辑。
+    /// </summary>
+    /// <param name="camera">当前要渲染的相机。</param>
     public virtual void Render(Camera camera)
     {
 
     }
 
+    /// <summary>
+    /// 在渲染指定相机之后执行的清理和恢复工作。
+    /// </summary>
+    /// <param name="camera">当前已渲染完成的相机。</param>
     public virtual void AfterRender(Camera camera)
     {
 
     }
 
-
+    /// <summary>
+    /// 在每帧全局渲染之前执行的准备工作。
+    /// </summary>
     public virtual void BeforeRender()
     {
 
     }
+
+    /// <summary>
+    /// 执行每帧全局渲染逻辑。
+    /// </summary>
     public virtual void Render()
     {
 
     }
 
+    /// <summary>
+    /// 在每帧全局渲染之后执行的清理工作。
+    /// </summary>
     public virtual void AfterRender()
     {
 
     }
 
     protected string? outputRenderTargetName;
+
+    /// <summary>
+    /// 设置当前渲染通道的输出渲染目标。
+    /// </summary>
+    /// <param name="renderTargetName">渲染目标的名称，若为 <c>null</c> 则输出到默认目标。</param>
+    /// <returns>当前的 <see cref="RenderPass"/> 实例。</returns>
     public RenderPass SetOutPutRenderTarget(string? renderTargetName)
     {
         this.outputRenderTargetName = renderTargetName;
-
         return this;
     }
 
+    /// <summary>
+    /// 绑定当前渲染通道的输出渲染目标到指定相机的帧缓冲。
+    /// </summary>
+    /// <param name="camera">当前渲染的相机。</param>
     public void BindOutPutRenderTarget(Camera camera)
     {
         uint fbo = 0;
@@ -97,8 +138,20 @@ public partial class RenderPass
         gl.Viewport(0, 0, camera.RenderTarget.Width, camera.RenderTarget.Height);
     }
 
+    /// <summary>
+    /// 获取指定名称和大小的渲染目标。
+    /// </summary>
+    /// <param name="name">渲染目标名称。</param>
+    /// <param name="size">渲染目标尺寸。</param>
+    /// <returns>渲染目标实例。</returns>
     public RenderTarget GetRenderTarget(string name, Size size) => renderPipeline.GetRenderTarget(name, size);
 
+    /// <summary>
+    /// 渲染单个网格，并设置模型矩阵与材质相关的着色器参数。
+    /// </summary>
+    /// <param name="mesh">要渲染的网格。</param>
+    /// <param name="view">视图矩阵。</param>
+    /// <param name="projection">投影矩阵。</param>
     public unsafe virtual void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
     {
         UniformMatrix4("modelMatrix", mesh.WorldTransform);
@@ -115,6 +168,12 @@ public partial class RenderPass
         gl.DrawElements(GLEnum.Triangles, (uint)mesh.Geometry.IndicesCount, GLEnum.UnsignedInt, (void*)0);
     }
 
+    /// <summary>
+    /// 根据筛选条件渲染场景中所有符合条件的网格。
+    /// </summary>
+    /// <param name="filter">网格筛选条件。</param>
+    /// <param name="view">视图矩阵。</param>
+    /// <param name="projection">投影矩阵。</param>
     public void RenderMeshes(Func<Mesh, bool> filter, Matrix4x4 view, Matrix4x4 projection)
     {
         foreach (var mesh in renderPipeline.Meshes)
@@ -131,11 +190,24 @@ public partial class RenderPass
         }
     }
     
+    /// <summary>
+    /// 渲染当前相机视锥体中可见且符合条件的网格。
+    /// </summary>
+    /// <param name="filter">网格筛选条件。</param>
+    /// <param name="view">视图矩阵。</param>
+    /// <param name="projection">投影矩阵。</param>
     public void RenderVisibleMeshesInCamera(Func<Mesh, bool> filter, Matrix4x4 view, Matrix4x4 projection)
     {
         RenderMeshesFromList(VisibleMeshesInCamera, filter, view, projection);
     }
 
+    /// <summary>
+    /// 从指定的网格列表中渲染符合条件的网格。
+    /// </summary>
+    /// <param name="meshes">要遍历的网格列表。</param>
+    /// <param name="filter">网格筛选条件。</param>
+    /// <param name="view">视图矩阵。</param>
+    /// <param name="projection">投影矩阵。</param>
     public void RenderMeshesFromList(List<Mesh> meshes, Func<Mesh, bool> filter, Matrix4x4 view, Matrix4x4 projection)
     {
         foreach (var mesh in meshes)
@@ -154,6 +226,13 @@ public partial class RenderPass
     
     List<Mesh> meshes = new List<Mesh>();
     Plane[] planes = new Plane[6];
+
+    /// <summary>
+    /// 渲染所有静态网格（非蒙皮），支持视锥体剔除。
+    /// </summary>
+    /// <param name="filter">网格筛选条件。</param>
+    /// <param name="view">视图矩阵。</param>
+    /// <param name="projection">投影矩阵。</param>
     public void RenderStaticMeshes(Func<Mesh, bool> filter, Matrix4x4 view, Matrix4x4 projection)
     {
         var list = renderPipeline.Meshes;
@@ -161,11 +240,8 @@ public partial class RenderPass
         if (EnableFrustumCulling == true)
         {
             meshes.Clear();
-
             renderPipeline.UpdateVisibleMeshesInCamera(view, projection, meshes);
-
             list = meshes;
-
         }
         foreach (var mesh in list)
         {
@@ -183,6 +259,12 @@ public partial class RenderPass
         }
     }
 
+    /// <summary>
+    /// 渲染所有蒙皮网格，支持视锥体剔除。
+    /// </summary>
+    /// <param name="filter">网格筛选条件。</param>
+    /// <param name="view">视图矩阵。</param>
+    /// <param name="projection">投影矩阵。</param>
     public void RenderSkinnedMeshes(Func<Mesh, bool> filter, Matrix4x4 view, Matrix4x4 projection)
     {
         var list = renderPipeline.Meshes;
@@ -190,11 +272,8 @@ public partial class RenderPass
         if (EnableFrustumCulling == true)
         {
             meshes.Clear();
-
             renderPipeline.UpdateVisibleMeshesInCamera(view, projection, meshes);
-
             list = meshes;
-
         }
         foreach (var mesh in list)
         {
@@ -224,41 +303,64 @@ public partial class RenderPass
             if (mesh.Material.BlendMode == mode)
                 return true;
             return false;
-
         }
     }
 
+    /// <summary>
+    /// 对网格列表按与相机的距离进行排序。
+    /// </summary>
+    /// <param name="Meshes">要排序的网格列表。</param>
+    /// <param name="camera">用于计算距离的相机。</param>
     public virtual void SortMeshes(List<Mesh> Meshes, Camera camera)
     {
         renderPipeline.SortMeshes(Meshes, camera);
     }    
 
+    /// <summary>
+    /// 渲染一个单位立方体。
+    /// </summary>
     public void RenderCube()
     {
         renderPipeline.RenderCube();
     }
 
+    /// <summary>
+    /// 渲染一个全屏四边形。
+    /// </summary>
     public void RenderQuad()
     {
         renderPipeline.RenderQuad();
     }
 
-    public void Destroy()
-    { 
+    /// <summary>
+    /// 销毁当前渲染通道分配的所有着色器程序。
+    /// </summary>
+    public virtual void Destroy()
+    {
         foreach(var shader in Shaders)
         {
             gl.DeleteProgram(shader.Value.ProgramId);
         }
         Shaders.Clear();
     }
-
 }
 
+/// <summary>
+/// 泛型渲染通道基类，提供对特定类型渲染管线的强类型访问。
+/// </summary>
+/// <typeparam name="T">渲染管线的类型。</typeparam>
 public class RenderPass<T> : RenderPass where T : RenderPipeline
 {
+    /// <summary>
+    /// 初始化 <see cref="RenderPass{T}"/> 类的新实例。
+    /// </summary>
+    /// <param name="renderPipeline">所属的渲染管线。</param>
     public RenderPass(RenderPipeline renderPipeline) : base(renderPipeline)
     {
     }
 
+    /// <summary>
+    /// 获取当前渲染通道所属的强类型渲染管线实例。
+    /// </summary>
     public T RenderPipeline => (T)renderPipeline;
 }

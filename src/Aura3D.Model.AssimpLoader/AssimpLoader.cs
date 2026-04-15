@@ -546,7 +546,7 @@ public static class AssimpLoader
                     len[vertexWeight.VertexID]++;
                 }
             }
-            geometry.SetVertexAttribute(BuildInVertexAttribute.Jonits_0, 4, joints);
+            geometry.SetVertexAttribute(BuildInVertexAttribute.Joints_0, 4, joints);
             geometry.SetVertexAttribute(BuildInVertexAttribute.Weights_0, 4, weights);
         }
         return mesh;

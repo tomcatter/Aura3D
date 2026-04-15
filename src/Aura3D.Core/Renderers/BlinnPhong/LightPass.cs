@@ -58,7 +58,7 @@ public class LightPass : RenderPass
         defaultNormal.Upload(gl);
     }
 
-    public override void Destory()
+    public override void Destroy()
     {
         defaultBaseColor.Destroy(gl);
         defaultNormal.Destroy(gl);

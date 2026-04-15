@@ -83,7 +83,7 @@ public class Scene
 
         if (node is IOctreeObject otreeObject)
         {
-            otreeObject.OnBoudingBoxChanged += OnBoudingBoxChanged;
+            otreeObject.OnBoundingBoxChanged += OnBoundingBoxChanged;
         }
 
         if (node is Mesh mesh)
@@ -122,7 +122,7 @@ public class Scene
 
         if (node is IOctreeObject otreeObject)
         {
-            otreeObject.OnBoudingBoxChanged -= OnBoudingBoxChanged;
+            otreeObject.OnBoundingBoxChanged -= OnBoundingBoxChanged;
         }
 
 
@@ -146,7 +146,7 @@ public class Scene
             return;
         _dirtyNodes.Add(node);
     }
-    void OnBoudingBoxChanged(IOctreeObject otreeObject)
+    void OnBoundingBoxChanged(IOctreeObject otreeObject)
     {
         if (otreeObject is not Node node)
             return;
@@ -160,7 +160,7 @@ public class Scene
             node.Update(deltaTime);
             if (node is Mesh mesh)
             {
-                if (mesh.IsSkinnedMesh && mesh.AnimationSampler != null && mesh.EnableSkeletonBoudingBox == true)
+                if (mesh.IsSkinnedMesh && mesh.AnimationSampler != null && mesh.EnableSkeletonBoundingBox == true)
                 {
                     mesh.CalcSkeletalMeshBoundingBoxInPlayAnimation();
                     StaticMeshOctree.Update(mesh);

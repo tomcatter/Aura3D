@@ -7,49 +7,111 @@ using System.Numerics;
 
 namespace Aura3D.Core.Renderers;
 
+/// <summary>
+/// 渲染管线创建实例的接口，用于通过场景创建对应的渲染管线实例。
+/// </summary>
 public interface IRenderPipelineCreateInstance
 {
+    /// <summary>
+    /// 使用指定的场景创建渲染管线实例。
+    /// </summary>
+    /// <param name="scene">要渲染的场景。</param>
+    /// <returns>新创建的渲染管线实例。</returns>
     public abstract static RenderPipeline CreateInstance(Scene scene);
-
-
 }
+
+/// <summary>
+/// 渲染管线的抽象基类，负责管理场景中的网格、相机、光源、GPU 资源以及组织渲染流程。
+/// </summary>
 public abstract partial class RenderPipeline
 {
+    /// <summary>
+    /// 初始化 <see cref="RenderPipeline"/> 类的新实例。
+    /// </summary>
+    /// <param name="scene">要关联的场景。</param>
     public RenderPipeline(Scene scene)
     {
         this.Scene = scene;
     }
 
+    /// <summary>
+    /// 获取或设置是否启用视锥体剔除。
+    /// </summary>
     public bool EnableFrustumCulling { get; set; } = true;
 
+    /// <summary>
+    /// 获取当前渲染管线关联的场景。
+    /// </summary>
     public Scene Scene { get; private set; }
 
+    /// <summary>
+    /// 获取场景中的所有网格节点列表。
+    /// </summary>
     public List<Mesh> Meshes { get; } = new List<Mesh>();
 
+    /// <summary>
+    /// 获取场景中的所有相机节点列表。
+    /// </summary>
     public List<Camera> Cameras { get; } = new List<Camera>();
 
+    /// <summary>
+    /// 获取场景中的所有点光源列表。
+    /// </summary>
     public List<PointLight> PointLights { get; } = new List<PointLight>();
 
+    /// <summary>
+    /// 获取场景中的所有聚光灯列表。
+    /// </summary>
     public List<SpotLight> SpotLights { get; } = new List<SpotLight>();
 
+    /// <summary>
+    /// 获取场景中的所有方向光源列表。
+    /// </summary>
     public List<DirectionalLight> DirectionalLights { get; } = new List<DirectionalLight>();
 
+    /// <summary>
+    /// 获取或设置默认的帧缓冲对象标识符。
+    /// </summary>
     public uint DefaultFramebuffer { get; set; }
 
+    /// <summary>
+    /// 获取或设置 OpenGL ES 上下文对象。
+    /// </summary>
     public GL? gl { get; protected set; }
+
+    /// <summary>
+    /// 获取每个相机渲染时都需要执行的渲染通道列表。
+    /// </summary>
     public List<RenderPass> EveryCameraRenderPasses { get; } = new List<RenderPass>();
 
+    /// <summary>
+    /// 获取每帧仅执行一次的渲染通道列表。
+    /// </summary>
     public List<RenderPass> OnceRenderPasses { get; } = new List<RenderPass>();
 
+    /// <summary>
+    /// 获取当前渲染管线管理的所有 GPU 资源集合。
+    /// </summary>
     public HashSet<IGpuResource> GpuResources { get; } = new HashSet<IGpuResource>();
 
+    /// <summary>
+    /// 获取需要更新上传的 GPU 资源集合。
+    /// </summary>
     public HashSet<IGpuResource> NeedUpdateResources { get; } = new HashSet<IGpuResource>();
 
-
+    /// <summary>
+    /// 获取或设置方向光源的最大数量限制。
+    /// </summary>
     public int DirectionalLightLimit { get; set; } = 4;
 
+    /// <summary>
+    /// 获取或设置点光源的最大数量限制。
+    /// </summary>
     public int PointLightLimit { get; set; } = 4;
 
+    /// <summary>
+    /// 获取或设置聚光灯的最大数量限制。
+    /// </summary>
     public int SpotLightLimit { get; set; } = 4;
 
     private int lastDirectionalLightLimit;
@@ -60,7 +122,11 @@ public abstract partial class RenderPipeline
 
     protected event Action<int, int, int>? LightLimitChangedEvent;
 
+    /// <summary>
+    /// 获取或设置当前相机视锥体中可见的网格列表。
+    /// </summary>
     public List<Mesh> VisibleMeshesInCamera = [];
+
     protected void RegisterRenderPass(RenderPass renderPass, RenderPassGroup renderPassGroup)
     {
         if (renderPassGroup == RenderPassGroup.EveryCamera)
@@ -69,12 +135,19 @@ public abstract partial class RenderPipeline
             OnceRenderPasses.Add(renderPass);
     }
 
+    /// <summary>
+    /// 渲染通道分组枚举，用于标识渲染通道的执行频率。
+    /// </summary>
     public enum RenderPassGroup
     {
         Once,
         EveryCamera,
     }
 
+    /// <summary>
+    /// 使用指定的获取函数指针委托初始化渲染管线，包括 OpenGL 上下文获取与渲染通道设置。
+    /// </summary>
+    /// <param name="getProcAddressFunctionPtr">用于获取 OpenGL 函数指针的委托。</param>
     public void Initialize(Func<string, nint> getProcAddressFunctionPtr)
     {
         gl = GL.GetApi(getProcAddressFunctionPtr);
@@ -91,11 +164,17 @@ public abstract partial class RenderPipeline
         }
     }
 
+    /// <summary>
+    /// 在初始化时执行管线的自定义设置逻辑，子类可重写以添加特定资源初始化。
+    /// </summary>
     public virtual void Setup()
     {
 
     }
 
+    /// <summary>
+    /// 更新所有 GPU 资源，上传新增或已标记需要更新的资源到 GPU，并清理已移除资源。
+    /// </summary>
     public void UpdateGpuResources()
     {
         foreach(var (isAdd, gpuResource) in modifyGpuResourceList)
@@ -120,20 +199,30 @@ public abstract partial class RenderPipeline
         }
     }
 
-
+    /// <summary>
+    /// 将指定的 GPU 资源添加到当前渲染管线中。
+    /// </summary>
+    /// <param name="gpuResource">要添加的 GPU 资源。</param>
     public void AddGpuResource(IGpuResource gpuResource)
     {
         modifyGpuResourceList.Add((true, gpuResource));
     }
 
+    /// <summary>
+    /// 从当前渲染管线中移除指定的 GPU 资源。
+    /// </summary>
+    /// <param name="gpuResource">要移除的 GPU 资源。</param>
     public void RemoveGpuResource(IGpuResource gpuResource)
     {
         modifyGpuResourceList.Add((false, gpuResource));
     }
 
-
     List<(bool isAdd, IGpuResource gpuResource)> modifyGpuResourceList = [];
 
+    /// <summary>
+    /// 将节点添加到当前渲染管线，并根据节点类型分类管理。
+    /// </summary>
+    /// <param name="node">要添加的场景节点。</param>
     public void AddNode(Node node)
     {
         switch (node)
@@ -161,6 +250,10 @@ public abstract partial class RenderPipeline
         }
     }
 
+    /// <summary>
+    /// 从当前渲染管线中移除指定节点，并清理其关联的 GPU 资源。
+    /// </summary>
+    /// <param name="node">要移除的场景节点。</param>
     public void RemoveNode(Node node)
     {
         switch (node)
@@ -199,6 +292,9 @@ public abstract partial class RenderPipeline
         }
     }
 
+    /// <summary>
+    /// 执行一帧的完整渲染流程，包括更新渲染目标、光源限制、GPU 资源，以及执行所有渲染通道。
+    /// </summary>
     public virtual void Render()
     {
         UpdateRenderTargetsLRU();
@@ -237,6 +333,13 @@ public abstract partial class RenderPipeline
     }
 
     private Plane[] planes = new Plane[6];
+
+    /// <summary>
+    /// 根据相机的视图和投影矩阵更新当前视锥体中可见的网格列表。
+    /// </summary>
+    /// <param name="view">视图矩阵。</param>
+    /// <param name="projection">投影矩阵。</param>
+    /// <param name="meshes">用于输出可见网格的列表。</param>
     public void UpdateVisibleMeshesInCamera(Matrix4x4 view, Matrix4x4 projection, List<Mesh> meshes)
     {
         
@@ -266,14 +369,13 @@ public abstract partial class RenderPipeline
             max = Vector3.Max(max, wpos);
         }
 
-        var cameraBoudingBox = new BoundingBox (min, max);
-
+        var cameraBoundingBox = new BoundingBox(min, max);
 
         MatrixHelper.ExtractPlanes(viewProjection, planes);
 
         this.Scene.StaticMeshOctree.Query(boundingBox =>
         {
-            if (cameraBoudingBox.Intersects(boundingBox))
+            if (cameraBoundingBox.Intersects(boundingBox))
             {
                 if (boundingBox.IsBoxInsideFrustum(planes))
                 {
@@ -284,27 +386,45 @@ public abstract partial class RenderPipeline
 
         }, meshes);
     }
+
+    /// <summary>
+    /// 在所有相机渲染之前执行的逻辑，子类可重写。
+    /// </summary>
     public virtual void BeforeRender()
     {
 
     }
 
+    /// <summary>
+    /// 在所有相机渲染之后执行的逻辑，子类可重写。
+    /// </summary>
     public virtual void AfterRender()
     {
 
     }
 
-
+    /// <summary>
+    /// 在单个相机渲染之前执行的逻辑，子类可重写。
+    /// </summary>
+    /// <param name="camera">当前要渲染的相机。</param>
     public virtual void BeforeCameraRender(Camera camera)
     {
 
-
     }
 
+    /// <summary>
+    /// 在单个相机渲染之后执行的逻辑，子类可重写。
+    /// </summary>
+    /// <param name="camera">当前已渲染完成的相机。</param>
     public virtual void AfterCameraRender(Camera camera)
     {
     }
 
+    /// <summary>
+    /// 根据网格与相机的距离对网格列表进行排序，用于透明物体的正确渲染。
+    /// </summary>
+    /// <param name="Meshes">要排序的网格列表。</param>
+    /// <param name="camera">用于计算距离的相机。</param>
     public virtual void SortMeshes(List<Mesh> Meshes, Camera camera)
     {
         var m = camera.View;
@@ -327,6 +447,10 @@ public abstract partial class RenderPipeline
     private InternalCube? _internalCube;
 
     private InternalQuad? _internalQuad;
+
+    /// <summary>
+    /// 渲染一个全屏单位立方体，常用于天空盒或环境贴图渲染。
+    /// </summary>
     public void RenderCube()
     {
         if (gl == null)
@@ -342,7 +466,9 @@ public abstract partial class RenderPipeline
         gl.DrawArrays(GLEnum.Triangles, 0, 36);
     }
 
-
+    /// <summary>
+    /// 渲染一个全屏四边形，常用于后处理全屏效果的绘制。
+    /// </summary>
     public unsafe void RenderQuad()
     {
         if (gl == null)
@@ -358,6 +484,9 @@ public abstract partial class RenderPipeline
         gl.DrawElements(GLEnum.Triangles, 6, GLEnum.UnsignedInt, (void*)0);
     }
 
+    /// <summary>
+    /// 销毁当前渲染管线及其管理的所有 GPU 资源和渲染通道。
+    /// </summary>
     public virtual void Destroy()
     {
         foreach(var gpuResource in GpuResources)
@@ -370,11 +499,11 @@ public abstract partial class RenderPipeline
 
         foreach (var pass in OnceRenderPasses)
         {
-            pass.Destory();
+            pass.Destroy();
         }
         foreach (var pass in EveryCameraRenderPasses)
         {
-            pass.Destory();
+            pass.Destroy();
         }
 
         Meshes.Clear();
@@ -384,10 +513,7 @@ public abstract partial class RenderPipeline
         PointLights.Clear();
 
         SpotLights.Clear();
-
-
     }
-
 }
 
 class InternalCube : IGpuResource
@@ -495,6 +621,7 @@ class InternalQuad : IGpuResource
         public Vector3 Location;
         public Vector2 TexCoord;
     }
+
     public void Destroy(GL gl)
     {
         if (Vao != 0)
@@ -513,6 +640,7 @@ class InternalQuad : IGpuResource
             Ebo = 0;
         }
     }
+
     public unsafe void Upload(GL gl)
     {
         QuadVertex* vertices = stackalloc QuadVertex[4] {
@@ -545,6 +673,5 @@ class InternalQuad : IGpuResource
         gl.EnableVertexAttribArray(1);
         gl.VertexAttribPointer(1, 2, GLEnum.Float, false, (uint)sizeof(QuadVertex), (void*)sizeof(Vector3));
         gl.BindVertexArray(0);
-
     }
 }

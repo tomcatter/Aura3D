@@ -5,9 +5,16 @@ using System.Numerics;
 
 namespace Aura3D.Core.Nodes;
 
+/// <summary>
+/// 网格节点，包含几何体与材质信息，支持静态网格与骨骼网格。
+/// </summary>
 public class Mesh : Node, IOctreeObject
 {
     private Material? material;
+
+    /// <summary>
+    /// 获取或设置网格的材质。
+    /// </summary>
     public Material? Material 
     { 
         get => material;
@@ -31,25 +38,35 @@ public class Mesh : Node, IOctreeObject
 
     private BoundingBox? boundingBox;
 
+    /// <summary>
+    /// 获取一个值，指示该网格是否为骨骼网格。
+    /// </summary>
     [MemberNotNullWhen(returnValue: true, nameof(Model), nameof(Skeleton))]
     public bool IsSkinnedMesh => Model != null && Model.Skeleton != null;
 
+    /// <summary>
+    /// 获取一个值，指示该网格是否为静态网格。
+    /// </summary>
     [MemberNotNullWhen(returnValue: false, nameof(Model), nameof(Skeleton))]
     public bool IsStaticMesh => !IsSkinnedMesh;
 
-    private bool _enbaleSkeletonBoudingBox = false;
-    public bool EnableSkeletonBoudingBox
+    private bool _enableSkeletonBoundingBox = false;
+
+    /// <summary>
+    /// 获取或设置一个值，指示是否启用骨骼包围盒。
+    /// </summary>
+    public bool EnableSkeletonBoundingBox
     {
-        get => _enbaleSkeletonBoudingBox;
+        get => _enableSkeletonBoundingBox;
 
         set
         {
-            if (_enbaleSkeletonBoudingBox != value)
+            if (_enableSkeletonBoundingBox != value)
             {
-                _enbaleSkeletonBoudingBox = value;
+                _enableSkeletonBoundingBox = value;
                 localBoundingBox = null;
                 boundingBox = null;
-                OnBoudingBoxChanged?.Invoke(this);
+                OnBoundingBoxChanged?.Invoke(this);
             }
         }
     }
@@ -69,6 +86,9 @@ public class Mesh : Node, IOctreeObject
         }
     }
 
+    /// <summary>
+    /// 获取或设置网格的几何体数据。
+    /// </summary>
     public Geometry? Geometry 
     { 
         get => geometry;
@@ -84,11 +104,15 @@ public class Mesh : Node, IOctreeObject
 
             boundingBox = null;
 
-            OnBoudingBoxChanged?.Invoke(this);
+            OnBoundingBoxChanged?.Invoke(this);
         }
     }
 
 
+    /// <summary>
+    /// 获取当前网格使用的 GPU 资源列表。
+    /// </summary>
+    /// <returns>GPU 资源列表。</returns>
     public override List<IGpuResource> GetGpuResources()
     {
         if (Geometry == null)
@@ -113,7 +137,14 @@ public class Mesh : Node, IOctreeObject
         return list;
     }
 
+    /// <summary>
+    /// 获取或设置该网格所属的模型。
+    /// </summary>
     public Model? Model { get; set; }
+
+    /// <summary>
+    /// 获取所属节点列表。
+    /// </summary>
     public List<object> BelongingNodes => belongingNodes;
 
     private List<object> belongingNodes = [];
@@ -123,6 +154,9 @@ public class Mesh : Node, IOctreeObject
     /// </summary>
     private BoundingBox? localBoundingBox;
 
+    /// <summary>
+    /// 获取局部空间中的边界框。
+    /// </summary>
     public BoundingBox? LocalBoundingBox
     {
         get
@@ -133,7 +167,10 @@ public class Mesh : Node, IOctreeObject
         }
     }
 
-    public event Action<IOctreeObject>? OnBoudingBoxChanged = delegate { };
+    /// <summary>
+    /// 当边界框发生变化时触发的事件。
+    /// </summary>
+    public event Action<IOctreeObject>? OnBoundingBoxChanged = delegate { };
 
     /// <summary>
     /// 更新边界框
@@ -147,9 +184,9 @@ public class Mesh : Node, IOctreeObject
             return;
         }
         
-        if (IsSkinnedMesh == false || EnableSkeletonBoudingBox == false)
+        if (IsSkinnedMesh == false || EnableSkeletonBoundingBox == false)
         {
-            calcStaticMeshBoudingBox();
+            CalcStaticMeshBoundingBox();
         }
         else
         {
@@ -170,22 +207,28 @@ public class Mesh : Node, IOctreeObject
         boundingBox = LocalBoundingBox.Transform(WorldTransform);
     }
 
+    /// <summary>
+    /// 获取骨骼数据。
+    /// </summary>
     public Skeleton? Skeleton => Model?.Skeleton;
 
+    /// <summary>
+    /// 获取动画采样器。
+    /// </summary>
     public IAnimationSampler? AnimationSampler => Model?.AnimationSampler;
 
-    private Dictionary<int, BoundingBox> SkeletalMeshBoudingBox = new ();
+    private Dictionary<int, BoundingBox> SkeletalMeshBoundingBox = new();
 
-    private List<BoundingBox> skeletalMeshBoudingBox2 = new ();
+    private List<BoundingBox> SkeletalMeshBoundingBox2 = new();
 
     protected override void OnWorldTransformChanged()
     {
         base.OnWorldTransformChanged();
         UpdateWorldBoundingBox();
-        OnBoudingBoxChanged?.Invoke(this);
+        OnBoundingBoxChanged?.Invoke(this);
     }
 
-    private void calcStaticMeshBoudingBox()
+    private void CalcStaticMeshBoundingBox()
     {
         if (Geometry == null)
             return;
@@ -215,7 +258,7 @@ public class Mesh : Node, IOctreeObject
 
         localBoundingBox = BoundingBox.CreateFromPoints(positions);
 
-        // 骨骼网格体 加大BoxBoudingBox以减少误差
+        // 骨骼网格体 加大BoundingBox以减少误差
         if (IsSkinnedMesh)
         {
             var size = localBoundingBox.Size;
@@ -234,7 +277,7 @@ public class Mesh : Node, IOctreeObject
         if (IsSkinnedMesh == false)
             return;
 
-        SkeletalMeshBoudingBox.Clear();
+        SkeletalMeshBoundingBox.Clear();
 
         Dictionary<int, List<Vector3>> JointPoints = new Dictionary<int, List<Vector3>>();
 
@@ -245,7 +288,7 @@ public class Mesh : Node, IOctreeObject
 
         var positions = mesh.Geometry.GetAttributeData(BuildInVertexAttribute.Position);
 
-        var joints = mesh.Geometry.GetAttributeData(BuildInVertexAttribute.Jonits_0);
+        var joints = mesh.Geometry.GetAttributeData(BuildInVertexAttribute.Joints_0);
 
         var weights = mesh.Geometry.GetAttributeData(BuildInVertexAttribute.Weights_0);
 
@@ -270,12 +313,15 @@ public class Mesh : Node, IOctreeObject
         foreach (var (index, points) in JointPoints)
         {
             var boundingBox = BoundingBox.CreateFromPoints(points);
-            SkeletalMeshBoudingBox.Add(index, boundingBox);
+            SkeletalMeshBoundingBox.Add(index, boundingBox);
 
-            localBoundingBox = BoundingBox.CreateMerged(SkeletalMeshBoudingBox.Values);
+            localBoundingBox = BoundingBox.CreateMerged(SkeletalMeshBoundingBox.Values);
         }
     }
 
+    /// <summary>
+    /// 在动画播放过程中计算骨骼网格的边界框。
+    /// </summary>
     public void CalcSkeletalMeshBoundingBoxInPlayAnimation()
     {
         if (IsSkinnedMesh == false)
@@ -283,17 +329,17 @@ public class Mesh : Node, IOctreeObject
         if (AnimationSampler == null)
             return;
 
-        skeletalMeshBoudingBox2.Clear();
+        SkeletalMeshBoundingBox2.Clear();
 
-        foreach (var (index, boundingBox) in SkeletalMeshBoudingBox)
+        foreach (var (index, boundingBox) in SkeletalMeshBoundingBox)
         {
             if (index < AnimationSampler.BonesTransform.Count)
             {
-                skeletalMeshBoudingBox2.Add(boundingBox.Transform(Skeleton.Bones[index].InverseWorldMatrix * AnimationSampler.BonesTransform[index]));
+                SkeletalMeshBoundingBox2.Add(boundingBox.Transform(Skeleton.Bones[index].InverseWorldMatrix * AnimationSampler.BonesTransform[index]));
             }
         }
 
-        localBoundingBox = BoundingBox.CreateMerged(skeletalMeshBoudingBox2);
+        localBoundingBox = BoundingBox.CreateMerged(SkeletalMeshBoundingBox2);
 
         boundingBox = null;
     }

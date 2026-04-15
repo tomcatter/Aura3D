@@ -535,7 +535,7 @@ public static class ModelLoader
                         case "JOINTS_0":
                             if (skeleton == null)
                                 break;
-                            geometry.SetVertexAttribute(BuildInVertexAttribute.Jonits_0, 4, primitive.GetVertexColumns().Joints0.SelectMany(v =>
+                            geometry.SetVertexAttribute(BuildInVertexAttribute.Joints_0, 4, primitive.GetVertexColumns().Joints0.SelectMany(v =>
                             {
                                 if (node.Skin == null)
                                     return new float[] { v.X, v.Y, v.Z, v.W };
@@ -549,7 +549,7 @@ public static class ModelLoader
                         case "JOINTS_1":
                             if (skeleton == null)
                                 break;
-                            geometry.SetVertexAttribute(BuildInVertexAttribute.Jonits_1, 4, primitive.GetVertexColumns().Joints1.SelectMany(v =>
+                            geometry.SetVertexAttribute(BuildInVertexAttribute.Joints_1, 4, primitive.GetVertexColumns().Joints1.SelectMany(v =>
                             {
                                 if (node.Skin == null)
                                     return new float[] { v.X, v.Y, v.Z, v.W };
