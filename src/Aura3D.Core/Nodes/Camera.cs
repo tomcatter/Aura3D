@@ -13,7 +13,7 @@ public class Camera : Node
     public Camera()
     {
         if (ControlRenderTarget == null)
-            throw new Exception("ControlRenderTarget is null, please set Camera.ControlRenderTarget before create Camera instance.");
+            throw new InvalidOperationException("ControlRenderTarget is null. Please set Camera.ControlRenderTarget before creating a Camera instance.");
         RenderTarget = ControlRenderTarget;
     }
 

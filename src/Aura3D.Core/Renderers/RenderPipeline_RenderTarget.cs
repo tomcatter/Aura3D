@@ -75,7 +75,7 @@ public  abstract partial class RenderPipeline
             return rt.Item1;
         }
 
-        throw new Exception($"RenderTarget '{name}' not found");
+        throw new KeyNotFoundException($"RenderTarget '{name}' not found. Ensure the render target is registered before use.");
     }
 
 }
@@ -92,7 +92,7 @@ public class RenderTargetConf
     public RenderTargetConf AddTexture(string name, TextureFormat internalFormat)
     {
         if (TextureNames.Contains(name))
-            throw new Exception();
+            throw new ArgumentException($"Texture '{name}' already exists in render target configuration.", nameof(name));
         Textures.Add((name, internalFormat));
         TextureNames.Add(name);
         return this;

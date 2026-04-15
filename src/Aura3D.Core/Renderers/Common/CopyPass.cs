@@ -66,7 +66,7 @@ void main()
         var inputrt = GetRenderTarget(_inputRenderTargetName, new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height));
         var source = inputrt.GetTexture(_inputRenderTargetTextureName);
         if (source == null)
-            throw new Exception();
+            throw new InvalidOperationException($"Source texture '{_inputRenderTargetTextureName}' not found in render target '{_inputRenderTargetName}'.");
         
         UseShader_Internal(null);
         ClearTextureUnit(); 

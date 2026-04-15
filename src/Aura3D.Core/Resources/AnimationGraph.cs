@@ -105,7 +105,7 @@ public class AnimationGraphNode
     public void AddNextNode(Func<IAnimationSampler, double, bool> func, AnimationGraphNode node)
     {
         if (this == node)
-            throw new Exception();
+            throw new InvalidOperationException("An animation graph node cannot reference itself as a next node.");
         NextNodes.Add((func, node));
     }
 

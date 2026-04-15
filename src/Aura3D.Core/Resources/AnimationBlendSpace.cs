@@ -39,10 +39,10 @@ public class AnimationBlendSpace : IAnimationSampler
     public void AddAnimationSampler(Vector2 point, IAnimationSampler animationSampler)
     {
         if (point.X > 1 || point.X < -1)
-            throw new Exception();
+            throw new ArgumentOutOfRangeException(nameof(point), "Animation sampler point X must be in range [-1, 1].");
 
         if (point.Y > 1 || point.Y < -1)
-            throw new Exception();
+            throw new ArgumentOutOfRangeException(nameof(point), "Animation sampler point Y must be in range [-1, 1].");
 
         animationSamplers.Add((point, animationSampler));
         weights.Add(0);
@@ -53,7 +53,7 @@ public class AnimationBlendSpace : IAnimationSampler
     public void SetAxis(float x, float y)
     {
         if (x < -1 || y < -1 || x > 1 || y > 1)
-            throw new Exception();
+            throw new ArgumentOutOfRangeException(nameof(x), "Axis values must be in range [-1, 1].");
         AxisValue.X = x;
         AxisValue.Y = y;
     }

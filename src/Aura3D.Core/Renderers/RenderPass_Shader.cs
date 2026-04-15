@@ -103,7 +103,7 @@ public partial class RenderPass
         {
             var info = gl.GetShaderInfoLog(vertex);
             Console.WriteLine(vs);
-            throw new Exception(info);
+            throw new InvalidOperationException($"Vertex shader compilation failed: {info}");
         }
 
         var fragment = gl.CreateShader(ShaderType.FragmentShader);
@@ -118,7 +118,7 @@ public partial class RenderPass
         {
             var info = gl.GetShaderInfoLog(fragment);
             Console.WriteLine(fs);
-            throw new Exception(info);
+            throw new InvalidOperationException($"Fragment shader compilation failed: {info}");
         }
 
         var programId = gl.CreateProgram();
@@ -133,7 +133,7 @@ public partial class RenderPass
         if (linkStatus == 0)
         {
             var info = gl.GetProgramInfoLog(programId);
-            throw new Exception($"Program link error: {info}");
+            throw new InvalidOperationException($"Shader program link failed: {info}");
         }
 
         gl.DeleteShader(vertex);

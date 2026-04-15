@@ -113,7 +113,7 @@ public class RenderTarget : IRenderTarget
 
         if (state != GLEnum.FramebufferComplete)
         {
-            throw new Exception("create framebuffer error: " + state);
+            throw new InvalidOperationException($"Framebuffer creation failed with status: {state}");
         }
     }
 
@@ -221,7 +221,7 @@ public static class TextureFormatExtensions
         TextureFormat.Rgb32f => PixelType.Float,
         TextureFormat.Rgba32f => PixelType.Float,
 
-        _ => throw new NotImplementedException()
+        _ => throw new ArgumentOutOfRangeException(nameof(format), $"Texture format '{format}' is not supported.")
     };
 
 
@@ -244,7 +244,7 @@ public static class TextureFormatExtensions
         TextureFormat.Rgb32f => PixelFormat.Rgb,
         TextureFormat.Rgba32f => PixelFormat.Rgba,
 
-        _ => throw new NotImplementedException()
+        _ => throw new ArgumentOutOfRangeException(nameof(format), $"Texture format '{format}' is not supported.")
 
     };
 
@@ -264,7 +264,7 @@ public static class TextureFormatExtensions
         TextureFormat.Rgba16f => InternalFormat.Rgba16f,
         TextureFormat.Rgb32f => InternalFormat.Rgb32f,
         TextureFormat.Rgba32f => InternalFormat.Rgba32f,
-        _ => throw new NotImplementedException()
+        _ => throw new ArgumentOutOfRangeException(nameof(format), $"Texture format '{format}' is not supported.")
     };
 
 
@@ -275,6 +275,6 @@ public static class TextureFormatExtensions
         TextureFormat.DepthComponent32f => GLEnum.DepthAttachment,
         TextureFormat.Depth24Stencil8 => GLEnum.DepthStencilAttachment,
         TextureFormat.Depth32fStencil8 => GLEnum.DepthStencilAttachment,
-        _ => throw new NotImplementedException()
+        _ => throw new ArgumentOutOfRangeException(nameof(format), $"Texture format '{format}' is not supported.")
     };
 }

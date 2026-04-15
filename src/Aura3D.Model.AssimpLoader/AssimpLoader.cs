@@ -417,7 +417,7 @@ public static class AssimpLoader
             }
             else
             {
-                throw new Exception("error texture");
+                throw new InvalidDataException("Embedded texture has neither compressed nor non-compressed data.");
             }
         }
         else

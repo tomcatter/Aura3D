@@ -41,7 +41,7 @@ internal class TranslucentIBLAmbientPass : RenderPass<PBRDeferredPipeline>
         BindOutPutRenderTarget(camera);
 
         if (outputRenderTargetName == null)
-            throw new Exception();
+            throw new InvalidOperationException("Output render target is not set.");
 
         var gbuffer = GetRenderTarget(gbufferRenderTargetName, new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height));
 
@@ -63,7 +63,7 @@ internal class TranslucentIBLAmbientPass : RenderPass<PBRDeferredPipeline>
     public override void AfterRender(Camera camera)
     {
         if (outputRenderTargetName == null)
-            throw new Exception();
+            throw new InvalidOperationException("Output render target is not set.");
         var outputRt = GetRenderTarget(outputRenderTargetName,
                 new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height));
 
