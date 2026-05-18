@@ -50,11 +50,20 @@ void main()
 	vec3 positionOS_Offset2 = position + outlineWidth  * 0.001 * normal;
 
 #ifdef SKINNED_MESH
+
 		
-	mat4 skinMatrix = boneWeights.x * BoneMatrices[int(boneIndices.x)];
-	skinMatrix += boneWeights.y * BoneMatrices[int(boneIndices.y)];
-	skinMatrix += boneWeights.z * BoneMatrices[int(boneIndices.z)];
-	skinMatrix += boneWeights.w * BoneMatrices[int(boneIndices.w)];
+	int idx0 = clamp(int(boneIndices.x), 0, BONE_NUMBER - 1);
+    int idx1 = clamp(int(boneIndices.y), 0, BONE_NUMBER - 1);
+    int idx2 = clamp(int(boneIndices.z), 0, BONE_NUMBER - 1);
+    int idx3 = clamp(int(boneIndices.w), 0, BONE_NUMBER - 1);
+
+	float sum = boneWeights.x + boneWeights.y + boneWeights.z + boneWeights.w;
+    vec4 w = (sum > 0.0001) ? boneWeights / sum : vec4(1.0, 0.0, 0.0, 0.0);
+
+	mat4 skinMatrix = w.x * BoneMatrices[idx0];
+    skinMatrix      += w.y * BoneMatrices[idx1];
+    skinMatrix      += w.z * BoneMatrices[idx2];
+    skinMatrix      += w.w * BoneMatrices[idx3];
 
 	vec4 worldPosition = modelMatrix * skinMatrix * vec4(positionOS, 1.0);
 	vec4 worldPosition_Offset2 = modelMatrix * skinMatrix * vec4(positionOS_Offset2, 1.0);
