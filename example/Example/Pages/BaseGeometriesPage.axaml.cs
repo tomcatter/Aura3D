@@ -39,6 +39,9 @@ public partial class BaseGeometriesPage : UserControl
         {
             return;
         }
+
+        view.AutoRequestNextFrameRendering = false;
+
         try
         {
 
@@ -93,6 +96,8 @@ public partial class BaseGeometriesPage : UserControl
         {
 
         }
+
+        view.RequestNextFrameRendering();
     }
 
     float pitch = 0;
@@ -105,6 +110,8 @@ public partial class BaseGeometriesPage : UserControl
             return;
         pitch += (float)(e.DeltaTime * 10);
         mesh.RotationDegrees = new Vector3(pitch, 0, 0);
+
+        (sender as Aura3DView)?.RequestNextFrameRendering();
     }
 
     private void Button_Click(object? sender, RoutedEventArgs e)

@@ -26,6 +26,8 @@ public abstract class Aura3DViewBase : global::Avalonia.OpenGL.Controls.OpenGlCo
 
     int fb = 0;
 
+    public bool AutoRequestNextFrameRendering { get; set; } = true;
+
     protected bool isSizeChanged = true;
     /// <summary>
     /// 初始化 <see cref="Aura3DViewBase"/> 类的新实例。
@@ -110,8 +112,11 @@ public abstract class Aura3DViewBase : global::Avalonia.OpenGL.Controls.OpenGlCo
         OnSceneUpdated(deltaTime);
         Camera.ControlRenderTarget = null;
 
+        if (AutoRequestNextFrameRendering)
+        {
+            RequestNextFrameRendering();
+        }
 
-        RequestNextFrameRendering();
     }
 
     protected override void OnOpenGlDeinit(GlInterface gl)
