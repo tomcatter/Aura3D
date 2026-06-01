@@ -89,14 +89,22 @@ public class InstancedMesh : Node, IGpuResource
 
     public override List<IGpuResource> GetGpuResources()
     {
-        if (Material == null)
+        var list = new List<IGpuResource>()
         {
-            return [this];
-        }
-        else
+            this
+        };
+
+        if (Material != null)
         {
-            return [this, Material];
+            foreach (var channel in Material.Channels)
+            {
+                if (channel.Texture != null && channel.Texture is IGpuResource gpuResource)
+                {
+                    list.Add(gpuResource);
+                }
+            }
         }
+        return list;
     }
 
     public void Destroy(GL gl)

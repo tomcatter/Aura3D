@@ -22,6 +22,10 @@ public class TestView
 
     double deltaTime = 0;
 
+    InstancedMesh? instancedMesh;
+    List<float> instanceRotationAngles = new();
+    List<float> instanceRotationSpeeds = new();
+    List<Vector3> instancePositions = new();
 
     Func<string, Stream> loadFileFun;
 
@@ -173,6 +177,48 @@ public class TestView
         //pl.Position = model.Position + model.Up * 2;
 
         //AddNode(pl);
+
+        // --- Instanced Mesh Test ---
+        var sourceMesh = new Mesh();
+        sourceMesh.Geometry = new BoxGeometry();
+        sourceMesh.Material = new Material
+        {
+            BlendMode = BlendMode.Opaque,
+            Channels = new List<Channel>
+            {
+                new Channel()
+                {
+                    Name = "BaseColor",
+                    Texture = Texture.CreateFromColor(Color.White),
+                }
+            }
+        };
+
+        instancedMesh = InstancedMesh.FromMesh(sourceMesh);
+
+        var rand = new Random(42);
+        int gridSize = 30;
+        float spacing = 2f;
+        float offset = (gridSize - 1) * spacing / 2f;
+
+        for (int x = 0; x < gridSize; x++)
+        {
+            for (int y = 0; y < gridSize; y++)
+            {
+                for (int z = 0; z < gridSize; z++)
+                {
+                    Vector3 pos = new Vector3(x * spacing - offset, y * spacing - offset, z * spacing - offset);
+                    Matrix4x4 transform = Matrix4x4.CreateTranslation(pos);
+                    instancedMesh.AddInstance(transform);
+
+                    instancePositions.Add(pos);
+                    instanceRotationAngles.Add((float)(rand.NextDouble() * Math.PI * 2));
+                    instanceRotationSpeeds.Add((float)(rand.NextDouble() * 2 - 1));
+                }
+            }
+        }
+
+        scene.AddNode(instancedMesh);
     }
 
     public void OnUpdate(double deltaTime)
@@ -201,6 +247,26 @@ public class TestView
             scene.MainCamera!.Position += scene.MainCamera.Right * 0.1F * (float)deltaTime;
         }
 
+        /*
+        // Animate instanced mesh around the camera
+        if (instancedMesh != null)
+        {
+            var camPos = scene.MainCamera!.Position;
+
+            for (int i = 0; i < instancedMesh.InstanceCount; i++)
+            {
+                instanceRotationAngles[i] += instanceRotationSpeeds[i] * (float)deltaTime;
+
+                Matrix4x4 rotation = Matrix4x4.CreateFromYawPitchRoll(
+                    instanceRotationAngles[i],
+                    instanceRotationAngles[i] * 0.7f,
+                    instanceRotationAngles[i] * 0.3f);
+
+                Matrix4x4 transform = rotation * Matrix4x4.CreateTranslation(camPos + instancePositions[i]);
+                instancedMesh.UpdateInstance(i, transform);
+            }
+        }
+        */
     }
 
 }

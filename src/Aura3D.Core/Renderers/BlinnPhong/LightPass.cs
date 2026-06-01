@@ -191,12 +191,12 @@ public class LightPass : RenderPass
     protected void SetupUniform(Material? material, Matrix4x4 view, Matrix4x4 projection)
     {
         SetupCameraUniforms(view, projection);
-        SetupDirectionalLights();
-        SetupPointLights();
-        SetupSpotLights();
 
         UniformTexture("BaseColorTexture", material?.GetTexture("BaseColor") ?? defaultBaseColor);
         UniformTexture("NormalTexture", material?.GetTexture("Normal") ?? defaultNormal);
+        SetupDirectionalLights();
+        SetupPointLights();
+        SetupSpotLights();
 
         if (material != null)
         {
