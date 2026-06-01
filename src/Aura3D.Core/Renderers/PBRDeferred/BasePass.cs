@@ -109,10 +109,6 @@ internal class BasePass : RenderPass <PBRDeferredPipeline>
 
         setupMeshUniforms(instancedMesh.Material, view, projection);
 
-        var normalMatrix = instancedMesh.WorldTransform.Inverse();
-        normalMatrix = Matrix4x4.Transpose(normalMatrix);
-        UniformMatrix4("normalMatrix", normalMatrix);
-
         base.RenderInstancedMesh(instancedMesh, view, projection);
     }
 

@@ -309,9 +309,6 @@ internal class TranslucentPass : RenderPass<PBRDeferredPipeline>
             UniformTexture("Texture_Emissive", emissive);
         }
 
-        var normalMatrix = instancedMesh.WorldTransform.Inverse();
-        normalMatrix = Matrix4x4.Transpose(normalMatrix);
-        UniformMatrix4("normalMatrix", normalMatrix);
     }
 
     public void RenderTranslucentInstancedMesh(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
