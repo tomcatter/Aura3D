@@ -18,7 +18,14 @@ uniform mat4 BoneMatrices[BONE_NUMBER];
 
 #endif
 
+#ifdef INSTANCED_MESH
+layout(location = 12) in mat4 modelMatrix;
+#endif
+
+#ifndef INSTANCED_MESH
 uniform mat4 modelMatrix;
+#endif
+
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 

@@ -235,4 +235,14 @@ public enum BuildInVertexAttribute
     /// 第四套纹理坐标
     /// </summary>
     TexCoord_3 = 11,
+
+    InstancedTransformColumn0 = 12,
+    InstancedTransformColumn1 = 13,
+    InstancedTransformColumn2 = 14,
+    InstancedTransformColumn3 = 15,
+
+    InstancedNormalTransformColumn0 = 16,
+    InstancedNormalTransformColumn1 = 17,
+    InstancedNormalTransformColumn2 = 18,
+    InstancedNormalTransformColumn3 = 19
 }

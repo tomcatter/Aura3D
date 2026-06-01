@@ -126,7 +126,7 @@ internal class PrefilteredEnvironmentMapPass : RenderPass<PBRDeferredPipeline>
         }
 
         UseShader();
-        UseShader_Internal(null);
+        UseShader_Internal();
 
         var projection = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 2, 1, 0.1f, 10f);
 

@@ -45,7 +45,7 @@ internal class DirectionalLightingPass : RenderPass
             else
                 UseShader("ENABLE_DIR_LIGHT", "ENABLE_SHADOWS", "ENBALE_DEFERRED_SHADING");
 
-            UseShader_Internal(null);
+            UseShader_Internal();
             ClearTextureUnit();
             UniformTexture(nameof(gBufferBaseColor), gBufferBaseColor);
             UniformTexture(nameof(gBufferNormalRoughness), gBufferNormalRoughness);

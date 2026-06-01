@@ -46,7 +46,7 @@ public class BackgroundPass: RenderPass
             return;
 
         ClearTextureUnit(); 
-        UseShader_Internal(null);
+        UseShader_Internal();
         if (Scene.Background.IsT0 && Scene.Background.AsT0 != null)
         {
             Matrix4x4 projection = default;

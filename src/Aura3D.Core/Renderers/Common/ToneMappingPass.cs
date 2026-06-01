@@ -95,7 +95,7 @@ void main()
 
         BindOutPutRenderTarget(camera);
 
-        UseShader_Internal(null);
+        UseShader_Internal();
         ClearTextureUnit();
         UniformTexture("u_texture", source);
         UniformFloat("u_exposure", 0.7f);

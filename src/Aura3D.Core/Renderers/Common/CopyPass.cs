@@ -77,7 +77,7 @@ void main()
         if (source == null)
             throw new InvalidOperationException($"Source texture '{_inputRenderTargetTextureName}' not found in render target '{_inputRenderTargetName}'.");
         
-        UseShader_Internal(null);
+        UseShader_Internal();
         ClearTextureUnit(); 
         UniformTexture("u_texture", source);
         RenderQuad();
