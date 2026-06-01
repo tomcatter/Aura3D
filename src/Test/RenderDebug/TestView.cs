@@ -185,7 +185,7 @@ public class TestView
         sourceMesh.Geometry = new BoxGeometry();
         sourceMesh.Material = new Material
         {
-            BlendMode = BlendMode.Opaque,
+            BlendMode = BlendMode.Translucent,
             Channels = new List<Channel>
             {
                 new Channel()
