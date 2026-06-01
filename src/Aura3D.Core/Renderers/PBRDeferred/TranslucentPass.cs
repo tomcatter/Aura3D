@@ -77,12 +77,22 @@ internal class TranslucentPass : RenderPass<PBRDeferredPipeline>
 
         foreach(var mesh in VisibleMeshesInCamera)
         {
+            if (mesh.Enable == false)
+                continue;
+
             if (IsMaterialBlendMode(mesh, BlendMode.Translucent))
             {
                 RenderTranslucentMesh(mesh, camera.View, camera.Projection);
             }
         }
 
+        foreach (var instancedMesh in renderPipeline.InstancedMeshes)
+        {
+            if (IsMaterialBlendMode(instancedMesh.Material, BlendMode.Translucent))
+            {
+                // RenderTranslucentMesh(instancedMesh.Material, camera.View, camera.Projection);
+            }
+        }
     }
 
 

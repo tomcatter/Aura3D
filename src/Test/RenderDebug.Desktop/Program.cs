@@ -3,6 +3,7 @@ using Aura3D.Core;
 using Aura3D.Core.Geometries;
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Renderers;
+using Aura3D.Core.Renderers.PBRDeferred;
 using Aura3D.Core.Resources;
 using Aura3D.Core.Scenes;
 using Aura3D.Model;
@@ -16,7 +17,7 @@ using System.Numerics;
 var window = Window.Create(WindowOptions.Default);
 ControlRenderTarget controlRenderTarget = new ControlRenderTarget();
 Camera.ControlRenderTarget = controlRenderTarget;
-Scene scene = new Scene(scene => new BlinnPhongPipeline(scene));
+Scene scene = new Scene(scene => new PBRDeferredPipeline(scene));
 
 
 TestView? testView = null;

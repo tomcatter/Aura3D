@@ -76,7 +76,9 @@ public class TestView
 
         var camera = scene.MainCamera;
 
-        camera.NearPlane = 1;
+        camera.NearPlane = 10;
+
+        camera.FarPlane = 100;
 
         var list = new List<Stream>();
         List<string> name =
@@ -109,7 +111,7 @@ public class TestView
         var (model, animations) = ModelLoader.LoadGlbModelAndAnimations(loadFileFun("Models/lion_head_1k.glb"));
 
 
-        camera.FitToBoundingBox(model.BoundingBox, 1);
+       //  camera.FitToBoundingBox(model.BoundingBox, 1);
 
 
         model.Position = model.Position;
