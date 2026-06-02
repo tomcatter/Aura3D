@@ -57,7 +57,8 @@ public class Geometry : IGpuResource, IClone<Geometry>
             Name = name,
             Location = location,
             Size = size,
-            Data = data
+            Data = data,
+            Enabled = (location <= 6)
         });
         VertexAttributeLocations.Add(location);
     }
@@ -84,6 +85,22 @@ public class Geometry : IGpuResource, IClone<Geometry>
         return GetAttributeData(attribute.ToString());
     }
 
+    /// <summary>
+    /// 开启或关闭指定顶点属性的上传。
+    /// </summary>
+    /// <param name="attribute">内置顶点属性枚举。</param>
+    /// <param name="enabled">是否启用上传。</param>
+    public void SetAttributeEnabled(BuildInVertexAttribute attribute, bool enabled)
+    {
+        var name = attribute.ToString();
+        if (VertexAttributes.TryGetValue(name, out var attr))
+        {
+            attr.Enabled = enabled;
+            VertexAttributes[name] = attr;
+            NeedsUpload = true;
+        }
+    }
+
     public void Destroy(GL gl)
     {
         foreach (var vbo in VboIds)
@@ -105,12 +122,27 @@ public class Geometry : IGpuResource, IClone<Geometry>
 
     public unsafe void Upload(GL gl)
     {
-        Vao = gl.GenVertexArray();
+        if (Vao == 0)
+        {
+            Vao = gl.GenVertexArray();
+        }
+        else
+        {
+            // 重新上传时清理旧 VBO，避免重复申请导致泄漏
+            foreach (var vbo in VboIds)
+            {
+                gl.DeleteBuffer(vbo);
+            }
+            VboIds.Clear();
+        }
 
         gl.BindVertexArray(Vao);
 
         foreach (var(_, attribute) in VertexAttributes)
         {
+            if (!attribute.Enabled)
+                continue;
+
             uint vbo = gl.GenBuffer();
             VboIds.Add(vbo);
             gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
@@ -125,7 +157,10 @@ public class Geometry : IGpuResource, IClone<Geometry>
             gl.VertexAttribPointer(attribute.Location, attribute.Size, GLEnum.Float, false, (uint)(sizeof(float) * attribute.Size), (void*)0);
         }
 
-        Ebo = gl.GenBuffer();
+        if (Ebo == 0)
+        {
+            Ebo = gl.GenBuffer();
+        }
         gl.BindBuffer(GLEnum.ElementArrayBuffer, Ebo);
 
         fixed (uint* indexPtr = CollectionsMarshal.AsSpan(Indices))
@@ -180,6 +215,10 @@ public struct VertexAttribute
     /// 属性数据
     /// </summary>
     public List<float> Data;
+    /// <summary>
+    /// 是否启用上传。默认只有 location 0~6 (Position 到 Weights_0) 为 true。
+    /// </summary>
+    public bool Enabled;
 }
 
 /// <summary>
