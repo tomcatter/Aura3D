@@ -102,14 +102,14 @@ public class InstancedMesh : Node, IGpuResource
 
     public int InstanceCount => _instanceCount;
 
-    private void EnsureDefaultAttributes()
+    private unsafe void EnsureDefaultAttributes()
     {
         if (!InstanceAttributes.ContainsKey("InstanceTransform"))
         {
             InstanceAttributes["InstanceTransform"] = new InstanceAttribute
             {
                 Name = "InstanceTransform",
-                Stride = 16 * sizeof(float),
+                Stride = sizeof(Matrix4x4),
                 Pointers = new List<InstanceAttributePointer>(DefaultTransformPointers)
             };
         }
@@ -118,7 +118,7 @@ public class InstancedMesh : Node, IGpuResource
             InstanceAttributes["InstanceNormalTransform"] = new InstanceAttribute
             {
                 Name = "InstanceNormalTransform",
-                Stride = 16 * sizeof(float),
+                Stride = sizeof(Matrix4x4),
                 Pointers = new List<InstanceAttributePointer>(DefaultNormalTransformPointers)
             };
         }
@@ -188,16 +188,16 @@ public class InstancedMesh : Node, IGpuResource
     /// 设置通用的逐实例自定义属性。
     /// </summary>
     /// <typeparam name="T">非托管值类型，每个实例的数据元素。</typeparam>
-    /// <param name="name">属性名称。</param>
-    /// <param name="location">着色器中 layout(location) 的位置。</param>
+    /// <param name="attribute">内置顶点属性枚举，同时作为名称和 location。</param>
     /// <param name="componentCount">分量数：1=float, 2=vec2, 3=vec3, 4=vec4。</param>
     /// <param name="data">逐实例数据列表，数量必须与 <see cref="InstanceCount"/> 一致。</param>
-    public unsafe void SetInstanceAttribute<T>(string name, int location, int componentCount, IReadOnlyList<T> data)
+    public unsafe void SetInstanceAttribute<T>(BuildInVertexAttribute attribute, int componentCount, IReadOnlyList<T> data)
         where T : unmanaged
     {
         if (data.Count != _instanceCount)
             throw new ArgumentException($"数据数量 ({data.Count}) 与实例数量 ({_instanceCount}) 不一致。");
 
+        var name = attribute.ToString();
         int elementSize = sizeof(T) / sizeof(float);
         int stride = componentCount * sizeof(float);
         var floatData = new List<float>(data.Count * componentCount);
@@ -218,7 +218,7 @@ public class InstancedMesh : Node, IGpuResource
             Data = floatData,
             Pointers = new List<InstanceAttributePointer>
             {
-                new() { Location = (uint)location, ComponentCount = componentCount, Offset = 0 }
+                new() { Location = (uint)attribute, ComponentCount = componentCount, Offset = 0 }
             }
         };
 
