@@ -252,7 +252,7 @@ void main() {
         gl.Disable(EnableCap.Blend); 
         UseShader();
         ClearTextureUnit();
-        UseShader_Internal(null);
+        UseShader_Internal();
         UniformTexture("u_texture", rt.GetTexture(inputRenderTargetTextureName));
         UniformVector2("u_textureSize", new Vector2(rt.GetTexture(inputRenderTargetTextureName).Width, rt.GetTexture(inputRenderTargetTextureName).Height));
         RenderQuad();

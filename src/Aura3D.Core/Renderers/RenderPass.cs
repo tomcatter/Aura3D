@@ -3,8 +3,6 @@ using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
 using Aura3D.Core.Scenes;
 using Silk.NET.OpenGLES;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
 
@@ -168,6 +166,22 @@ public partial class RenderPass
         gl.DrawElements(GLEnum.Triangles, (uint)mesh.Geometry.IndicesCount, GLEnum.UnsignedInt, (void*)0);
     }
 
+
+    public unsafe virtual void RenderInstancedMesh(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        gl.BindVertexArray(instancedMesh.Vao);
+
+        if (instancedMesh.Material != null && instancedMesh.Material.HasShader == true)
+        {
+            var callback = instancedMesh.Material.GetShaderPassParametersCallback(ShaderName);
+            if (callback != null)
+            {
+                callback(this);
+            }
+        }
+        gl.DrawElementsInstanced(GLEnum.Triangles, (uint)instancedMesh.IndicesCount, GLEnum.UnsignedInt, (void*)0, (uint)instancedMesh.InstanceCount);
+    }
+
     /// <summary>
     /// 根据筛选条件渲染场景中所有符合条件的网格。
     /// </summary>
@@ -291,16 +305,34 @@ public partial class RenderPass
         }
     }
 
+    public void RenderInstancedMeshes(Func<InstancedMesh, bool> filter, Matrix4x4 view, Matrix4x4 projection)
+    {
+        foreach (var instancedMesh in renderPipeline.InstancedMeshes)
+        {
+            if (instancedMesh.Enable == false)
+                continue;
+            if (!filter(instancedMesh))
+                continue;
+            UseShader_Internal(instancedMesh.Material);
+            RenderInstancedMesh(instancedMesh, view, projection);
+        }
+    }
+
     protected bool IsMaterialBlendMode(Mesh mesh, BlendMode mode)
     {
-        if (mesh.Material == null)
+        return IsMaterialBlendMode(mesh.Material, mode);
+    }
+
+    protected bool IsMaterialBlendMode(Material? material, BlendMode mode)
+    {
+        if (material == null)
             if (mode == BlendMode.Opaque)
                 return true;
             else
                 return false;
         else
         {
-            if (mesh.Material.BlendMode == mode)
+            if (material.BlendMode == mode)
                 return true;
             return false;
         }

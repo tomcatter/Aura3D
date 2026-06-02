@@ -94,6 +94,17 @@ internal class TranslucentIBLAmbientPass : RenderPass<PBRDeferredPipeline>
                 RenderTranslucentMesh(mesh, camera.View, camera.Projection);
             }
         }
+
+        foreach (var instancedMesh in renderPipeline.InstancedMeshes)
+        {
+            if (instancedMesh.Enable == false)
+                continue;
+
+            if (IsMaterialBlendMode(instancedMesh.Material, BlendMode.Translucent))
+            {
+                RenderTranslucentInstancedMesh(instancedMesh, camera.View, camera.Projection);
+            }
+        }
     }
 
     Camera camera;
@@ -183,5 +194,55 @@ internal class TranslucentIBLAmbientPass : RenderPass<PBRDeferredPipeline>
                 }
             }
         }
+    }
+
+    private void SetupUpInstancedMeshUniforms(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        var u_brdfLUT = RenderPipeline.BrdfLutTexture;
+
+        var irradianceMap = camera.GetPipelineGpuResource<CubeRenderTarget>("IrradianceMap");
+        var u_irradianceMap = irradianceMap.GetTexture(0);
+
+        var perfilteredEnvMap = camera.GetPipelineGpuResource<CubeRenderTarget>("PrefilteredEnvironmentMap");
+        var u_prefilterMap = perfilteredEnvMap.GetTexture(0);
+
+        UniformMatrix4("viewMatrix", view);
+        UniformMatrix4("projectionMatrix", projection);
+
+        UniformVector3("u_cameraPos", camera.WorldTransform.Translation);
+
+        ClearTextureUnit();
+        {
+            var baseColor = instancedMesh.Material?.GetTexture("BaseColor") ?? defaultBaseColor;
+            UniformTexture("Texture_BaseColor", baseColor);
+
+            var normal = instancedMesh.Material?.GetTexture("Normal") ?? defaultNormal;
+            UniformTexture("Texture_Normal", normal);
+
+            var metallicRoughness = instancedMesh.Material?.GetTexture("MetallicRoughness") ?? defaultMetallicRoughness;
+            UniformTexture("Texture_MetallicRoughness", metallicRoughness);
+
+            var occlusion = instancedMesh.Material?.GetTexture("Occlusion") ?? defaultOcclusion;
+            UniformTexture("Texture_Occlusion", occlusion);
+
+            var emissive = instancedMesh.Material?.GetTexture("Emissive") ?? defaultEmissive;
+            UniformTexture("Texture_Emissive", emissive);
+
+            UniformTexture(nameof(u_brdfLUT), u_brdfLUT);
+
+            UniformTextureCubeMap(nameof(u_irradianceMap), u_irradianceMap);
+
+            UniformTextureCubeMap(nameof(u_prefilterMap), u_prefilterMap);
+        }
+
+        UniformFloat("u_max_mipmap", mipmap);
+    }
+
+    public void RenderTranslucentInstancedMesh(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        UseShader("BLENDMODE_TRANSLUCENT", "INSTANCED_MESH");
+        UseShader_Internal(instancedMesh.Material);
+        SetupUpInstancedMeshUniforms(instancedMesh, view, projection);
+        base.RenderInstancedMesh(instancedMesh, view, projection);
     }
 }

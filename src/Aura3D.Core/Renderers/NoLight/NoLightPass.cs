@@ -1,4 +1,4 @@
-    using Aura3D.Core.Nodes;
+using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
 using System.Drawing;
@@ -55,6 +55,14 @@ public class NoLightPass : RenderPass
         RenderVisibleMeshesInCamera(mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Masked), camera.View, camera.Projection);
 
 
+
+        UseShader("INSTANCED_MESH");
+        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
+
+        UseShader("INSTANCED_MESH", "BLENDMODE_MASKED");
+        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
+
+
         gl.Enable(EnableCap.Blend);
         gl.BlendFunc(GLEnum.SrcAlpha, GLEnum.OneMinusSrcAlpha);
         gl.DepthMask(false);
@@ -66,6 +74,10 @@ public class NoLightPass : RenderPass
         UseShader("SKINNED_MESH", "BLENDMODE_TRANSLUCENT");
         RenderVisibleMeshesInCamera(mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Translucent), camera.View, camera.Projection);
 
+
+        UseShader("INSTANCED_MESH", "BLENDMODE_TRANSLUCENT");
+        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Translucent), camera.View, camera.Projection);
+
     }
 
     public override void AfterRender(Camera camera)
@@ -73,18 +85,17 @@ public class NoLightPass : RenderPass
         
     }
 
-    public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
+    private void setupUniform(Material? material, Matrix4x4 view, Matrix4x4 projection)
     {
-        ClearTextureUnit();
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
 
-        UniformTexture("BaseColorTexture", mesh.Material?.GetTexture("BaseColor") ?? defaultBaseColor);
+        UniformTexture("BaseColorTexture", material?.GetTexture("BaseColor") ?? defaultBaseColor);
 
-        if (mesh.Material != null)
+        if (material != null)
         {
 
-            if (mesh.Material.DoubleSided == false)
+            if (material.DoubleSided == false)
             {
                 gl.Enable(EnableCap.CullFace);
             }
@@ -93,7 +104,7 @@ public class NoLightPass : RenderPass
                 gl.Disable(EnableCap.CullFace);
             }
 
-            UniformFloat("alphaCutoff", mesh.Material.AlphaCutoff);
+            UniformFloat("alphaCutoff", material.AlphaCutoff);
         }
         else
         {
@@ -101,6 +112,22 @@ public class NoLightPass : RenderPass
             UniformFloat("alphaCutoff", 0.0f);
 
         }
+    }
+
+    public override void RenderInstancedMesh(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        ClearTextureUnit();
+
+        setupUniform(instancedMesh.Material, view, projection);
+
+        base.RenderInstancedMesh(instancedMesh, view, projection);
+    }
+
+    public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        ClearTextureUnit();
+
+        setupUniform(mesh.Material, view, projection);
 
         if (mesh.IsSkinnedMesh)
         {

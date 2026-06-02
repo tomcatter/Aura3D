@@ -181,23 +181,26 @@ public class ShadowMapPass : RenderPass
         RenderMeshesFromList(meshes, mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Opaque), view, projection);
 
 
-
         UseShader("SKINNED_MESH", "BLENDMODE_MASKED");
         RenderMeshesFromList(meshes, mesh => mesh.IsSkinnedMesh && IsMaterialBlendMode(mesh, BlendMode.Masked), view, projection);
 
+        UseShader("INSTANCED_MESH");
+        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), view, projection);
+
+        UseShader("INSTANCED_MESH", "BLENDMODE_MASKED");
+        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), view, projection);
     }
 
-    public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
+    void setupUniform(Material? material, Matrix4x4 view, Matrix4x4 projection)
     {
-
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
 
-        if (mesh.Material != null && mesh.Material.BlendMode == BlendMode.Masked)
+        if (material != null && material.BlendMode == BlendMode.Masked)
         {
             ClearTextureUnit();
 
-            foreach(var channel in mesh.Material.Channels)
+            foreach (var channel in material.Channels)
             {
                 if (channel.Name == "BaseColor")
                 {
@@ -208,9 +211,23 @@ public class ShadowMapPass : RenderPass
 
                 }
             }
-            UniformFloat("alphaCutoff", mesh.Material.AlphaCutoff);
+            UniformFloat("alphaCutoff", material.AlphaCutoff);
         }
+    }
 
+    public override void RenderInstancedMesh(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        ClearTextureUnit();
+
+        setupUniform(instancedMesh.Material, view, projection);
+
+        base.RenderInstancedMesh(instancedMesh, view, projection);
+    }
+    public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        ClearTextureUnit();
+
+        setupUniform(mesh.Material, view, projection);
 
         if (mesh.IsSkinnedMesh)
         {

@@ -132,7 +132,7 @@ void main()
 
             gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            UseShader_Internal(null);
+            UseShader_Internal();
 
             UniformMatrix4(nameof(projection), projection);
             

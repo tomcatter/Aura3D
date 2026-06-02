@@ -73,7 +73,7 @@ void main() {
         var u_prefilterMap = perfilteredEnvMap.GetTexture(0);
 
         UseShader("ENBALE_DEFERRED_SHADING");
-        UseShader_Internal(null);
+        UseShader_Internal();
         ClearTextureUnit();
 
         UniformTexture(nameof(gBufferBaseColor), gBufferBaseColor);

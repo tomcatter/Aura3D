@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:a="https://sunce.tech/aura3d"
+             x:Class="Example.Pages.InstancedRenderingPage">
+    <DockPanel>
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="10" Spacing="10">
+            <TextBlock Text="Grid Size:" VerticalAlignment="Center"/>
+            <TextBox x:Name="gridSizeTextBox" Text="10" Width="60"/>
+            <Button Content="Build" Click="BuildButton_Click"/>
+            <TextBlock x:Name="fpsText" Text="Instances: -- | FPS: --" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <a:Aura3DView x:Name="aura3Dview"
+                       SceneInitialized="Aura3DView_SceneInitialized"
+                       SceneUpdated="Aura3DView_SceneUpdated"/>
+    </DockPanel>
+</UserControl>

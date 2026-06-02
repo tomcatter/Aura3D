@@ -80,7 +80,7 @@ void main()
 
         UseShader();
         ClearTextureUnit();
-        UseShader_Internal(null);
+        UseShader_Internal();
         UniformTexture("colorTexture", rt.GetTexture(inputRenderTargetTextureName));
         RenderQuad();
 

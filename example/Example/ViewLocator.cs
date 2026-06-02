@@ -19,6 +19,7 @@ public class ViewLocator : IDataTemplate
             AnimationGraphViewModel animationGraphViewModel => new AnimationGraphPage(),
             PbrViewModel pbrViewModel => new PbrPipelinePage(),
             CelShadingViewModel celShadingViewModel => new CelShadingPage(),
+            InstancedRenderingViewModel instancedRenderingViewModel => new InstancedRenderingPage(),
             _ => new TextBlock() { Text = "NotFound" }
         };
     }

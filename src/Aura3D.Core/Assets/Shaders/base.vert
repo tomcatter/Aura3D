@@ -14,20 +14,27 @@ layout(location = 1) in vec2 texCoord;
 layout(location = 2) in vec3 normal;
 layout(location = 3) in vec3 tangent;
 layout(location = 4) in vec3 bitangent;
-
-#ifdef SKINNED_MESH
 layout(location = 5) in vec4 boneIndices;
 layout(location = 6) in vec4 boneWeights;
 
-uniform mat4 BoneMatrices[BONE_NUMBER];
 
+#ifdef INSTANCED_MESH
+layout(location = 7) in mat4 modelMatrix;
+layout(location = 11) in mat4 normalMatrix;
 #endif
 
+
+#ifdef SKINNED_MESH
+uniform mat4 BoneMatrices[BONE_NUMBER];
+#endif
+
+#ifndef INSTANCED_MESH
 uniform mat4 modelMatrix;
+uniform mat4 normalMatrix;
+#endif
+
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
-
-uniform mat4 normalMatrix;
 
 out vec2 vTexCoord;
 out vec3 vFragPosition;
