@@ -56,6 +56,10 @@ namespace Example.ViewModels
                     ViewModel = new InstancedRenderingViewModel()
                 },
                 new MenuViewModel {
+                    Title = "HISM (Hierarchical Instanced)",
+                    ViewModel = new HISMViewModel()
+                },
+                new MenuViewModel {
                     Title = "Point Cloud",
                     ViewModel = new PointCloudViewModel()
                 },

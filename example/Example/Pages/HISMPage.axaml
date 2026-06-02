@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:a="https://sunce.tech/aura3d"
+             x:Class="Example.Pages.HISMPage">
+    <DockPanel>
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="10" Spacing="10">
+            <TextBlock Text="Grid:" VerticalAlignment="Center"/>
+            <TextBox x:Name="gridSizeTextBox" Text="100" Width="50"/>
+            <TextBlock Text="Spacing:" VerticalAlignment="Center"/>
+            <TextBox x:Name="spacingTextBox" Text="3" Width="40"/>
+            <TextBlock Text="Max/Group:" VerticalAlignment="Center"/>
+            <TextBox x:Name="maxPerGroupTextBox" Text="64" Width="40"/>
+            <TextBlock Text="Depth:" VerticalAlignment="Center"/>
+            <TextBox x:Name="maxDepthTextBox" Text="6" Width="30"/>
+            <Button Content="Build" Click="BuildButton_Click"/>
+            <Separator Width="1" Background="Gray" Margin="10,0"/>
+            <CheckBox x:Name="cullingCheckbox" IsChecked="True" VerticalAlignment="Center"
+                      Content="Frustum Culling"/>
+            <Separator Width="1" Background="Gray" Margin="10,0"/>
+            <TextBlock x:Name="statsText" Text="Instances: -- | Groups: -- | FPS: --" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <a:Aura3DView x:Name="aura3Dview"
+                       SceneInitialized="Aura3DView_SceneInitialized"
+                       SceneUpdated="Aura3DView_SceneUpdated"/>
+    </DockPanel>
+</UserControl>
