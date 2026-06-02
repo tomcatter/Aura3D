@@ -15,81 +15,12 @@ namespace Example.Pages;
 public partial class RoboticArmPage : UserControl
 {
 
-    double deltaTime = 0;
-    bool _isPressed = false;
+    private CameraController _cameraController;
 
-    Avalonia.Point point = new(-1, -1);
     public RoboticArmPage()
     {
         InitializeComponent();
-
-        aura3Dview.Focusable = true;
-        this.aura3Dview.PointerPressed += (s, e) =>
-        {
-            if (model == null)
-                return;
-            _isPressed = true;
-            point = new(-1, -1);
-
-        };
-
-        this.aura3Dview.PointerReleased += (s, e) =>
-        {
-            _isPressed = false;
-            point = new(-1, -1);
-        };
-
-        this.aura3Dview.PointerMoved += (s, e) =>
-        {
-            if (_isPressed == false)
-                return;
-            if (e.Pointer.IsPrimary == false)
-                return;
-
-            var newPosition = e.GetCurrentPoint(this).Position;
-            if (point.X != -1 && point.Y != -1)
-            {
-                var delta = newPosition - point;
-
-                if (aura3Dview.MainCamera != null)
-                {
-
-                    aura3Dview.MainCamera!.RotationDegrees = new Vector3(
-                        (float)(aura3Dview.MainCamera.RotationDegrees.X + (float)delta.Y * (float)deltaTime * 20),
-                        (float)(aura3Dview.MainCamera.RotationDegrees.Y + (float)delta.X * (float)deltaTime * 20f), 0);
-                }
-
-            }
-            point = newPosition;
-
-        };
-
-        this.aura3Dview.KeyDown += (s, e) =>
-        {
-
-            if (model == null)
-                return;
-            if (aura3Dview.MainCamera == null)
-            {
-                return;
-            }
-            if (e.Key == Avalonia.Input.Key.W)
-            {
-                aura3Dview.MainCamera!.Position += aura3Dview.MainCamera.Forward * (float)deltaTime;
-            }
-            else if (e.Key == Avalonia.Input.Key.S)
-            {
-                aura3Dview.MainCamera!.Position -= aura3Dview.MainCamera.Forward * (float)deltaTime;
-            }
-            else if (e.Key == Avalonia.Input.Key.A)
-            {
-                aura3Dview.MainCamera!.Position -= aura3Dview.MainCamera.Right * (float)deltaTime;
-            }
-            else if (e.Key == Avalonia.Input.Key.D)
-            {
-                aura3Dview.MainCamera!.Position += aura3Dview.MainCamera.Right * (float)deltaTime;
-            }
-        };
+        _cameraController = new CameraController(aura3Dview);
     }
 
     Node item1 = new Node();
@@ -150,10 +81,8 @@ public partial class RoboticArmPage : UserControl
         return degree;
     }
 
-    float yaw = 0;
     private void Aura3DView_SceneUpdated(object? sender, UpdateRoutedEventArgs e)
     {
-        deltaTime = e.DeltaTime;
     }
 
 

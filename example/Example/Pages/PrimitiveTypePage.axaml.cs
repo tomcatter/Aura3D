@@ -14,9 +14,7 @@ namespace Example.Pages;
 
 public partial class PrimitiveTypePage : UserControl
 {
-    bool _isPressed = false;
-    Avalonia.Point point = new(-1, -1);
-    double deltaTime = 0;
+    private CameraController _cameraController;
     bool _autoRotate = true;
     float _rotationAngle = 0;
 
@@ -61,53 +59,10 @@ public partial class PrimitiveTypePage : UserControl
     public PrimitiveTypePage()
     {
         InitializeComponent();
-        aura3Dview.Focusable = true;
+        _cameraController = new CameraController(aura3Dview);
 
-        this.aura3Dview.PointerPressed += (s, e) =>
-        {
-            _isPressed = true;
-            point = new(-1, -1);
-        };
-
-        this.aura3Dview.PointerReleased += (s, e) =>
-        {
-            _isPressed = false;
-            point = new(-1, -1);
-        };
-
-        this.aura3Dview.PointerMoved += (s, e) =>
-        {
-            if (_isPressed == false) return;
-            if (e.Pointer.IsPrimary == false) return;
-
-            var newPosition = e.GetCurrentPoint(this).Position;
-            if (point.X != -1 && point.Y != -1)
-            {
-                var delta = newPosition - point;
-                if (aura3Dview.MainCamera != null)
-                {
-                    _autoRotate = false;
-                    aura3Dview.MainCamera!.RotationDegrees = new Vector3(
-                        (float)(aura3Dview.MainCamera.RotationDegrees.X + (float)delta.Y * (float)deltaTime * 20),
-                        (float)(aura3Dview.MainCamera.RotationDegrees.Y + (float)delta.X * (float)deltaTime * 20f), 0);
-                }
-            }
-            point = newPosition;
-        };
-
-        this.aura3Dview.KeyDown += (s, e) =>
-        {
-            if (aura3Dview.MainCamera == null) return;
-
-            if (e.Key == Avalonia.Input.Key.W)
-                aura3Dview.MainCamera!.Position += aura3Dview.MainCamera.Forward * (float)deltaTime;
-            else if (e.Key == Avalonia.Input.Key.S)
-                aura3Dview.MainCamera!.Position -= aura3Dview.MainCamera.Forward * (float)deltaTime;
-            else if (e.Key == Avalonia.Input.Key.A)
-                aura3Dview.MainCamera!.Position -= aura3Dview.MainCamera.Right * (float)deltaTime;
-            else if (e.Key == Avalonia.Input.Key.D)
-                aura3Dview.MainCamera!.Position += aura3Dview.MainCamera.Right * (float)deltaTime;
-        };
+        // 用户手动旋转时停止自动旋转
+        aura3Dview.PointerPressed += (s, e) => { _autoRotate = false; };
     }
 
     private void Aura3DView_SceneInitialized(object? sender, InitializedRoutedEventArgs e)
@@ -247,17 +202,17 @@ public partial class PrimitiveTypePage : UserControl
 
     private void Aura3DView_SceneUpdated(object? sender, UpdateRoutedEventArgs args)
     {
-        deltaTime = args.DeltaTime;
+        var dt = args.DeltaTime;
 
         if (deltaTimes.Count >= 10)
             deltaTimes.RemoveAt(0);
-        deltaTimes.Add(deltaTime);
+        deltaTimes.Add(dt);
         var avgDt = deltaTimes.Average();
         infoText.Text = $"FPS: {(int)(1 / avgDt)}";
 
         if (_autoRotate && container != null)
         {
-            _rotationAngle += (float)deltaTime * 20;
+            _rotationAngle += (float)dt * 20;
             container.RotationDegrees = new Vector3(0, _rotationAngle, 0);
         }
 
