@@ -122,15 +122,19 @@ public class Material : IClone<Material>, IGpuResource
             };
             material.Channels.Add(newChannel);
         }
-        foreach(var vs in _vertexShaders)
+        material._vertexShaders = [];
+        foreach (var vs in _vertexShaders)
         {
             material._vertexShaders.Add(vs.Key, vs.Value);
         }
+
+        material._fragmentShaders = [];
         foreach (var fs in _fragmentShaders)
         {
             material._fragmentShaders.Add(fs.Key, fs.Value);
         }
 
+        material.ShaderPassParametersCallbacks = [];
         foreach (var callback in ShaderPassParametersCallbacks)
         {
             material.ShaderPassParametersCallbacks.Add(callback.Key, callback.Value);
