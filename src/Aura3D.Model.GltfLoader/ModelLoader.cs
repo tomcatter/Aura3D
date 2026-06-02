@@ -17,10 +17,10 @@ namespace Aura3D.Core;
 public static class ModelLoader
 {
 
-    static Dictionary<Type, Type> _materialExtensionTypes = new();
-    public static void RegisterMaterialExtensions<T1, T2>() where T1: JsonSerializable where T2: MaterialExtensionLoaderBase
+    static Dictionary<Type, Func<MaterialExtensionLoaderBase>> _materialExtensionFactories = new();
+    public static void RegisterMaterialExtension<TExtension>(Func<MaterialExtensionLoaderBase> factory) where TExtension: JsonSerializable
     {
-        _materialExtensionTypes[typeof(T1)] = typeof(T2);
+        _materialExtensionFactories[typeof(TExtension)] = factory;
     }
 
     public static (Model, List<Resources.Animation>) LoadGlbModelAndAnimations(Stream stream)
@@ -310,11 +310,11 @@ public static class ModelLoader
     {
         foreach (var ext in material.Extensions)
         {
-            _materialExtensionTypes.TryGetValue(ext.GetType(), out Type extType);
-            if (extType == null)
+            _materialExtensionFactories.TryGetValue(ext.GetType(), out var factory);
+            if (factory == null)
                 continue;
 
-            MaterialExtensionLoaderBase materialExtension = (MaterialExtensionLoaderBase)Activator.CreateInstance(extType);
+            MaterialExtensionLoaderBase materialExtension = factory();
             if (materialExtension == null)
                 continue;
 
@@ -621,7 +621,7 @@ public static class ModelLoader
                 geometry.SetVertexAttribute(BuildInVertexAttribute.TexCoord_2, 2, columns.TexCoords2.SelectMany(v => new float[] { v.X, v.Y }).ToList());
                 break;
             case "TEXCOORD_3":
-                geometry.SetVertexAttribute(BuildInVertexAttribute.TexCoord_0, 2, columns.TexCoords3.SelectMany(v => new float[] { v.X, v.Y }).ToList());
+                geometry.SetVertexAttribute(BuildInVertexAttribute.TexCoord_3, 2, columns.TexCoords3.SelectMany(v => new float[] { v.X, v.Y }).ToList());
                 break;
             case "NORMAL":
                 geometry.SetVertexAttribute(BuildInVertexAttribute.Normal, 3, columns.Normals.SelectMany(v => new float[] { v.X, v.Y, v.Z }).ToList());

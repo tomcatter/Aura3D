@@ -1,4 +1,3 @@
-using SharpGLTF.Schema2;
 using System.Numerics;
 
 namespace Aura3D.Core.Resources;

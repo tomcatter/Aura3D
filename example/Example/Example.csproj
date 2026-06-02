@@ -23,6 +23,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Aura3D.Avalonia\Aura3D.Avalonia.csproj" />
     <ProjectReference Include="..\..\src\Aura3D.Model.AssimpLoader\Aura3D.Model.AssimpLoader.csproj" />
+    <ProjectReference Include="..\..\src\Aura3D.Model.GltfLoader\Aura3D.Model.GltfLoader.csproj" />
+    <ProjectReference Include="..\..\src\Aura3D.Renderer.CelShading\Aura3D.Renderer.CelShading.csproj" />
+    <ProjectReference Include="..\..\src\Aura3D.Renderer.PBR\Aura3D.Renderer.PBR.csproj" />
   </ItemGroup>
 
   <ItemGroup>

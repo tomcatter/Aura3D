@@ -6,7 +6,7 @@
              xmlns:u="https://irihi.tech/ursa"
              xmlns:vm="clr-namespace:Example.ViewModels"
              x:DataType="vm:BlendSpaceViewModel"
-             xmlns:acr="clr-namespace:Aura3D.Core.Renderers.PBRDeferred;assembly=Aura3D.Core"
+             xmlns:acr="clr-namespace:Aura3D.Core.Renderers.PBRDeferred;assembly=Aura3D.Renderer.PBR"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Example.Pages.BlendSpacePage">
   <DockPanel>

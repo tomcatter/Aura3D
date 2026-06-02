@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="OneOf" />
-    <PackageReference Include="SharpGLTF.Toolkit" />
     <PackageReference Include="Silk.NET.OpenGLES" />
     <PackageReference Include="StbImageSharp" />
   </ItemGroup>
