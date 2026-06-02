@@ -1,8 +1,10 @@
 using Aura3D.Core.Nodes;
 using Silk.NET.OpenGLES;
 using Aura3D.Core.Resources;
+using Aura3D.Core;
+using Aura3D.Core.Renderers;
 
-namespace Aura3D.Core.Renderers;
+namespace Aura3D.Pipeline.CelShading;
 
 public class CelTranslucentPass : LightPass
 {

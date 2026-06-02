@@ -1,16 +1,11 @@
 using Aura3D.Core;
 using Aura3D.Core.Nodes;
-using Aura3D.Core.Renderers;
-using Aura3D.Core.Renderers.PBRDeferred;
 using Aura3D.Core.Scenes;
-using Java.Nio.FileNio.Attributes;
+using Aura3D.Pipeline.PBR;
 using RenderDebug;
 using Silk.NET.Input;
 using Silk.NET.Windowing;
 using Silk.NET.Windowing.Sdl.Android;
-using System.Drawing;
-using System.Numerics;
-using static Java.Util.Jar.Attributes;
 
 namespace Example.Test.Android;
 

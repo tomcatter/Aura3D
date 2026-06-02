@@ -4,12 +4,11 @@ using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
 using System.Drawing;
 using System.Numerics;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using Texture = Aura3D.Core.Resources.Texture;
+using Aura3D.Core;
+using Aura3D.Core.Renderers;
 
-
-namespace Aura3D.Core.Renderers;
+namespace Aura3D.Pipeline.CelShading;
 
 public enum CelShadingTextureBit
 {

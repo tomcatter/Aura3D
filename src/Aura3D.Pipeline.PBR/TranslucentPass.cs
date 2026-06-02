@@ -4,20 +4,22 @@ using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
 using System.Drawing;
 using System.Numerics;
+using Aura3D.Core.Renderers;
+using Aura3D.Core;
 
-namespace Aura3D.Core.Renderers.PBRDeferred;
+namespace Aura3D.Pipeline.PBR;
 
 internal class TranslucentPass : RenderPass<PBRDeferredPipeline>
 {
-    Resources.Texture defaultBaseColor => RenderPipeline.DefaultBaseColor;
+    Core.Resources.Texture defaultBaseColor => RenderPipeline.DefaultBaseColor;
 
-    Resources.Texture defaultNormal => RenderPipeline.DefaultNormal;
+    Core.Resources.Texture defaultNormal => RenderPipeline.DefaultNormal;
 
-    Resources.Texture defaultMetallicRoughness => RenderPipeline.DefaultMetallicRoughness;
+    Core.Resources.Texture defaultMetallicRoughness => RenderPipeline.DefaultMetallicRoughness;
 
-    Resources.Texture defaultEmissive => RenderPipeline.DefaultEmissive;
+    Core.Resources.Texture defaultEmissive => RenderPipeline.DefaultEmissive;
 
-    Resources.Texture defaultOcclusion => RenderPipeline.DefaultOcclusion;
+    Core.Resources.Texture defaultOcclusion => RenderPipeline.DefaultOcclusion;
     string GbufferRenderTargetName;
     public TranslucentPass(RenderPipeline renderPipeline, string gbufferRendertarget) : base(renderPipeline)
     {

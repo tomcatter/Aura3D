@@ -3,8 +3,10 @@ using Silk.NET.OpenGLES;
 using System.Numerics;
 using Aura3D.Core.Resources;
 using Aura3D.Core.Math;
+using Aura3D.Core;
+using Aura3D.Core.Renderers;
 
-namespace Aura3D.Core.Renderers;
+namespace Aura3D.Pipeline.CelShading;
 
 public class OutlinePass : RenderPass
 {

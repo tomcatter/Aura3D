@@ -3,12 +3,10 @@ using Aura3D.Core.Geometries;
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
 using Aura3D.Core.Scenes;
-using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Numerics;
 using Silk.NET.Input;
+using Aura3D.Model;
 
 namespace RenderDebug;
 

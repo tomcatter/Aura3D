@@ -1,8 +1,11 @@
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Scenes;
 using Silk.NET.OpenGLES;
+using Aura3D.Core;
+using Aura3D.Core.Renderers;
 
-namespace Aura3D.Core.Renderers;
+namespace Aura3D.Pipeline.CelShading;
+
 public class CelShadingPipeline : RenderPipeline, IRenderPipelineCreateInstance
 {
 

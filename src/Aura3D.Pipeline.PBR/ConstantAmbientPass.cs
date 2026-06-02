@@ -2,8 +2,10 @@
 using Aura3D.Core.Nodes;
 using Silk.NET.OpenGLES;
 using System.Drawing;
+using Aura3D.Core.Renderers;
+using Aura3D.Core;
 
-namespace Aura3D.Core.Renderers.PBRDeferred;
+namespace Aura3D.Pipeline.PBR;
 
 internal class ConstantAmbientPass : RenderPass
 {

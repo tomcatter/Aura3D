@@ -23,8 +23,17 @@ jobs:
     - name: Pack Aura3D.Avalonia
       run: dotnet pack src/Aura3D.Avalonia -o packages -c Release
       
+    - name: Pack Aura3D.Pipeline.CelShading
+      run: dotnet pack src/Aura3D.Pipeline.CelShading -o packages -c Release
+
+    - name: Pack Aura3D.Pipeline.PBR
+      run: dotnet pack src/Aura3D.Pipeline.PBR -o packages -c Release
+    
     - name: Pack Aura3D.Model.AssimpLoader
       run: dotnet pack src/Aura3D.Model.AssimpLoader -o packages -c Release
+
+    - name: Pack Aura3D.Model.GltfLoader
+      run: dotnet pack src/Aura3D.Model.GltfLoader -o packages -c Release
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4

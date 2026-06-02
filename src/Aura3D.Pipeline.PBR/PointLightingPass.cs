@@ -6,8 +6,10 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Aura3D.Core.Renderers;
+using Aura3D.Core;
 
-namespace Aura3D.Core.Renderers.PBRDeferred;
+namespace Aura3D.Pipeline.PBR;
 
 public class PointLightingPass : RenderPass
 {

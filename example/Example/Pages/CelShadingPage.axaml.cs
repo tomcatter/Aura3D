@@ -1,6 +1,7 @@
 using Aura3D.Avalonia;
 using Aura3D.Core;
 using Aura3D.Core.Nodes;
+using Aura3D.Model;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;

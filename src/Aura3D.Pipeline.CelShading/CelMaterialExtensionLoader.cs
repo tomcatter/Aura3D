@@ -8,10 +8,11 @@ using System.Numerics;
 using JSONREADER = System.Text.Json.Utf8JsonReader;
 using JSONWRITER = System.Text.Json.Utf8JsonWriter;
 using System.Runtime.CompilerServices;
+using Aura3D.Model;
+using Aura3D.Core;
+using Aura3D.Core.Renderers;
 
-
-
-namespace Aura3D.Core;
+namespace Aura3D.Pipeline.CelShading;
 
 public class CelMaterialExtensionLoader : MaterialExtensionLoaderBase
 {
@@ -24,7 +25,7 @@ public class CelMaterialExtensionLoader : MaterialExtensionLoaderBase
         ModelLoader.RegisterMaterialExtension<Aura3DCelExtraProperties>(() => new CelMaterialExtensionLoader());
     }
 
-    private static Resources.Texture? GetTextureAtIndex(ModelRoot modelRoot, int index)
+    private static Core.Resources.Texture? GetTextureAtIndex(ModelRoot modelRoot, int index)
     {
         if (index < 0 || index > modelRoot.LogicalTextures.Count)
             return null;
@@ -35,7 +36,7 @@ public class CelMaterialExtensionLoader : MaterialExtensionLoaderBase
         return tex;
     }
 
-    public override void LoadMaterialExtension(ModelRoot modelRoot, SharpGLTF.Schema2.Material modelMaterial, Resources.Material logicMaterial)
+    public override void LoadMaterialExtension(ModelRoot modelRoot, SharpGLTF.Schema2.Material modelMaterial, Core.Resources.Material logicMaterial)
     {
         // Read Texture
         foreach (var extension in modelMaterial.Extensions)
@@ -56,7 +57,7 @@ public class CelMaterialExtensionLoader : MaterialExtensionLoaderBase
                     ++i;
                     continue;
                 }
-                var channel = new Resources.Channel();
+                var channel = new Core.Resources.Channel();
                 channel.Texture = texture;
                 channel.Name = texturesNames[i];
                 logicMaterial.Channels.Add(channel);
@@ -155,7 +156,7 @@ public class Aura3DCelExtraProperties : ExtraProperties
 
     #endregion
 
-    private static Resources.Texture? GetTextureAtIndex(ModelRoot modelRoot, int index)
+    private static Core.Resources.Texture? GetTextureAtIndex(ModelRoot modelRoot, int index)
     {
         if (index < 0 || index > modelRoot.LogicalTextures.Count)
             return null;
@@ -166,9 +167,9 @@ public class Aura3DCelExtraProperties : ExtraProperties
         return tex;
     }
 
-    public static List<Resources.Channel> GetExtenionChannels(ModelRoot modelRoot, SharpGLTF.Schema2.Material material)
+    public static List<Core.Resources.Channel> GetExtenionChannels(ModelRoot modelRoot, SharpGLTF.Schema2.Material material)
     {
-        List<Resources.Channel> channels = new List<Resources.Channel>();
+        List<Core.Resources.Channel> channels = new List<Core.Resources.Channel>();
         foreach (var extension in material.Extensions)
         {
             if (extension.GetType() == typeof(Aura3DCelExtraProperties))
@@ -186,7 +187,7 @@ public class Aura3DCelExtraProperties : ExtraProperties
                         ++i;
                         continue;
                     }
-                    var channel = new Resources.Channel();
+                    var channel = new Core.Resources.Channel();
                     channel.Texture = texture;
                     channel.Name = texturesNames[i];
                     channels.Add(channel);

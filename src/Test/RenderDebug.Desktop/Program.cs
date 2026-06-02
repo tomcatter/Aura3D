@@ -1,18 +1,11 @@
 // See https://aka.ms/new-console-template for more information
 using Aura3D.Core;
-using Aura3D.Core.Geometries;
 using Aura3D.Core.Nodes;
-using Aura3D.Core.Renderers;
-using Aura3D.Core.Renderers.PBRDeferred;
-using Aura3D.Core.Resources;
 using Aura3D.Core.Scenes;
-using Aura3D.Model;
+using Aura3D.Pipeline.PBR;
 using RenderDebug;
 using Silk.NET.Input;
 using Silk.NET.Windowing;
-using System.ComponentModel.DataAnnotations;
-using System.Drawing;
-using System.Numerics;
 
 var window = Window.Create(WindowOptions.Default);
 ControlRenderTarget controlRenderTarget = new ControlRenderTarget();

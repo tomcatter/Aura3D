@@ -8,23 +8,25 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Aura3D.Core.Renderers;
+using Aura3D.Core;
 
-namespace Aura3D.Core.Renderers.PBRDeferred;
+namespace Aura3D.Pipeline.PBR;
 
 public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
 {
 
-    public Resources.Texture DefaultBaseColor { get; private set; }
+    public Texture DefaultBaseColor { get; private set; }
 
-    public Resources.Texture DefaultNormal { get; private set; }
+    public Texture DefaultNormal { get; private set; }
 
-    public Resources.Texture DefaultMetallicRoughness { get; private set; }
+    public Texture DefaultMetallicRoughness { get; private set; }
 
-    public Resources.Texture DefaultEmissive { get; private set; }
+    public Texture DefaultEmissive { get; private set; }
 
-    public Resources.Texture DefaultOcclusion { get; private set; }
+    public Texture DefaultOcclusion { get; private set; }
 
-    public Resources.CubeTexture DefaultIblAmbientCubeTexture
+    public CubeTexture DefaultIblAmbientCubeTexture
     {
         get
         {
@@ -45,7 +47,7 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
         }
     }
 
-    private Resources.CubeTexture? _defaultIblAmbientCubeTexture = null;
+    private CubeTexture? _defaultIblAmbientCubeTexture = null;
 
     public Texture BrdfLutTexture;
 
@@ -53,7 +55,7 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
     {
         using (var ms = new MemoryStream(ShaderResource.lut))
         {
-            BrdfLutTexture = TextureLoader.LoadHdrTexture(ms);
+            BrdfLutTexture = Core.TextureLoader.LoadHdrTexture(ms);
         }
 
         var shadowPass = new ShadowMapPass(this);
@@ -112,18 +114,18 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
             .AddTexture("Color", TextureFormat.Rgba32f)
             .SetDepthTexture(TextureFormat.DepthComponent16);
 
-        DefaultBaseColor = Resources.Texture.CreateFromColor(Color.White);
+        DefaultBaseColor = Texture.CreateFromColor(Color.White);
 
 
-        DefaultNormal = Resources.Texture.CreateFromColor(Color.FromArgb(128, 128, 255));
+        DefaultNormal = Texture.CreateFromColor(Color.FromArgb(128, 128, 255));
 
 
-        DefaultMetallicRoughness = Resources.Texture.CreateFromColor(Color.FromArgb(0, 127, 0));
+        DefaultMetallicRoughness = Texture.CreateFromColor(Color.FromArgb(0, 127, 0));
 
 
-        DefaultEmissive = Resources.Texture.CreateFromColor(Color.Black);
+        DefaultEmissive = Texture.CreateFromColor(Color.Black);
 
-        DefaultOcclusion = Resources.Texture.CreateFromColor(Color.White);
+        DefaultOcclusion = Texture.CreateFromColor(Color.White);
 
     }
 

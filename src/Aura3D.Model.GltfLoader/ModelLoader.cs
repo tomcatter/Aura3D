@@ -12,7 +12,7 @@ using Texture = Aura3D.Core.Resources.Texture;
 using TextureWrapMode = Aura3D.Core.Resources.TextureWrapMode;
 
 
-namespace Aura3D.Core;
+namespace Aura3D.Model;
 
 public static class ModelLoader
 {
@@ -23,7 +23,7 @@ public static class ModelLoader
         _materialExtensionFactories[typeof(TExtension)] = factory;
     }
 
-    public static (Model, List<Resources.Animation>) LoadGlbModelAndAnimations(Stream stream)
+    public static (Core.Nodes.Model, List<Core.Resources.Animation>) LoadGlbModelAndAnimations(Stream stream)
     {
         var modelRoot = ModelRoot.ReadGLB(stream, new ReadSettings { Validation = SharpGLTF.Validation.ValidationMode.TryFix });
 
@@ -42,7 +42,7 @@ public static class ModelLoader
     }
 
 
-    public static (Model, List<Resources.Animation>) LoadGlbModelAndAnimations(string filePath)
+    public static (Core.Nodes.Model, List<Core.Resources.Animation>) LoadGlbModelAndAnimations(string filePath)
     {
         using (var stream = File.OpenRead(filePath))
         {
@@ -50,7 +50,7 @@ public static class ModelLoader
         }
     }
 
-    public static (Model, List<Resources.Animation>) LoadGltfModelAndAnimations(string filePath)
+    public static (Core.Nodes.Model, List<Core.Resources.Animation>) LoadGltfModelAndAnimations(string filePath)
     {
         var modelRoot = ModelRoot.Load(filePath);
 
@@ -68,7 +68,7 @@ public static class ModelLoader
         return (model, animations);
     }
 
-    public static Model LoadGlbModel(Stream stream)
+    public static Core.Nodes.Model LoadGlbModel(Stream stream)
     {
         
         var modelRoot = ModelRoot.ReadGLB(stream, new ReadSettings { Validation = SharpGLTF.Validation.ValidationMode.TryFix });
@@ -77,7 +77,7 @@ public static class ModelLoader
     }
 
 
-    public static Model LoadGlbModel(string filePath)
+    public static Core.Nodes.Model LoadGlbModel(string filePath)
     {
         using (var stream = File.OpenRead(filePath))
         {
@@ -85,7 +85,7 @@ public static class ModelLoader
         }
     }
 
-    public static Model LoadGltfModel(string filePath)
+    public static Core.Nodes.Model LoadGltfModel(string filePath)
     {
         var modelRoot = ModelRoot.Load(filePath);
 
@@ -93,7 +93,7 @@ public static class ModelLoader
 
     }
 
-    public static List<Resources.Animation> LoadGltfAnimations(string filePath, Skeleton? skeleton = null)
+    public static List<Core.Resources.Animation> LoadGltfAnimations(string filePath, Skeleton? skeleton = null)
     {
         var modelRoot = ModelRoot.Load(filePath);
 
@@ -114,14 +114,14 @@ public static class ModelLoader
     }
 
 
-    public static List<Resources.Animation> LoadGlbAnimations(string filePath, Skeleton? skeleton = null)
+    public static List<Core.Resources.Animation> LoadGlbAnimations(string filePath, Skeleton? skeleton = null)
     {
         using (var stream = File.OpenRead(filePath))
         {
             return LoadGlbAnimations(stream);
         }
     }
-    public static List<Resources.Animation> LoadGlbAnimations(Stream stream, Skeleton? skeleton = null)
+    public static List<Core.Resources.Animation> LoadGlbAnimations(Stream stream, Skeleton? skeleton = null)
     {
         var modelRoot = ModelRoot.ReadGLB(stream, new ReadSettings { Validation = SharpGLTF.Validation.ValidationMode.TryFix });
 
@@ -143,13 +143,13 @@ public static class ModelLoader
     }
 
 
-    private static List<Resources.Animation> processAnimations(ModelRoot modelRoot)
+    private static List<Core.Resources.Animation> processAnimations(ModelRoot modelRoot)
     {
-        var list = new List<Resources.Animation>();
+        var list = new List<Core.Resources.Animation>();
 
         foreach (var gltfAnimation in modelRoot.LogicalAnimations)
         {
-            var animation = new Resources.Animation();
+            var animation = new Core.Resources.Animation();
 
             animation.Name = gltfAnimation.Name;
             animation.Duration = gltfAnimation.Duration;
@@ -158,7 +158,7 @@ public static class ModelLoader
             {
                 if (animation.Channels.TryGetValue(channel.TargetNode.Name, out var animationChannel) == false)
                 {
-                    animationChannel = new Resources.AnimationChannel();
+                    animationChannel = new Core.Resources.AnimationChannel();
                     animation.Channels[channel.TargetNode.Name] = animationChannel;
 
                 }
@@ -220,10 +220,10 @@ public static class ModelLoader
 
         return list;
     }
-    private static Model processModelRoot(ModelRoot modelRoot)
+    private static Core.Nodes.Model processModelRoot(ModelRoot modelRoot)
     {
         var skeleton = processSkeleton(modelRoot);
-        var model = new Model
+        var model = new Core.Nodes.Model
         {
             Skeleton = skeleton,
             Name = modelRoot.DefaultScene.Name
@@ -254,7 +254,7 @@ public static class ModelLoader
             if (texture.PrimaryImage != null)
             {
                 var data = texture.PrimaryImage.Content.Content;
-                var tex = TextureLoader.LoadTexture(data.ToArray());
+                var tex = Core.TextureLoader.LoadTexture(data.ToArray());
                 if (tex != null)
                 {
                     textureMap[texture] = tex;

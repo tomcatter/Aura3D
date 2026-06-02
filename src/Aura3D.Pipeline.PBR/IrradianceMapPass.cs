@@ -2,8 +2,9 @@
 using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
 using System.Numerics;
+using Aura3D.Core.Renderers;
 
-namespace Aura3D.Core.Renderers.PBRDeferred;
+namespace Aura3D.Pipeline.PBR;
 
 internal class IrradianceMapPass : RenderPass<PBRDeferredPipeline>
 {
