@@ -19,6 +19,9 @@ namespace Example.Desktop
                 .WithInterFont()
                 .LogToTrace()
                 // .With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Wgl] })
-                ;
+                .With(new AvaloniaNativePlatformOptions()
+                {
+                    RenderingMode = [AvaloniaNativeRenderingMode.OpenGl]
+                });
     }
 }
