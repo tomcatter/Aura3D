@@ -57,10 +57,10 @@ public class NoLightPass : RenderPass
 
 
         UseShader("INSTANCED_MESH");
-        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
+        RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
 
         UseShader("INSTANCED_MESH", "BLENDMODE_MASKED");
-        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
+        RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
 
 
         gl.Enable(EnableCap.Blend);
@@ -76,7 +76,7 @@ public class NoLightPass : RenderPass
 
 
         UseShader("INSTANCED_MESH", "BLENDMODE_TRANSLUCENT");
-        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Translucent), camera.View, camera.Projection);
+        RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Translucent), camera.View, camera.Projection);
 
     }
 

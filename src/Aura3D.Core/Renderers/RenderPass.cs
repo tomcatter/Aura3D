@@ -342,6 +342,29 @@ public partial class RenderPass
         }
     }
 
+    /// <summary>
+    /// 渲染当前相机视锥体中可见且符合条件的实例化网格（支持视锥体剔除）。
+    /// </summary>
+    /// <param name="filter">实例化网格筛选条件。</param>
+    /// <param name="view">视图矩阵。</param>
+    /// <param name="projection">投影矩阵。</param>
+    public void RenderVisibleInstancedMeshesInCamera(Func<InstancedMesh, bool> filter, Matrix4x4 view, Matrix4x4 projection)
+    {
+        var list = EnableFrustumCulling
+            ? renderPipeline.VisibleInstancedMeshesInCamera
+            : renderPipeline.InstancedMeshes;
+
+        foreach (var instancedMesh in list)
+        {
+            if (instancedMesh.Enable == false)
+                continue;
+            if (!filter(instancedMesh))
+                continue;
+            UseShader_Internal(instancedMesh.Material);
+            RenderInstancedMesh(instancedMesh, view, projection);
+        }
+    }
+
     protected bool IsMaterialBlendMode(Mesh mesh, BlendMode mode)
     {
         return IsMaterialBlendMode(mesh.Material, mode);

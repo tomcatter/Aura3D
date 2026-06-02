@@ -130,6 +130,11 @@ public abstract partial class RenderPipeline
     /// </summary>
     public List<Mesh> VisibleMeshesInCamera = [];
 
+    /// <summary>
+    /// 当前相机视锥体中可见的实例化网格列表。
+    /// </summary>
+    public List<InstancedMesh> VisibleInstancedMeshesInCamera = [];
+
     protected void RegisterRenderPass(RenderPass renderPass, RenderPassGroup renderPassGroup)
     {
         if (renderPassGroup == RenderPassGroup.EveryCamera)
@@ -324,10 +329,17 @@ public abstract partial class RenderPipeline
                 continue;
 
             VisibleMeshesInCamera.Clear();
+            VisibleInstancedMeshesInCamera.Clear();
             if (EnableFrustumCulling == true)
+            {
                 UpdateVisibleMeshesInCamera(camera.View, camera.Projection, VisibleMeshesInCamera);
+                UpdateVisibleInstancedMeshesInCamera(camera.View, camera.Projection, VisibleInstancedMeshesInCamera);
+            }
             else
+            {
                 VisibleMeshesInCamera.AddRange(Meshes);
+                VisibleInstancedMeshesInCamera.AddRange(InstancedMeshes);
+            }
 
             BeforeCameraRender(camera);
             foreach (var renderPass in EveryCameraRenderPasses)
@@ -394,6 +406,37 @@ public abstract partial class RenderPipeline
             return false;
 
         }, meshes);
+    }
+
+    /// <summary>
+    /// 根据相机的视图和投影矩阵更新当前视锥体中可见的实例化网格列表。
+    /// 对每个 InstancedMesh 的合并世界包围盒进行视锥体测试，
+    /// 同时尊重每个 InstancedMesh 自身的 <see cref="InstancedMesh.EnableFrustumCulling"/> 设置。
+    /// </summary>
+    /// <param name="view">视图矩阵。</param>
+    /// <param name="projection">投影矩阵。</param>
+    /// <param name="instancedMeshes">用于输出可见实例化网格的列表。</param>
+    public void UpdateVisibleInstancedMeshesInCamera(Matrix4x4 view, Matrix4x4 projection, List<InstancedMesh> instancedMeshes)
+    {
+        var viewProjection = view * projection;
+        MatrixHelper.ExtractPlanes(viewProjection, planes);
+
+        foreach (var im in InstancedMeshes)
+        {
+            if (im.Enable == false)
+                continue;
+            if (im.InstanceCount == 0)
+                continue;
+            if (im.EnableFrustumCulling == false)
+            {
+                instancedMeshes.Add(im);
+                continue;
+            }
+            if (im.IsInsideFrustum(planes))
+            {
+                instancedMeshes.Add(im);
+            }
+        }
     }
 
     /// <summary>

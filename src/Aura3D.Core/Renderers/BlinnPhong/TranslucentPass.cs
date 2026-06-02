@@ -41,6 +41,6 @@ public class TranslucentPass : LightPass
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Translucent) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
 
         UseShader("INSTANCED_MESH", "BLENDMODE_TRANSLUCENT");
-        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Translucent), camera.View, camera.Projection);
+        RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Translucent), camera.View, camera.Projection);
     }
 }

@@ -66,10 +66,10 @@ internal class BasePass : RenderPass <PBRDeferredPipeline>
 
 
         UseShader("INSTANCED_MESH");
-        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
+        RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
 
         UseShader("INSTANCED_MESH", "BLENDMODE_MASKED");
-        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
+        RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
     }
 
     public override void AfterRender(Camera camera)

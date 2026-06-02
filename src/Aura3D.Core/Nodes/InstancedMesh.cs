@@ -11,6 +11,11 @@ namespace Aura3D.Core.Nodes;
 /// </summary>
 public class InstancedMesh : Node, IGpuResource
 {
+    /// <summary>
+    /// 添加一个新的实例。
+    /// </summary>
+    /// <param name="transform">实例的模型变换矩阵。</param>
+    /// <returns>新实例的索引。</returns>
     public unsafe int AddInstance(Matrix4x4 transform)
     {
         EnsureDefaultAttributes();
@@ -32,6 +37,10 @@ public class InstancedMesh : Node, IGpuResource
 
         _instanceCount++;
         NeedsUpload = true;
+
+        // 更新每个实例的世界包围盒
+        UpdateInstanceWorldBoundingBox(_instanceCount - 1, transform);
+
         return _instanceCount - 1;
     }
 
@@ -45,6 +54,13 @@ public class InstancedMesh : Node, IGpuResource
         }
         _instanceCount--;
         NeedsUpload = true;
+
+        // 移除对应的世界包围盒
+        if (index < _instanceWorldBoundingBoxes.Count)
+        {
+            _instanceWorldBoundingBoxes.RemoveAt(index);
+            _worldBoundingBoxDirty = true;
+        }
     }
 
     public unsafe void UpdateInstance(int index, Matrix4x4 transform)
@@ -65,6 +81,9 @@ public class InstancedMesh : Node, IGpuResource
             normalAttr.Data[baseIndex + i] = p[i];
 
         NeedsUpload = true;
+
+        // 更新每个实例的世界包围盒
+        UpdateInstanceWorldBoundingBox(index, transform);
     }
 
     private int _instanceCount;
@@ -111,6 +130,151 @@ public class InstancedMesh : Node, IGpuResource
     /// 顶点数量，委托给内部 Geometry。
     /// </summary>
     public int VertexCount => geometry.VertexCount;
+
+    /// <summary>
+    /// 获取或设置是否对此 InstancedMesh 启用视锥体剔除。
+    /// </summary>
+    public bool EnableFrustumCulling { get; set; } = true;
+
+    /// <summary>
+    /// 获取局部空间中的包围盒（从源几何体计算，不考虑实例变换）。
+    /// 如果几何体没有位置数据，则为 <c>null</c>。
+    /// </summary>
+    public BoundingBox? LocalBoundingBox
+    {
+        get
+        {
+            if (_localBoundingBox == null && _localBoundingBoxComputed == false)
+            {
+                _localBoundingBoxComputed = true;
+                _localBoundingBox = ComputeLocalBoundingBox();
+            }
+            return _localBoundingBox;
+        }
+    }
+
+    private BoundingBox? _localBoundingBox;
+    private bool _localBoundingBoxComputed;
+
+    /// <summary>
+    /// 每个实例的世界空间包围盒缓存。
+    /// </summary>
+    private readonly List<BoundingBox?> _instanceWorldBoundingBoxes = new();
+
+    /// <summary>
+    /// 世界包围盒脏标记，当实例发生增删改时设为 true。
+    /// </summary>
+    private bool _worldBoundingBoxDirty = true;
+
+    /// <summary>
+    /// 合并后的世界空间包围盒缓存。
+    /// </summary>
+    private BoundingBox? _cachedWorldBoundingBox;
+
+    /// <summary>
+    /// 获取合并后的世界空间包围盒（所有实例包围盒的并集）。
+    /// 如果没有实例或没有局部包围盒，则为 <c>null</c>。
+    /// </summary>
+    public BoundingBox? WorldBoundingBox
+    {
+        get
+        {
+            if (_worldBoundingBoxDirty)
+            {
+                _cachedWorldBoundingBox = ComputeWorldBoundingBox();
+                _worldBoundingBoxDirty = false;
+            }
+            return _cachedWorldBoundingBox;
+        }
+    }
+
+    /// <summary>
+    /// 获取指定索引实例的世界空间包围盒。
+    /// </summary>
+    /// <param name="index">实例索引。</param>
+    /// <returns>该实例的世界包围盒；如果索引无效或没有局部包围盒则为 <c>null</c>。</returns>
+    public BoundingBox? GetInstanceWorldBoundingBox(int index)
+    {
+        if (index < 0 || index >= _instanceWorldBoundingBoxes.Count)
+            return null;
+        return _instanceWorldBoundingBoxes[index];
+    }
+
+    /// <summary>
+    /// 测试此 InstancedMesh 的合并世界包围盒是否在给定视锥体内。
+    /// </summary>
+    /// <param name="planes">视锥体的 6 个裁剪平面。</param>
+    /// <returns>如果在视锥体内或相交则为 <c>true</c>，完全在外则为 <c>false</c>。</returns>
+    public bool IsInsideFrustum(Span<Plane> planes)
+    {
+        var wbb = WorldBoundingBox;
+        if (wbb == null)
+            return true; // 没有包围盒时默认可见
+        return wbb.IsBoxInsideFrustum(planes);
+    }
+
+    /// <summary>
+    /// 从源几何体的 Position 属性计算局部包围盒。
+    /// </summary>
+    private BoundingBox? ComputeLocalBoundingBox()
+    {
+        var positionData = geometry.GetAttributeData(BuildInVertexAttribute.Position);
+        if (positionData == null || positionData.Count < 3)
+            return null;
+
+        var positions = new List<Vector3>(positionData.Count / 3);
+        for (int i = 0; i + 2 < positionData.Count; i += 3)
+        {
+            positions.Add(new Vector3(positionData[i], positionData[i + 1], positionData[i + 2]));
+        }
+
+        if (positions.Count == 0)
+            return null;
+
+        return BoundingBox.CreateFromPoints(positions);
+    }
+
+    /// <summary>
+    /// 更新指定实例的世界包围盒。
+    /// </summary>
+    private void UpdateInstanceWorldBoundingBox(int index, Matrix4x4 transform)
+    {
+        var localBB = LocalBoundingBox;
+        if (localBB == null)
+        {
+            // 确保列表长度与实例数一致
+            while (_instanceWorldBoundingBoxes.Count <= index)
+                _instanceWorldBoundingBoxes.Add(null);
+            return;
+        }
+
+        var worldBB = localBB.Transform(transform);
+
+        if (index < _instanceWorldBoundingBoxes.Count)
+            _instanceWorldBoundingBoxes[index] = worldBB;
+        else
+            _instanceWorldBoundingBoxes.Add(worldBB);
+
+        _worldBoundingBoxDirty = true;
+    }
+
+    /// <summary>
+    /// 计算合并后的世界空间包围盒（所有实例包围盒的并集）。
+    /// </summary>
+    private BoundingBox? ComputeWorldBoundingBox()
+    {
+        var validBoxes = new List<BoundingBox>();
+        foreach (var bb in _instanceWorldBoundingBoxes)
+        {
+            if (bb != null)
+                validBoxes.Add(bb);
+        }
+
+        if (validBoxes.Count == 0)
+            return null;
+
+        return BoundingBox.CreateMerged(validBoxes);
+    }
 
     private unsafe void EnsureDefaultAttributes()
     {

@@ -97,7 +97,11 @@ internal class TranslucentIBLAmbientPass : RenderPass<PBRDeferredPipeline>
             }
         }
 
-        foreach (var instancedMesh in renderPipeline.InstancedMeshes)
+        var instancedMeshes = EnableFrustumCulling
+            ? renderPipeline.VisibleInstancedMeshesInCamera
+            : renderPipeline.InstancedMeshes;
+
+        foreach (var instancedMesh in instancedMeshes)
         {
             if (instancedMesh.Enable == false)
                 continue;

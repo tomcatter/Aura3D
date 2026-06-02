@@ -182,10 +182,10 @@ public class LightPass : RenderPass
 
 
         UseShader("INSTANCED_MESH");
-        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
+        RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
 
         UseShader("INSTANCED_MESH", "BLENDMODE_MASKED");
-        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
+        RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
     }
 
     protected void SetupUniform(Material? material, Matrix4x4 view, Matrix4x4 projection)
