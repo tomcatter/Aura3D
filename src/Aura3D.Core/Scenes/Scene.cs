@@ -204,8 +204,13 @@ public class Scene
     public void Update(double deltaTime)
     {
 
-        foreach(var node in Nodes)
+        // 快照避免节点 Update 过程中增删子节点导致集合被修改
+        var nodesSnapshot = new List<Node>(_nodes);
+        foreach(var node in nodesSnapshot)
         {
+            if (!_nodes.Contains(node))
+                continue;
+
             node.Update(deltaTime);
             if (node is Mesh mesh)
             {

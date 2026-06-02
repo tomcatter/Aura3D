@@ -25,6 +25,9 @@ public partial class HISMPage : UserControl
     int currentMaxPerGroup = 64;
     int currentMaxDepth = 6;
 
+    // 存储所有实例的原始位置，供 Random Move 使用
+    List<Vector3> _instancePositions = new();
+
     List<double> deltaTimes = new();
 
     public HISMPage()
@@ -154,6 +157,7 @@ public partial class HISMPage : UserControl
         var transforms = new List<Matrix4x4>(total);
         float offset = (currentGridSize - 1) * currentSpacing / 2f;
         var rand = new Random(42);
+        _instancePositions.Clear();
 
         for (int x = 0; x < currentGridSize; x++)
         {
@@ -171,6 +175,7 @@ public partial class HISMPage : UserControl
                     * Matrix4x4.CreateTranslation(px, py, pz);
 
                 transforms.Add(t);
+                _instancePositions.Add(new Vector3(px, py, pz));
             }
         }
 
@@ -194,6 +199,7 @@ public partial class HISMPage : UserControl
         if (_group != null)
         {
             statsText.Text = $"Instances: {_group.InstanceCount} | Groups: {_group.GroupCount} | FPS: {(int)(1 / avgDt)}";
+            updateStatsText.Text = $"InPlace: {_group.InPlaceUpdateCount} | Rebuild: {_group.RebuildCount}";
         }
 
         (sender as Aura3DView)?.RequestNextFrameRendering();
@@ -210,5 +216,57 @@ public partial class HISMPage : UserControl
         if (int.TryParse(maxDepthTextBox.Text?.Trim(), out int md) && md > 0)
             currentMaxDepth = md;
         BuildScene(aura3Dview);
+    }
+
+    /// <summary>
+    /// 将指定索引的实例移动到用户输入的位置。
+    /// 同区域内 → InPlace 计数 +1；跨区域 → Rebuild 计数 +1。
+    /// </summary>
+    private void UpdateInstanceButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_group == null || _group.InstanceCount == 0) return;
+
+        if (!int.TryParse(instanceIndexTextBox.Text?.Trim(), out int idx)) return;
+        if (idx < 0 || idx >= _group.InstanceCount) return;
+
+        if (!float.TryParse(posXTextBox.Text?.Trim(), out float px)) return;
+        if (!float.TryParse(posYTextBox.Text?.Trim(), out float py)) return;
+        if (!float.TryParse(posZTextBox.Text?.Trim(), out float pz)) return;
+
+        var newPos = new Vector3(px, py, pz);
+        var transform = Matrix4x4.CreateScale(1f)
+            * Matrix4x4.CreateTranslation(newPos);
+
+        _group.UpdateInstance(idx, transform);
+    }
+
+    /// <summary>
+    /// 随机挑选一个实例，将其移动到距离原始位置较远的地方（很可能跨分组）。
+    /// </summary>
+    private void RandomMoveButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_group == null || _group.InstanceCount == 0) return;
+        if (_instancePositions.Count == 0) return;
+
+        var rand = new Random();
+        int idx = rand.Next(_group.InstanceCount);
+
+        // 在整体范围外随机偏移，增加跨分组概率
+        float range = currentGridSize * currentSpacing;
+        float farX = (float)((rand.NextDouble() - 0.5) * range * 3);
+        float farZ = (float)((rand.NextDouble() - 0.5) * range * 3);
+        float farY = (float)(rand.NextDouble() * 20);
+
+        var newPos = new Vector3(farX, farY, farZ);
+        var transform = Matrix4x4.CreateScale(1f)
+            * Matrix4x4.CreateTranslation(newPos);
+
+        _group.UpdateInstance(idx, transform);
+
+        // 更新 UI 显示当前操作的实例
+        instanceIndexTextBox.Text = idx.ToString();
+        posXTextBox.Text = farX.ToString("F1");
+        posYTextBox.Text = farY.ToString("F1");
+        posZTextBox.Text = farZ.ToString("F1");
     }
 }

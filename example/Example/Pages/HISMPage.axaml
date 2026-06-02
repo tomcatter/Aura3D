@@ -3,7 +3,8 @@
              xmlns:a="https://sunce.tech/aura3d"
              x:Class="Example.Pages.HISMPage">
     <DockPanel>
-        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="10" Spacing="10">
+        <!-- 行1: 构建参数 -->
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="10,10,10,0" Spacing="10">
             <TextBlock Text="Grid:" VerticalAlignment="Center"/>
             <TextBox x:Name="gridSizeTextBox" Text="100" Width="50"/>
             <TextBlock Text="Spacing:" VerticalAlignment="Center"/>
@@ -18,6 +19,21 @@
                       Content="Frustum Culling"/>
             <Separator Width="1" Background="Gray" Margin="10,0"/>
             <TextBlock x:Name="statsText" Text="Instances: -- | Groups: -- | FPS: --" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- 行2: 实例更新 -->
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="10,5,10,5" Spacing="8">
+            <TextBlock Text="Idx:" VerticalAlignment="Center"/>
+            <TextBox x:Name="instanceIndexTextBox" Text="0" Width="45"/>
+            <TextBlock Text="X:" VerticalAlignment="Center"/>
+            <TextBox x:Name="posXTextBox" Text="0" Width="45"/>
+            <TextBlock Text="Y:" VerticalAlignment="Center"/>
+            <TextBox x:Name="posYTextBox" Text="0" Width="45"/>
+            <TextBlock Text="Z:" VerticalAlignment="Center"/>
+            <TextBox x:Name="posZTextBox" Text="0" Width="45"/>
+            <Button Content="Update" Click="UpdateInstanceButton_Click"/>
+            <Button Content="Random Move" Click="RandomMoveButton_Click"/>
+            <TextBlock x:Name="updateStatsText" Text="InPlace: 0 | Rebuild: 0" VerticalAlignment="Center"/>
         </StackPanel>
 
         <a:Aura3DView x:Name="aura3Dview"
