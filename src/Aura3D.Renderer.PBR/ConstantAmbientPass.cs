@@ -44,7 +44,7 @@ internal class ConstantAmbientPass : RenderPass
         var depthTexture = rt.DepthStencilTexture;
 
         UseShader("ENBALE_DEFERRED_SHADING");
-        UseShader_Internal(null);
+        UseShader_Internal();
         ClearTextureUnit();
 
         UniformTexture(nameof(gBufferBaseColor), gBufferBaseColor);

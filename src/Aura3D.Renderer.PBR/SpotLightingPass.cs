@@ -46,7 +46,7 @@ internal class SpotLightingPass : RenderPass
                 UseShader("ENABLE_SPOT_LIGHT", "ENBALE_DEFERRED_SHADING");
             else
                 UseShader("ENABLE_SPOT_LIGHT", "ENABLE_SHADOWS", "ENBALE_DEFERRED_SHADING");
-            UseShader_Internal(null);
+            UseShader_Internal();
 
             ClearTextureUnit();
             UniformTexture(nameof(gBufferBaseColor), gBufferBaseColor);

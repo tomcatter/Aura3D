@@ -49,6 +49,9 @@ public abstract partial class RenderPipeline
     /// </summary>
     public List<Mesh> Meshes { get; } = new List<Mesh>();
 
+
+    public List<InstancedMesh> InstancedMeshes { get; } = new List<InstancedMesh>();
+
     /// <summary>
     /// 获取场景中的所有相机节点列表。
     /// </summary>
@@ -230,6 +233,9 @@ public abstract partial class RenderPipeline
             case Mesh mesh:
                 Meshes.Add(mesh);
                 break;
+            case InstancedMesh instancedMesh:
+                InstancedMeshes.Add(instancedMesh);
+                break;
             case Camera camera:
                 Cameras.Add(camera);
                 break;
@@ -260,6 +266,9 @@ public abstract partial class RenderPipeline
         {
             case Mesh mesh:
                 Meshes.Remove(mesh);
+                break;
+            case InstancedMesh instancedMesh:
+                InstancedMeshes.Remove(instancedMesh);
                 break;
             case Camera camera:
                 Cameras.Remove(camera);

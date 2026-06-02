@@ -50,6 +50,10 @@ namespace Example.ViewModels
                 new MenuViewModel {
                     Title = "Cel Shading",
                     ViewModel = new CelShadingViewModel()
+                },
+                new MenuViewModel {
+                    Title = "Instanced Rendering",
+                    ViewModel = new InstancedRenderingViewModel()
                 }
             ];
             OnNavigation(this, _menus.First());

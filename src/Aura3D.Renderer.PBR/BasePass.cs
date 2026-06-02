@@ -61,6 +61,13 @@ internal class BasePass : RenderPass <PBRDeferredPipeline>
 
         UseShader("SKINNED_MESH", "BLENDMODE_MASKED");
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
+
+
+        UseShader("INSTANCED_MESH");
+        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
+
+        UseShader("INSTANCED_MESH", "BLENDMODE_MASKED");
+        RenderInstancedMeshes(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
     }
 
     public override void AfterRender(Camera camera)
@@ -68,33 +75,48 @@ internal class BasePass : RenderPass <PBRDeferredPipeline>
         base.AfterRender(camera);
     }
 
-    public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
-    {
-        ClearTextureUnit();
 
+    private void setupMeshUniforms(Material? material, Matrix4x4 view, Matrix4x4 projection)
+    {
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
 
 
         {
 
-            var baseColor = mesh.Material?.GetTexture("BaseColor") ?? defaultBaseColor;
+            var baseColor = material?.GetTexture("BaseColor") ?? defaultBaseColor;
             UniformTexture("Texture_BaseColor", baseColor);
 
-            var normal = mesh.Material?.GetTexture("Normal") ?? defaultNormal;
+            var normal = material?.GetTexture("Normal") ?? defaultNormal;
             UniformTexture("Texture_Normal", normal);
 
-            var metallicRoughness = mesh.Material?.GetTexture("MetallicRoughness") ?? defaultMetallicRoughness;
+            var metallicRoughness = material?.GetTexture("MetallicRoughness") ?? defaultMetallicRoughness;
             UniformTexture("Texture_MetallicRoughness", metallicRoughness);
 
 
-            var occlusion = mesh.Material?.GetTexture("Occlusion") ?? defaultOcclusion;
+            var occlusion = material?.GetTexture("Occlusion") ?? defaultOcclusion;
             UniformTexture("Texture_Occlusion", occlusion);
 
-            var emissive = mesh.Material?.GetTexture("Emissive") ?? defaultEmissive;
+            var emissive = material?.GetTexture("Emissive") ?? defaultEmissive;
             UniformTexture("Texture_Emissive", emissive);
         }
 
+    }
+
+    public override void RenderInstancedMesh(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        ClearTextureUnit();
+
+        setupMeshUniforms(instancedMesh.Material, view, projection);
+
+        base.RenderInstancedMesh(instancedMesh, view, projection);
+    }
+
+    public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        ClearTextureUnit();
+
+        setupMeshUniforms(mesh.Material, view, projection);
 
         var normalMatrix = mesh.WorldTransform.Inverse();
         normalMatrix = Matrix4x4.Transpose(normalMatrix);

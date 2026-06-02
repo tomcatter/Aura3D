@@ -1,10 +1,10 @@
+using Aura3D.Core.Math;
+using Aura3D.Core.Nodes;
+using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
 using System.Drawing;
 using System.Numerics;
 using System.Text;
-using Aura3D.Core.Math;
-using Aura3D.Core.Resources;
-using Aura3D.Core.Nodes;
 using ShaderType = Silk.NET.OpenGLES.ShaderType;
 
 namespace Aura3D.Core.Renderers;
@@ -50,19 +50,29 @@ public partial class RenderPass
         this.defines.AddRange(defines);
     }
 
+
+    protected void UseShader_Internal()
+    {
+        UseShader_Internal((Material?)null);
+    }
     protected void UseShader_Internal(Mesh? mesh)
+    {
+        UseShader_Internal(mesh?.Material);
+    }
+
+    protected void UseShader_Internal(Material? material)
     {
         Shader? shader = null;
 
         var name = string.Join(";", defines);
 
-        if (mesh != null && mesh.Material != null && mesh.Material.HasShader)
+        if (material != null && material.HasShader)
         {
-            var (vertexShader, fragmentShader) = mesh.Material.GetShaderSource(ShaderName);
+            var (vertexShader, fragmentShader) = material.GetShaderSource(ShaderName);
 
             if (vertexShader != null || fragmentShader != null)
             {
-                if (mesh.Material.Shaders.TryGetValue(name, out shader) == false)
+                if (material.Shaders.TryGetValue(name, out shader) == false)
                 {
                     if (vertexShader == null)
                         vertexShader = VertexShader;
@@ -71,7 +81,7 @@ public partial class RenderPass
 
                     shader = CreateShaderProgram(defines.ToArray(), vertexShader, fragmentShader);
 
-                    mesh.Material.Shaders[name] = shader;
+                    material.Shaders[name] = shader;
                 }
             }
         }

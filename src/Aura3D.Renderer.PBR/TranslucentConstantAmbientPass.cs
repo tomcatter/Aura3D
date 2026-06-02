@@ -76,6 +76,16 @@ internal class TranslucentConstantAmbientPass : RenderPass<PBRDeferredPipeline>
             }
         }
 
+        foreach (var instancedMesh in renderPipeline.InstancedMeshes)
+        {
+            if (instancedMesh.Enable == false)
+                continue;
+
+            if (IsMaterialBlendMode(instancedMesh.Material, BlendMode.Translucent))
+            {
+                RenderTranslucentInstancedMesh(instancedMesh, camera.View, camera.Projection);
+            }
+        }
     }
 
 
@@ -132,5 +142,27 @@ internal class TranslucentConstantAmbientPass : RenderPass<PBRDeferredPipeline>
                 }
             }
         }
+    }
+
+    private void SetupUpInstancedMeshUniforms(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        UniformMatrix4("viewMatrix", view);
+        UniformMatrix4("projectionMatrix", projection);
+
+        {
+            var baseColor = instancedMesh.Material?.GetTexture("BaseColor") ?? defaultBaseColor;
+            UniformTexture("Texture_BaseColor", baseColor);
+
+            var occlusion = instancedMesh.Material?.GetTexture("Occlusion") ?? defaultOcclusion;
+            UniformTexture("Texture_Occlusion", occlusion);
+        }
+    }
+
+    public void RenderTranslucentInstancedMesh(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        UseShader("BLENDMODE_TRANSLUCENT", "IS_FIRST_LIGHT", "INSTANCED_MESH");
+        UseShader_Internal(instancedMesh.Material);
+        SetupUpInstancedMeshUniforms(instancedMesh, view, projection);
+        base.RenderInstancedMesh(instancedMesh, view, projection);
     }
 }

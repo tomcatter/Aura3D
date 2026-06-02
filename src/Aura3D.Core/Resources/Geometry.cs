@@ -215,24 +215,35 @@ public enum BuildInVertexAttribute
     /// 第一套权重
     /// </summary>
     Weights_0 = 6,
-    /// <summary>
-    /// 第二套关节索引
-    /// </summary>
-    Joints_1 = 7,
-    /// <summary>
-    /// 第二套权重
-    /// </summary>
-    Weights_1 = 8,
+
+    InstancedTransformColumn0 = 7,
+    InstancedTransformColumn1 = 8,
+    InstancedTransformColumn2 = 9,
+    InstancedTransformColumn3 = 10,
+
+    InstancedNormalTransformColumn0 = 11,
+    InstancedNormalTransformColumn1 = 12,
+    InstancedNormalTransformColumn2 = 13,
+    InstancedNormalTransformColumn3 = 14,
+
     /// <summary>
     /// 第二套纹理坐标
     /// </summary>
-    TexCoord_1 = 9,
+    TexCoord_1 = 15,
     /// <summary>
     /// 第三套纹理坐标
     /// </summary>
-    TexCoord_2 = 10,
+    TexCoord_2 = 16,
     /// <summary>
     /// 第四套纹理坐标
     /// </summary>
-    TexCoord_3 = 11,
+    TexCoord_3 = 17,
+    /// <summary>
+    /// 第二套关节索引
+    /// </summary>
+    Joints_1 = 18,
+    /// <summary>
+    /// 第二套权重
+    /// </summary>
+    Weights_1 = 19,
 }
