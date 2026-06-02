@@ -117,8 +117,8 @@ public partial class PrimitiveTypePage : UserControl
 
         view.AutoRequestNextFrameRendering = false;
 
-        view.MainCamera.Position = new Vector3(0, 6, 15);
-        view.MainCamera.RotationDegrees = new Vector3(-20, 0, 0);
+        view.MainCamera.Position = new Vector3(0, 3, 20);
+        view.MainCamera.RotationDegrees = new Vector3(-10, 0, 0);
 
         var dl = new DirectionalLight();
         dl.RotationDegrees = new Vector3(-30, -15, 0);
@@ -133,20 +133,104 @@ public partial class PrimitiveTypePage : UserControl
         view.RequestNextFrameRendering();
     }
 
-    private Mesh CreateSolidColorMesh(
+    private void BuildAllPrimitives()
+    {
+        if (container == null) return;
+
+        float x = -7.5f;
+        const float step = 2.5f;
+
+        // ── TRIANGLES ── 蓝色三角形
+        CreateAndAdd(
+            Aura3D.Core.Resources.PrimitiveType.Triangles,
+            new List<float> { -0.5f, -0.4f, 0, 0.5f, -0.4f, 0, 0f, 0.5f, 0 },
+            new List<uint> { 0, 1, 2 },
+            new Vector4(0.2f, 0.4f, 1f, 1f),
+            new Vector3(x, 0, 0));
+        x += step;
+
+        // ── POINTS ── 红色散点
+        CreateAndAdd(
+            Aura3D.Core.Resources.PrimitiveType.Points,
+            new List<float> { 0,0,0, 0.3f,0.25f,0, -0.25f,0.35f,0, 0.15f,-0.3f,0, -0.35f,-0.1f,0 },
+            null,
+            new Vector4(1f, 0.2f, 0.2f, 1f),
+            new Vector3(x, 0, 0));
+        x += step;
+
+        // ── LINES ── 绿色独立线段
+        CreateAndAdd(
+            Aura3D.Core.Resources.PrimitiveType.Lines,
+            new List<float> { -0.4f,0,0, -0.15f,0.3f,0, 0,0.1f,0, 0.2f,0.35f,0, 0.4f,0,0, 0.15f,-0.3f,0 },
+            null,
+            new Vector4(0.2f, 0.9f, 0.3f, 1f),
+            new Vector3(x, 0, 0));
+        x += step;
+
+        // ── LINE_STRIP ── 黄色折线
+        CreateAndAdd(
+            Aura3D.Core.Resources.PrimitiveType.LineStrip,
+            new List<float> { -0.5f,-0.3f,0, -0.2f,0.35f,0, 0.1f,-0.35f,0, 0.45f,0.3f,0 },
+            null,
+            new Vector4(1f, 0.9f, 0.1f, 1f),
+            new Vector3(x, 0, 0));
+        x += step;
+
+        // ── LINE_LOOP ── 青色五边形
+        {
+            var positions = new List<float>();
+            for (int i = 0; i < 5; i++)
+            {
+                float a = (float)(i * Math.PI * 2 / 5 - Math.PI / 2);
+                positions.Add(0.45f * MathF.Cos(a));
+                positions.Add(0.45f * MathF.Sin(a));
+                positions.Add(0);
+            }
+            CreateAndAdd(Aura3D.Core.Resources.PrimitiveType.LineLoop, positions, null,
+                new Vector4(0.1f, 0.9f, 0.9f, 1f), new Vector3(x, 0, 0));
+        }
+        x += step;
+
+        // ── TRIANGLE_STRIP ── 品红色带状（逆时针绕序，从右侧往左侧走，首三角形 CCW）
+        CreateAndAdd(
+            Aura3D.Core.Resources.PrimitiveType.TriangleStrip,
+            new List<float> { 0.3f,-0.25f,0, 0.3f,0.25f,0, -0.1f,-0.35f,0, -0.1f,0.35f,0, -0.5f,-0.3f,0, -0.5f,0.3f,0 },
+            null,
+            new Vector4(0.9f, 0.2f, 0.9f, 1f),
+            new Vector3(x, 0, 0));
+        x += step;
+
+        // ── TRIANGLE_FAN ── 橙色六边形扇（逆时针绕序，与 Triangles 一致）
+        {
+            var positions = new List<float> { 0f, 0f, 0f };
+            for (int i = 0; i <= 6; i++)
+            {
+                float a = (float)(i * Math.PI * 2 / 6); // CCW
+                positions.Add(0.45f * MathF.Cos(a));
+                positions.Add(0.45f * MathF.Sin(a));
+                positions.Add(0);
+            }
+            CreateAndAdd(Aura3D.Core.Resources.PrimitiveType.TriangleFan, positions, null,
+                new Vector4(1f, 0.5f, 0.15f, 1f), new Vector3(x, 0, 0));
+        }
+    }
+
+    private void CreateAndAdd(
         Aura3D.Core.Resources.PrimitiveType type,
         List<float> positions,
         List<uint>? indices,
-        Vector4 color)
+        Vector4 color,
+        Vector3 offset)
     {
+        if (container == null) return;
+
         var geometry = new Geometry();
         geometry.PrimitiveType = type;
         geometry.SetVertexAttribute(BuildInVertexAttribute.Position, 3, positions);
         if (indices != null && indices.Count > 0)
             geometry.SetIndices(indices);
 
-        var mesh = new Mesh();
-        mesh.Geometry = geometry;
+        var mesh = new Mesh { Geometry = geometry };
 
         var material = new Material { BlendMode = BlendMode.Opaque };
         material.SetShaderSource("LightPass", ShaderType.Vertex, SolidColorVertexShader);
@@ -155,125 +239,10 @@ public partial class PrimitiveTypePage : UserControl
         {
             pass.UniformVector4("uColor", color);
         });
-
         mesh.Material = material;
-        return mesh;
-    }
 
-    private void BuildAllPrimitives()
-    {
-        if (container == null) return;
-
-        var entries = new List<(string Label, Mesh Mesh, Vector3 Offset)>();
-
-        // ── TRIANGLES ── 蓝色三角形
-        {
-            var positions = new List<float> {
-                -0.5f, -0.4f, 0,   0.5f, -0.4f, 0,   0f, 0.5f, 0,
-            };
-            var indices = new List<uint> { 0, 1, 2 };
-            var mesh = CreateSolidColorMesh(
-                Aura3D.Core.Resources.PrimitiveType.Triangles,
-                positions, indices,
-                new Vector4(0.2f, 0.4f, 1f, 1f));
-            entries.Add(("Triangles", mesh, new Vector3(-4, 1.5f, 0)));
-        }
-
-        // ── POINTS ── 红色散点（5 个）
-        {
-            var positions = new List<float> {
-                0f, 0f, 0f,    0.3f, 0.25f, 0f,    -0.25f, 0.35f, 0f,
-                0.15f, -0.3f, 0f,   -0.35f, -0.1f, 0f,
-            };
-            var mesh = CreateSolidColorMesh(
-                Aura3D.Core.Resources.PrimitiveType.Points,
-                positions, null,
-                new Vector4(1f, 0.2f, 0.2f, 1f));
-            entries.Add(("Points", mesh, new Vector3(-4, -1.5f, 0)));
-        }
-
-        // ── LINES ── 绿色独立线段（3 对）
-        {
-            var positions = new List<float> {
-                -0.4f, 0f, 0f,   -0.15f, 0.3f, 0f,   // 线段 1
-                0f, 0.1f, 0f,    0.2f, 0.35f, 0f,      // 线段 2
-                0.4f, 0f, 0f,    0.15f, -0.3f, 0f,     // 线段 3
-            };
-            var mesh = CreateSolidColorMesh(
-                Aura3D.Core.Resources.PrimitiveType.Lines,
-                positions, null,
-                new Vector4(0.2f, 0.9f, 0.3f, 1f));
-            entries.Add(("Lines", mesh, new Vector3(-1.2f, 1.5f, 0)));
-        }
-
-        // ── LINE_STRIP ── 黄色折线
-        {
-            var positions = new List<float> {
-                -0.5f, -0.3f, 0,   -0.2f, 0.35f, 0,   0.1f, -0.35f, 0,   0.45f, 0.3f, 0,
-            };
-            var mesh = CreateSolidColorMesh(
-                Aura3D.Core.Resources.PrimitiveType.LineStrip,
-                positions, null,
-                new Vector4(1f, 0.9f, 0.1f, 1f));
-            entries.Add(("LineStrip", mesh, new Vector3(-1.2f, -1.5f, 0)));
-        }
-
-        // ── LINE_LOOP ── 青色五边形
-        {
-            var positions = new List<float>();
-            int sides = 5;
-            float r = 0.45f;
-            for (int i = 0; i < sides; i++)
-            {
-                float angle = (float)(i * Math.PI * 2 / sides - Math.PI / 2);
-                positions.Add(r * MathF.Cos(angle));
-                positions.Add(r * MathF.Sin(angle));
-                positions.Add(0);
-            }
-            var mesh = CreateSolidColorMesh(
-                Aura3D.Core.Resources.PrimitiveType.LineLoop,
-                positions, null,
-                new Vector4(0.1f, 0.9f, 0.9f, 1f));
-            entries.Add(("LineLoop", mesh, new Vector3(1.6f, 1.5f, 0)));
-        }
-
-        // ── TRIANGLE_STRIP ── 品红色带状
-        {
-            var positions = new List<float> {
-                -0.5f, -0.3f, 0,   -0.5f, 0.3f, 0,   -0.1f, -0.35f, 0,   -0.1f, 0.35f, 0,
-                0.3f, -0.25f, 0,   0.3f, 0.25f, 0,
-            };
-            var mesh = CreateSolidColorMesh(
-                Aura3D.Core.Resources.PrimitiveType.TriangleStrip,
-                positions, null,
-                new Vector4(0.9f, 0.2f, 0.9f, 1f));
-            entries.Add(("TriStrip", mesh, new Vector3(1.6f, -1.5f, 0)));
-        }
-
-        // ── TRIANGLE_FAN ── 橙色六边形扇
-        {
-            var positions = new List<float> { 0f, 0f, 0f }; // 中心点
-            int fanSides = 6;
-            float fanR = 0.45f;
-            for (int i = 0; i <= fanSides; i++)
-            {
-                float angle = (float)(i * Math.PI * 2 / fanSides);
-                positions.Add(fanR * MathF.Cos(angle));
-                positions.Add(fanR * MathF.Sin(angle));
-                positions.Add(0);
-            }
-            var mesh = CreateSolidColorMesh(
-                Aura3D.Core.Resources.PrimitiveType.TriangleFan,
-                positions, null,
-                new Vector4(1f, 0.5f, 0.1f, 1f));
-            entries.Add(("TriFan", mesh, new Vector3(4.2f, 0, 0)));
-        }
-
-        foreach (var (_, mesh, offset) in entries)
-        {
-            mesh.LocalTransform = Matrix4x4.CreateTranslation(offset);
-            container.AddChild(mesh, AttachToParentRule.KeepLocal);
-        }
+        mesh.LocalTransform = Matrix4x4.CreateTranslation(offset);
+        container.AddChild(mesh, AttachToParentRule.KeepLocal);
     }
 
     private void Aura3DView_SceneUpdated(object? sender, UpdateRoutedEventArgs args)
