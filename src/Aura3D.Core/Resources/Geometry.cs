@@ -222,6 +222,56 @@ public struct VertexAttribute
 }
 
 /// <summary>
+/// 实例化属性指针，描述一个 VBO 内某个 location 的绑定方式。
+/// </summary>
+public struct InstanceAttributePointer
+{
+    /// <summary>
+    /// 着色器中 layout(location) 的位置。
+    /// </summary>
+    public uint Location;
+    /// <summary>
+    /// 分量数：1=float, 2=vec2, 3=vec3, 4=vec4。
+    /// </summary>
+    public int ComponentCount;
+    /// <summary>
+    /// 在实例步长内的字节偏移。
+    /// </summary>
+    public int Offset;
+}
+
+/// <summary>
+/// 实例化属性，一个 VBO 可包含多个 <see cref="InstanceAttributePointer"/>（如 mat4 = 4 个 vec4 指针）。
+/// </summary>
+public class InstanceAttribute
+{
+    /// <summary>
+    /// 属性名称。
+    /// </summary>
+    public string Name = string.Empty;
+    /// <summary>
+    /// 逐实例打包的浮点数据。
+    /// </summary>
+    public List<float> Data = new();
+    /// <summary>
+    /// 单个实例的字节步长。
+    /// </summary>
+    public int Stride;
+    /// <summary>
+    /// GPU 缓冲区 ID。
+    /// </summary>
+    public uint Vbo;
+    /// <summary>
+    /// 是否启用上传。
+    /// </summary>
+    public bool Enabled = true;
+    /// <summary>
+    /// 该 VBO 上的顶点属性指针列表。
+    /// </summary>
+    public List<InstanceAttributePointer> Pointers = new();
+}
+
+/// <summary>
 /// 内置顶点属性枚举
 /// </summary>
 public enum BuildInVertexAttribute

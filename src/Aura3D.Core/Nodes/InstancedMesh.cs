@@ -11,44 +11,84 @@ namespace Aura3D.Core.Nodes;
 /// </summary>
 public class InstancedMesh : Node, IGpuResource
 {
-    public int AddInstance(Matrix4x4 transform)
+    public unsafe int AddInstance(Matrix4x4 transform)
     {
-        instanceTransforms.Add(transform);
+        EnsureDefaultAttributes();
 
+        var transformAttr = InstanceAttributes["InstanceTransform"];
+        var normalAttr = InstanceAttributes["InstanceNormalTransform"];
+
+        // 追加 transform 数据（16 个 float）
+        float* p = (float*)&transform;
+        for (int i = 0; i < 16; i++)
+            transformAttr.Data.Add(p[i]);
+
+        // 计算并追加 normal matrix 数据
         var normalMatrix = transform.Inverse();
         normalMatrix = Matrix4x4.Transpose(normalMatrix);
-        instanceNormalTransforms.Add(normalMatrix);
+        p = (float*)&normalMatrix;
+        for (int i = 0; i < 16; i++)
+            normalAttr.Data.Add(p[i]);
 
+        _instanceCount++;
         NeedsUpload = true;
-        return instanceTransforms.Count - 1;
+        return _instanceCount - 1;
     }
 
 
     public void RemoveInstance(int index)
     {
-        instanceTransforms.RemoveAt(index);
-        instanceNormalTransforms.RemoveAt(index);
+        foreach (var attr in InstanceAttributes.Values)
+        {
+            int floatsPerInstance = attr.Stride / sizeof(float);
+            attr.Data.RemoveRange(index * floatsPerInstance, floatsPerInstance);
+        }
+        _instanceCount--;
         NeedsUpload = true;
     }
 
-    public void UpdateInstance(int index, Matrix4x4 transform)
+    public unsafe void UpdateInstance(int index, Matrix4x4 transform)
     {
-        instanceTransforms[index] = transform;
+        var transformAttr = InstanceAttributes["InstanceTransform"];
+        var normalAttr = InstanceAttributes["InstanceNormalTransform"];
+
+        int baseIndex = index * 16;
+
+        float* p = (float*)&transform;
+        for (int i = 0; i < 16; i++)
+            transformAttr.Data[baseIndex + i] = p[i];
 
         var normalMatrix = transform.Inverse();
         normalMatrix = Matrix4x4.Transpose(normalMatrix);
-        instanceNormalTransforms[index] = normalMatrix;
+        p = (float*)&normalMatrix;
+        for (int i = 0; i < 16; i++)
+            normalAttr.Data[baseIndex + i] = p[i];
 
         NeedsUpload = true;
     }
 
-    private List<Matrix4x4> instanceTransforms = new();
+    private int _instanceCount;
 
-    private List<Matrix4x4> instanceNormalTransforms = new();
+    private static readonly InstanceAttributePointer[] DefaultTransformPointers =
+    [
+        new() { Location = (uint)BuildInVertexAttribute.InstancedTransformColumn0, ComponentCount = 4, Offset = 0 },
+        new() { Location = (uint)BuildInVertexAttribute.InstancedTransformColumn1, ComponentCount = 4, Offset = sizeof(float) * 4 },
+        new() { Location = (uint)BuildInVertexAttribute.InstancedTransformColumn2, ComponentCount = 4, Offset = sizeof(float) * 8 },
+        new() { Location = (uint)BuildInVertexAttribute.InstancedTransformColumn3, ComponentCount = 4, Offset = sizeof(float) * 12 },
+    ];
 
-    private uint instanceVbo;
+    private static readonly InstanceAttributePointer[] DefaultNormalTransformPointers =
+    [
+        new() { Location = (uint)BuildInVertexAttribute.InstancedNormalTransformColumn0, ComponentCount = 4, Offset = 0 },
+        new() { Location = (uint)BuildInVertexAttribute.InstancedNormalTransformColumn1, ComponentCount = 4, Offset = sizeof(float) * 4 },
+        new() { Location = (uint)BuildInVertexAttribute.InstancedNormalTransformColumn2, ComponentCount = 4, Offset = sizeof(float) * 8 },
+        new() { Location = (uint)BuildInVertexAttribute.InstancedNormalTransformColumn3, ComponentCount = 4, Offset = sizeof(float) * 12 },
+    ];
 
-    private uint instanceNormalVbo;
+    /// <summary>
+    /// 逐实例属性字典，key 为属性名称。
+    /// </summary>
+    public Dictionary<string, InstanceAttribute> InstanceAttributes { get; } = new();
 
     public Material? Material { get; set; }
 
@@ -60,7 +100,29 @@ public class InstancedMesh : Node, IGpuResource
 
     public int IndicesCount => geometry.IndicesCount;
 
-    public int InstanceCount => instanceTransforms.Count;
+    public int InstanceCount => _instanceCount;
+
+    private void EnsureDefaultAttributes()
+    {
+        if (!InstanceAttributes.ContainsKey("InstanceTransform"))
+        {
+            InstanceAttributes["InstanceTransform"] = new InstanceAttribute
+            {
+                Name = "InstanceTransform",
+                Stride = 16 * sizeof(float),
+                Pointers = new List<InstanceAttributePointer>(DefaultTransformPointers)
+            };
+        }
+        if (!InstanceAttributes.ContainsKey("InstanceNormalTransform"))
+        {
+            InstanceAttributes["InstanceNormalTransform"] = new InstanceAttribute
+            {
+                Name = "InstanceNormalTransform",
+                Stride = 16 * sizeof(float),
+                Pointers = new List<InstanceAttributePointer>(DefaultNormalTransformPointers)
+            };
+        }
+    }
     /// <summary>
     /// 从给定的网格创建一个实例化网格节点。
     /// </summary>
@@ -83,6 +145,7 @@ public class InstancedMesh : Node, IGpuResource
             Material = material
         };
 
+        instancedMesh.EnsureDefaultAttributes();
 
         return instancedMesh;
     }
@@ -107,88 +170,112 @@ public class InstancedMesh : Node, IGpuResource
         return list;
     }
 
+    /// <summary>
+    /// 开启或关闭指定逐实例属性的上传。
+    /// </summary>
+    /// <param name="name">属性名称。</param>
+    /// <param name="enabled">是否启用上传。</param>
+    public void SetAttributeEnabled(string name, bool enabled)
+    {
+        if (InstanceAttributes.TryGetValue(name, out var attr))
+        {
+            attr.Enabled = enabled;
+            NeedsUpload = true;
+        }
+    }
+
+    /// <summary>
+    /// 设置通用的逐实例自定义属性。
+    /// </summary>
+    /// <typeparam name="T">非托管值类型，每个实例的数据元素。</typeparam>
+    /// <param name="name">属性名称。</param>
+    /// <param name="location">着色器中 layout(location) 的位置。</param>
+    /// <param name="componentCount">分量数：1=float, 2=vec2, 3=vec3, 4=vec4。</param>
+    /// <param name="data">逐实例数据列表，数量必须与 <see cref="InstanceCount"/> 一致。</param>
+    public unsafe void SetInstanceAttribute<T>(string name, int location, int componentCount, IReadOnlyList<T> data)
+        where T : unmanaged
+    {
+        if (data.Count != _instanceCount)
+            throw new ArgumentException($"数据数量 ({data.Count}) 与实例数量 ({_instanceCount}) 不一致。");
+
+        int elementSize = sizeof(T) / sizeof(float);
+        int stride = componentCount * sizeof(float);
+        var floatData = new List<float>(data.Count * componentCount);
+
+        foreach (var item in data)
+        {
+            float* ptr = (float*)&item;
+            for (int i = 0; i < componentCount; i++)
+            {
+                floatData.Add(i < elementSize ? ptr[i] : 0f);
+            }
+        }
+
+        InstanceAttributes[name] = new InstanceAttribute
+        {
+            Name = name,
+            Stride = stride,
+            Data = floatData,
+            Pointers = new List<InstanceAttributePointer>
+            {
+                new() { Location = (uint)location, ComponentCount = componentCount, Offset = 0 }
+            }
+        };
+
+        NeedsUpload = true;
+    }
+
     public void Destroy(GL gl)
     {
         geometry.Destroy(gl);
-        if (instanceVbo != 0)
+        foreach (var attr in InstanceAttributes.Values)
         {
-            gl.DeleteBuffer(instanceVbo);
-            instanceVbo = 0;
-        }
-        if (instanceNormalVbo != 0)
-        {
-            gl.DeleteBuffer(instanceNormalVbo);
-            instanceNormalVbo = 0;
+            if (attr.Vbo != 0)
+            {
+                gl.DeleteBuffer(attr.Vbo);
+                attr.Vbo = 0;
+            }
         }
     }
 
 
     public unsafe void Upload(GL gl)
     {
-        if (instanceTransforms.Count == 0)
+        if (_instanceCount == 0)
             return;
         if (geometry.Vao == 0)
         {
             geometry.Upload(gl);
         }
 
-        if (instanceVbo == 0)
-        {
-            instanceVbo = gl.GenBuffer();
-        }
+        EnsureDefaultAttributes();
 
         gl.BindVertexArray(geometry.Vao);
-        gl.BindBuffer(GLEnum.ArrayBuffer, instanceVbo);
 
-        fixed(void* p = CollectionsMarshal.AsSpan(instanceTransforms))
+        foreach (var attr in InstanceAttributes.Values)
         {
-            gl.BufferData(GLEnum.ArrayBuffer, (nuint)(instanceTransforms.Count * sizeof(Matrix4x4)), p, GLEnum.DynamicDraw);
+            if (!attr.Enabled)
+                continue;
+
+            if (attr.Vbo == 0)
+            {
+                attr.Vbo = gl.GenBuffer();
+            }
+
+            gl.BindBuffer(GLEnum.ArrayBuffer, attr.Vbo);
+
+            fixed (float* p = CollectionsMarshal.AsSpan(attr.Data))
+            {
+                gl.BufferData(GLEnum.ArrayBuffer, (nuint)(attr.Data.Count * sizeof(float)), p, GLEnum.DynamicDraw);
+            }
+
+            foreach (var ptr in attr.Pointers)
+            {
+                gl.EnableVertexAttribArray(ptr.Location);
+                gl.VertexAttribPointer(ptr.Location, ptr.ComponentCount, GLEnum.Float, false, (uint)attr.Stride, (void*)ptr.Offset);
+                gl.VertexAttribDivisor(ptr.Location, 1);
+            }
         }
-
-        gl.EnableVertexAttribArray((int)BuildInVertexAttribute.InstancedTransformColumn0);
-        gl.VertexAttribPointer((int)BuildInVertexAttribute.InstancedTransformColumn0, 4, GLEnum.Float, false, (uint)sizeof(Matrix4x4), (void*)0);
-        gl.EnableVertexAttribArray((int)BuildInVertexAttribute.InstancedTransformColumn1);
-        gl.VertexAttribPointer((int)BuildInVertexAttribute.InstancedTransformColumn1, 4, GLEnum.Float, false, (uint)sizeof(Matrix4x4), (void*)sizeof(Vector4));
-        gl.EnableVertexAttribArray((int)BuildInVertexAttribute.InstancedTransformColumn2);
-        gl.VertexAttribPointer((int)BuildInVertexAttribute.InstancedTransformColumn2, 4, GLEnum.Float, false, (uint)sizeof(Matrix4x4), (void*)(sizeof(Vector4) * 2));
-        gl.EnableVertexAttribArray((int)BuildInVertexAttribute.InstancedTransformColumn3);
-        gl.VertexAttribPointer((int)BuildInVertexAttribute.InstancedTransformColumn3, 4, GLEnum.Float, false, (uint)sizeof(Matrix4x4), (void*)(sizeof(Vector4) * 3));
-
-
-
-        gl.VertexAttribDivisor((int)BuildInVertexAttribute.InstancedTransformColumn0, 1);
-        gl.VertexAttribDivisor((int)BuildInVertexAttribute.InstancedTransformColumn1, 1);
-        gl.VertexAttribDivisor((int)BuildInVertexAttribute.InstancedTransformColumn2, 1);
-        gl.VertexAttribDivisor((int)BuildInVertexAttribute.InstancedTransformColumn3, 1);
-
-
-
-        if (instanceNormalVbo == 0)
-        {
-            instanceNormalVbo = gl.GenBuffer();
-        }
-        gl.BindBuffer(GLEnum.ArrayBuffer, instanceNormalVbo);
-
-        fixed (void* p = CollectionsMarshal.AsSpan(instanceNormalTransforms))
-        {
-            gl.BufferData(GLEnum.ArrayBuffer, (nuint)(instanceNormalTransforms.Count * sizeof(Matrix4x4)), p, GLEnum.DynamicDraw);
-        }
-
-        gl.EnableVertexAttribArray((int)BuildInVertexAttribute.InstancedNormalTransformColumn0);
-        gl.VertexAttribPointer((int)BuildInVertexAttribute.InstancedNormalTransformColumn0, 4, GLEnum.Float, false, (uint)sizeof(Matrix4x4), (void*)0);
-        gl.EnableVertexAttribArray((int)BuildInVertexAttribute.InstancedNormalTransformColumn1);
-        gl.VertexAttribPointer((int)BuildInVertexAttribute.InstancedNormalTransformColumn1, 4, GLEnum.Float, false, (uint)sizeof(Matrix4x4), (void*)sizeof(Vector4));
-        gl.EnableVertexAttribArray((int)BuildInVertexAttribute.InstancedNormalTransformColumn2);
-        gl.VertexAttribPointer((int)BuildInVertexAttribute.InstancedNormalTransformColumn2, 4, GLEnum.Float, false, (uint)sizeof(Matrix4x4), (void*)(sizeof(Vector4) * 2));
-        gl.EnableVertexAttribArray((int)BuildInVertexAttribute.InstancedNormalTransformColumn3);
-        gl.VertexAttribPointer((int)BuildInVertexAttribute.InstancedNormalTransformColumn3, 4, GLEnum.Float, false, (uint)sizeof(Matrix4x4), (void*)(sizeof(Vector4) * 3));
-
-
-
-        gl.VertexAttribDivisor((int)BuildInVertexAttribute.InstancedNormalTransformColumn0, 1);
-        gl.VertexAttribDivisor((int)BuildInVertexAttribute.InstancedNormalTransformColumn1, 1);
-        gl.VertexAttribDivisor((int)BuildInVertexAttribute.InstancedNormalTransformColumn2, 1);
-        gl.VertexAttribDivisor((int)BuildInVertexAttribute.InstancedNormalTransformColumn3, 1);
 
         gl.BindBuffer(GLEnum.ArrayBuffer, 0);
         gl.BindVertexArray(0);
