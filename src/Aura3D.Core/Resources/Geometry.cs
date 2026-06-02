@@ -382,4 +382,16 @@ public enum PrimitiveType
     /// 线段带。
     /// </summary>
     LineStrip,
+    /// <summary>
+    /// 线段环。
+    /// </summary>
+    LineLoop,
+    /// <summary>
+    /// 三角形带。
+    /// </summary>
+    TriangleStrip,
+    /// <summary>
+    /// 三角形扇。
+    /// </summary>
+    TriangleFan,
 }

@@ -591,6 +591,15 @@ public static class ModelLoader
     {
         var geometry = new Geometry();
 
+        // SharpGLTF 不直接暴露 DrawMode，通过 Get*Indices 方法推断原始图元类型
+        var pointIndices = primitive.GetPointIndices();
+        var lineIndices = primitive.GetLineIndices();
+        if (pointIndices.Any())
+            geometry.PrimitiveType = Aura3D.Core.Resources.PrimitiveType.Points;
+        else if (lineIndices.Any())
+            geometry.PrimitiveType = Aura3D.Core.Resources.PrimitiveType.Lines;
+        // 默认为 Triangles
+
         foreach (var (name, accessor) in primitive.VertexAccessors)
         {
             ProcessVertexAttribute(geometry, name, primitive, node, skeleton);

@@ -206,6 +206,9 @@ public partial class RenderPass
         Aura3D.Core.Resources.PrimitiveType.Points => GLEnum.Points,
         Aura3D.Core.Resources.PrimitiveType.Lines => GLEnum.Lines,
         Aura3D.Core.Resources.PrimitiveType.LineStrip => GLEnum.LineStrip,
+        Aura3D.Core.Resources.PrimitiveType.LineLoop => GLEnum.LineLoop,
+        Aura3D.Core.Resources.PrimitiveType.TriangleStrip => GLEnum.TriangleStrip,
+        Aura3D.Core.Resources.PrimitiveType.TriangleFan => GLEnum.TriangleFan,
         _ => GLEnum.Triangles,
     };
 

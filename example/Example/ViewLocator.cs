@@ -21,6 +21,7 @@ public class ViewLocator : IDataTemplate
             CelShadingViewModel celShadingViewModel => new CelShadingPage(),
             InstancedRenderingViewModel instancedRenderingViewModel => new InstancedRenderingPage(),
             PointCloudViewModel pointCloudViewModel => new PointCloudPage(),
+            PrimitiveTypeViewModel primitiveTypeViewModel => new PrimitiveTypePage(),
             _ => new TextBlock() { Text = "NotFound" }
         };
     }

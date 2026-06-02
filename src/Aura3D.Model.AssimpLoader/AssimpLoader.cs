@@ -463,6 +463,12 @@ public static class AssimpLoader
 
         var geometry = new Geometry();
 
+        geometry.PrimitiveType = assimpMesh.PrimitiveType switch
+        {
+            Assimp.PrimitiveType.Point => Aura3D.Core.Resources.PrimitiveType.Points,
+            Assimp.PrimitiveType.Line => Aura3D.Core.Resources.PrimitiveType.Lines,
+            _ => Aura3D.Core.Resources.PrimitiveType.Triangles,
+        };
 
         List<float> positions = new List<float>();
         List<float> normals = new List<float>();

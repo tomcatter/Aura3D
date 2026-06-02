@@ -58,6 +58,10 @@ namespace Example.ViewModels
                 new MenuViewModel {
                     Title = "Point Cloud",
                     ViewModel = new PointCloudViewModel()
+                },
+                new MenuViewModel {
+                    Title = "Primitive Types",
+                    ViewModel = new PrimitiveTypeViewModel()
                 }
             ];
             OnNavigation(this, _menus.First());
