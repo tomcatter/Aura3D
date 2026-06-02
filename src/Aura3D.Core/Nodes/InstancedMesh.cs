@@ -102,6 +102,16 @@ public class InstancedMesh : Node, IGpuResource
 
     public int InstanceCount => _instanceCount;
 
+    /// <summary>
+    /// 图元类型，委托给内部 Geometry。
+    /// </summary>
+    public Aura3D.Core.Resources.PrimitiveType PrimitiveType => geometry.PrimitiveType;
+
+    /// <summary>
+    /// 顶点数量，委托给内部 Geometry。
+    /// </summary>
+    public int VertexCount => geometry.VertexCount;
+
     private unsafe void EnsureDefaultAttributes()
     {
         if (!InstanceAttributes.ContainsKey("InstanceTransform"))

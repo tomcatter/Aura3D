@@ -20,6 +20,7 @@ public class ViewLocator : IDataTemplate
             PbrViewModel pbrViewModel => new PbrPipelinePage(),
             CelShadingViewModel celShadingViewModel => new CelShadingPage(),
             InstancedRenderingViewModel instancedRenderingViewModel => new InstancedRenderingPage(),
+            PointCloudViewModel pointCloudViewModel => new PointCloudPage(),
             _ => new TextBlock() { Text = "NotFound" }
         };
     }

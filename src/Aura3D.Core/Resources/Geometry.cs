@@ -33,6 +33,19 @@ public class Geometry : IGpuResource, IClone<Geometry>
     public int IndicesCount => Indices.Count;
 
     /// <summary>
+    /// 顶点数量，由 Position 属性的数据长度计算得出。
+    /// </summary>
+    public int VertexCount
+    {
+        get
+        {
+            if (VertexAttributes.TryGetValue("Position", out var attr))
+                return attr.Data.Count / attr.Size;
+            return 0;
+        }
+    }
+
+    /// <summary>
     /// 顶点数组对象ID
     /// </summary>
     public uint Vao;
@@ -41,6 +54,12 @@ public class Geometry : IGpuResource, IClone<Geometry>
     /// 元素缓冲对象ID
     /// </summary>
     public uint Ebo;
+
+    /// <summary>
+    /// 图元类型，默认为 Triangles。
+    /// </summary>
+    public PrimitiveType PrimitiveType { get; set; } = PrimitiveType.Triangles;
+
     public void SetVertexAttribute(string name, uint location, int size, List<float> data)
     {
         if (data.Count % size != 0)
@@ -157,16 +176,19 @@ public class Geometry : IGpuResource, IClone<Geometry>
             gl.VertexAttribPointer(attribute.Location, attribute.Size, GLEnum.Float, false, (uint)(sizeof(float) * attribute.Size), (void*)0);
         }
 
-        if (Ebo == 0)
+        if (Indices.Count > 0)
         {
-            Ebo = gl.GenBuffer();
-        }
-        gl.BindBuffer(GLEnum.ElementArrayBuffer, Ebo);
+            if (Ebo == 0)
+            {
+                Ebo = gl.GenBuffer();
+            }
+            gl.BindBuffer(GLEnum.ElementArrayBuffer, Ebo);
 
-        fixed (uint* indexPtr = CollectionsMarshal.AsSpan(Indices))
-        {
-            // 上传索引数据到 GPU
-            gl.BufferData(GLEnum.ElementArrayBuffer, (nuint)(Indices.Count * sizeof(uint)), indexPtr, GLEnum.StaticDraw);
+            fixed (uint* indexPtr = CollectionsMarshal.AsSpan(Indices))
+            {
+                // 上传索引数据到 GPU
+                gl.BufferData(GLEnum.ElementArrayBuffer, (nuint)(Indices.Count * sizeof(uint)), indexPtr, GLEnum.StaticDraw);
+            }
         }
 
 
@@ -178,7 +200,8 @@ public class Geometry : IGpuResource, IClone<Geometry>
         {
             Indices = Indices,
             VertexAttributes = VertexAttributes,
-            VertexAttributeLocations = VertexAttributeLocations
+            VertexAttributeLocations = VertexAttributeLocations,
+            PrimitiveType = PrimitiveType
         };
     }
 
@@ -188,7 +211,8 @@ public class Geometry : IGpuResource, IClone<Geometry>
         {
             Indices = new List<uint>(Indices),
             VertexAttributes = VertexAttributes.ToDictionary(),
-            VertexAttributeLocations = new HashSet<uint>(VertexAttributeLocations)
+            VertexAttributeLocations = new HashSet<uint>(VertexAttributeLocations),
+            PrimitiveType = PrimitiveType
         };
     }
 }
@@ -335,4 +359,27 @@ public enum BuildInVertexAttribute
     /// 第二套权重
     /// </summary>
     Weights_1 = 19,
+}
+
+/// <summary>
+/// 图元类型枚举。
+/// </summary>
+public enum PrimitiveType
+{
+    /// <summary>
+    /// 三角形。
+    /// </summary>
+    Triangles,
+    /// <summary>
+    /// 点。
+    /// </summary>
+    Points,
+    /// <summary>
+    /// 线段。
+    /// </summary>
+    Lines,
+    /// <summary>
+    /// 线段带。
+    /// </summary>
+    LineStrip,
 }

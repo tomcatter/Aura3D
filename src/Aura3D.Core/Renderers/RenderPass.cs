@@ -163,7 +163,12 @@ public partial class RenderPass
                 callback(this);
             }
         }
-        gl.DrawElements(GLEnum.Triangles, (uint)mesh.Geometry.IndicesCount, GLEnum.UnsignedInt, (void*)0);
+
+        var primitive = GetGLPrimitiveType(mesh.Geometry.PrimitiveType);
+        if (mesh.Geometry.IndicesCount > 0)
+            gl.DrawElements(primitive, (uint)mesh.Geometry.IndicesCount, GLEnum.UnsignedInt, (void*)0);
+        else
+            gl.DrawArrays(primitive, 0, (uint)mesh.Geometry.VertexCount);
     }
 
 
@@ -179,7 +184,12 @@ public partial class RenderPass
                 callback(this);
             }
         }
-        gl.DrawElementsInstanced(GLEnum.Triangles, (uint)instancedMesh.IndicesCount, GLEnum.UnsignedInt, (void*)0, (uint)instancedMesh.InstanceCount);
+
+        var primitive = GetGLPrimitiveType(instancedMesh.PrimitiveType);
+        if (instancedMesh.IndicesCount > 0)
+            gl.DrawElementsInstanced(primitive, (uint)instancedMesh.IndicesCount, GLEnum.UnsignedInt, (void*)0, (uint)instancedMesh.InstanceCount);
+        else
+            gl.DrawArraysInstanced(primitive, 0, (uint)instancedMesh.VertexCount, (uint)instancedMesh.InstanceCount);
     }
 
     /// <summary>
@@ -188,6 +198,17 @@ public partial class RenderPass
     /// <param name="filter">网格筛选条件。</param>
     /// <param name="view">视图矩阵。</param>
     /// <param name="projection">投影矩阵。</param>
+    /// <summary>
+    /// 将 <see cref="PrimitiveType"/> 转换为 OpenGL 图元枚举。
+    /// </summary>
+    private static GLEnum GetGLPrimitiveType(Aura3D.Core.Resources.PrimitiveType type) => type switch
+    {
+        Aura3D.Core.Resources.PrimitiveType.Points => GLEnum.Points,
+        Aura3D.Core.Resources.PrimitiveType.Lines => GLEnum.Lines,
+        Aura3D.Core.Resources.PrimitiveType.LineStrip => GLEnum.LineStrip,
+        _ => GLEnum.Triangles,
+    };
+
     public void RenderMeshes(Func<Mesh, bool> filter, Matrix4x4 view, Matrix4x4 projection)
     {
         foreach (var mesh in renderPipeline.Meshes)

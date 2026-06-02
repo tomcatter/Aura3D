@@ -54,6 +54,10 @@ namespace Example.ViewModels
                 new MenuViewModel {
                     Title = "Instanced Rendering",
                     ViewModel = new InstancedRenderingViewModel()
+                },
+                new MenuViewModel {
+                    Title = "Point Cloud",
+                    ViewModel = new PointCloudViewModel()
                 }
             ];
             OnNavigation(this, _menus.First());
