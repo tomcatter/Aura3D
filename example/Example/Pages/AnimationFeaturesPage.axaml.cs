@@ -219,6 +219,9 @@ public partial class AnimationFeaturesPage : UserControl
         animationBlendSpace.AddAnimationSampler(new Vector2(1, -1),     // Diagonal: Back-Right
             new AnimationSampler(animations[6]));
 
+        // Compute initial blend pose to avoid T-pose on first frame
+        animationBlendSpace.InitializePose();
+
         // === Lighting ===
         var dl = new DirectionalLight
         {

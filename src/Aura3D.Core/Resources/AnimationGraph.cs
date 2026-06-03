@@ -16,15 +16,17 @@ public class AnimationGraph : IAnimationSampler
     {
         bonesTransform = new Matrix4x4[skeleton.Bones.Count];
 
-        for (var i = 0; i < bonesTransform.Length; i++)
-        {
-            bonesTransform[i] = skeleton.Bones[i].WorldMatrix;
-        }
-
         Root = root;
         currentNode = root;
         lastNode = currentNode;
         startTime = DateTime.Now;
+
+        // Copy the initial pose from the root node's sampler to avoid
+        // showing T-pose before the first Update() call.
+        for (var i = 0; i < bonesTransform.Length; i++)
+        {
+            bonesTransform[i] = currentNode.Sampler.BonesTransform[i];
+        }
     }
 
     /// <summary>

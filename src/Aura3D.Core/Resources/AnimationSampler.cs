@@ -31,6 +31,10 @@ public class AnimationSampler : IAnimationSampler
 
         this.animation = animation;
         Skeleton = animation.Skeleton!;
+
+        // Compute the first frame immediately to avoid showing T-pose
+        // before the first Update() call.
+        processBoneTransform(Skeleton.Root, 0);
     }
 
     public Skeleton Skeleton { get; }

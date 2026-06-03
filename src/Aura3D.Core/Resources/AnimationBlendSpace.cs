@@ -97,10 +97,26 @@ public class AnimationBlendSpace : IAnimationSampler
     public float IdwPower { get; set; } = 2f;
 
     /// <summary>
+    /// 初始化混合姿态。在所有动画采样器添加完成后调用，
+    /// 避免首帧显示绑定姿态（T-Pose）。
+    /// </summary>
+    public void InitializePose()
+    {
+        if (animationSamplers.Count == 0)
+            return;
+        computeBlend(0);
+    }
+
+    /// <summary>
     /// 更新混合空间，计算并应用骨骼变换。
     /// </summary>
     /// <param name="deltaTime">自上一帧以来的时间增量。</param>
     public void Update(double deltaTime)
+    {
+        computeBlend(deltaTime);
+    }
+
+    private void computeBlend(double deltaTime)
     {
         float totalRawWeight = 0f;
 
@@ -154,7 +170,6 @@ public class AnimationBlendSpace : IAnimationSampler
             }
             index++;
         }
-
     }
 
     /// <summary>
