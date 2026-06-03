@@ -54,6 +54,10 @@ namespace Example.ViewModels
                 new MenuViewModel {
                     Title = "Picking Test",
                     ViewModel = new PickingTestViewModel()
+                },
+                new MenuViewModel {
+                    Title = "CSM Test",
+                    ViewModel = new CsmTestViewModel()
                 }
             ];
             OnNavigation(this, _menus.First());

@@ -253,20 +253,32 @@ public class LightPass : RenderPass
         UniformVector3(_directionalLightColorUniforms[index], new Vector3(light.LightColor.R / 255f, light.LightColor.G / 255f, light.LightColor.B / 255f));
         UniformFloat(_directionalLightCastShadowUniforms[index], light.CastShadow ? 1.0f : 0.0f);
 
-        var rt = light.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
+        var csmData = light.GetPipelineGpuResource<CsmShadowData>(nameof(CsmShadowData));
+        bool useCsm = light.CastShadow && csmData != null;
 
-        if (light.CastShadow && rt != null)
+        if (useCsm)
         {
-            var shadowView = Matrix4x4.CreateLookAt(light.WorldTransform.Translation, light.WorldTransform.Translation + light.WorldTransform.ForwardVector(), light.WorldTransform.UpVector());
-            var shadowProjection = Matrix4x4.CreateOrthographic(light.ShadowConfig.Width, light.ShadowConfig.Height, light.ShadowConfig.NearPlane, light.ShadowConfig.FarPlane);
-
-            UniformTexture(_directionalLightShadowMapUniforms[index], rt.DepthStencilTexture);
-            UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], shadowView * shadowProjection);
+            // CSM: first cascade as fallback shadow
+            UniformTexture(_directionalLightShadowMapUniforms[index], 0);
+            UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], csmData.CascadeMatrices[0]);
         }
         else
         {
-            UniformTexture(_directionalLightShadowMapUniforms[index], 0);
-            UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], Matrix4x4.Identity);
+            var rt = light.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
+
+            if (light.CastShadow && rt != null)
+            {
+                var shadowView = Matrix4x4.CreateLookAt(light.WorldTransform.Translation, light.WorldTransform.Translation + light.WorldTransform.ForwardVector(), light.WorldTransform.UpVector());
+                var shadowProjection = Matrix4x4.CreateOrthographic(light.ShadowConfig.Width, light.ShadowConfig.Height, light.ShadowConfig.NearPlane, light.ShadowConfig.FarPlane);
+
+                UniformTexture(_directionalLightShadowMapUniforms[index], rt.DepthStencilTexture);
+                UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], shadowView * shadowProjection);
+            }
+            else
+            {
+                UniformTexture(_directionalLightShadowMapUniforms[index], 0);
+                UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], Matrix4x4.Identity);
+            }
         }
     }
 

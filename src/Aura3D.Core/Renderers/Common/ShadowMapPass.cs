@@ -118,6 +118,14 @@ public class ShadowMapPass : RenderPass
         }
 
         index = 0;
+        int csmCascadeCount = renderPipeline.Settings.CsmCascadeCount;
+        float csmSplitLambda = renderPipeline.Settings.CsmSplitLambda;
+        var mainCamera = renderPipeline.Scene.MainCamera;
+        const int ShadowMapRes = 1024;
+        const int MaxCascades = 8;
+        Span<float> csmSplits = stackalloc float[MaxCascades + 1];
+        Span<Vector3> frustumCorners = stackalloc Vector3[8];
+
         foreach (var directionalLight in renderPipeline.DirectionalLights)
         {
             if (directionalLight.Enable == false)
@@ -127,25 +135,139 @@ public class ShadowMapPass : RenderPass
             if (index++ >= renderPipeline.Settings.DirectionalLightLimit)
                 break;
 
-            var rt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
+            bool useCsm = csmCascadeCount > 1;
 
-            if (rt == null)
+            if (useCsm)
             {
-                rt = new RenderTarget().SetDepthTexture(TextureFormat.DepthComponent24).SetSize(1024, 1024);
-                rt.Upload(gl);
-                directionalLight.SetPipelineGpuResource("ShadowMapRenderTarget", rt);
+                // === CSM: 纹理数组 + 多级联渲染 ===
+                int cascades = System.Math.Min(csmCascadeCount, MaxCascades);
+
+                // 计算 PSSM 级联分割
+                CalculateCascadeSplits(
+                    mainCamera.NearPlane, mainCamera.FarPlane,
+                    cascades, csmSplitLambda, csmSplits);
+
+                // 获取或创建 CSM 资源（通过管线缓存，IGpuResource 生命周期由管线管理）
+                var csmData = directionalLight.GetPipelineGpuResource<CsmShadowData>(nameof(CsmShadowData));
+                if (csmData == null ||
+                    csmData.Resolution != ShadowMapRes ||
+                    csmData.CascadeCount != cascades)
+                {
+                    // 销毁旧资源
+                    csmData?.Destroy(gl);
+
+                    csmData = new CsmShadowData
+                    {
+                        Resolution = ShadowMapRes,
+                        CascadeCount = cascades,
+                        CascadeMatrices = new Matrix4x4[cascades],
+                        CascadeSplitDepths = new float[cascades + 1],
+                    };
+
+                    // 创建 2D 纹理数组
+                    csmData.TextureArrayId = gl.GenTexture();
+                    gl.BindTexture(GLEnum.Texture2DArray, csmData.TextureArrayId);
+                    gl.TexImage3D(GLEnum.Texture2DArray, 0, (int)InternalFormat.DepthComponent24,
+                        (uint)ShadowMapRes, (uint)ShadowMapRes, (uint)cascades, 0,
+                        GLEnum.DepthComponent, GLEnum.UnsignedInt, ReadOnlySpan<byte>.Empty);
+                    gl.TexParameter(GLEnum.Texture2DArray, GLEnum.TextureMinFilter, (int)GLEnum.Nearest);
+                    gl.TexParameter(GLEnum.Texture2DArray, GLEnum.TextureMagFilter, (int)GLEnum.Nearest);
+                    gl.TexParameter(GLEnum.Texture2DArray, GLEnum.TextureWrapS, (int)GLEnum.ClampToEdge);
+                    gl.TexParameter(GLEnum.Texture2DArray, GLEnum.TextureWrapT, (int)GLEnum.ClampToEdge);
+
+                    csmData.FboId = gl.GenFramebuffer();
+
+                    directionalLight.SetPipelineGpuResource(nameof(CsmShadowData), csmData);
+                    renderPipeline.AddGpuResource(csmData);
+                }
+
+                // 更新每帧变化的级联数据
+                for (int c = 0; c <= cascades; c++)
+                    csmData.CascadeSplitDepths[c] = csmSplits[c];
+
+                gl.BindFramebuffer(GLEnum.Framebuffer, csmData.FboId);
+                gl.Viewport(0, 0, ShadowMapRes, ShadowMapRes);
+
+                var lightPos = directionalLight.WorldTransform.Translation;
+                var lightForward = directionalLight.WorldTransform.ForwardVector();
+                var lightUp = directionalLight.WorldTransform.UpVector();
+                var lightView = Matrix4x4.CreateLookAt(lightPos, lightPos + lightForward, lightUp);
+
+                for (int cascade = 0; cascade < cascades; cascade++)
+                {
+                    GetFrustumSliceCorners(mainCamera, csmSplits[cascade], csmSplits[cascade + 1], frustumCorners);
+
+                    Vector3 lightMin = new(float.MaxValue);
+                    Vector3 lightMax = new(float.MinValue);
+                    for (int c = 0; c < 8; c++)
+                    {
+                        var lightCorner = Vector3.Transform(frustumCorners[c], lightView);
+                        lightMin = Vector3.Min(lightMin, lightCorner);
+                        lightMax = Vector3.Max(lightMax, lightCorner);
+                    }
+
+                    float zPadding = 50f;
+                    lightMin.Z -= zPadding;
+                    lightMax.Z += zPadding;
+
+                    var lightProjection = Matrix4x4.CreateOrthographicOffCenter(
+                        lightMin.X, lightMax.X, lightMin.Y, lightMax.Y,
+                        -lightMax.Z, -lightMin.Z);
+
+                    csmData.CascadeMatrices[cascade] = lightView * lightProjection;
+
+                    gl.FramebufferTextureLayer(GLEnum.Framebuffer, GLEnum.DepthAttachment,
+                        csmData.TextureArrayId, 0, cascade);
+
+                    gl.Clear(ClearBufferMask.DepthBufferBit);
+                    gl.ClearDepth(1.0f);
+
+                    RenderMesh(lightView, lightProjection);
+                }
+
+                // 清除旧的单张 shadow map
+                var oldRt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
+                if (oldRt != null)
+                {
+                    oldRt.Destroy(gl);
+                    directionalLight.RemovePipelineGpuResource("ShadowMapRenderTarget");
+                }
             }
+            else
+            {
+                // === 普通阴影（单张）===
+                // 清除 CSM 资源
+                var oldCsm = directionalLight.GetPipelineGpuResource<CsmShadowData>(nameof(CsmShadowData));
+                if (oldCsm != null)
+                {
+                    oldCsm.Destroy(gl);
+                    directionalLight.RemovePipelineGpuResource(nameof(CsmShadowData));
+                }
 
-            gl.Viewport(0, 0, rt.Width, rt.Height);
+                var rt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
 
-            gl.BindFramebuffer(GLEnum.Framebuffer, rt.FrameBufferId);
-            gl.Clear(ClearBufferMask.DepthBufferBit);
-            gl.ClearDepth(1.0f);
+                if (rt == null)
+                {
+                    rt = new RenderTarget().SetDepthTexture(TextureFormat.DepthComponent24).SetSize(ShadowMapRes, ShadowMapRes);
+                    rt.Upload(gl);
+                    directionalLight.SetPipelineGpuResource("ShadowMapRenderTarget", rt);
+                }
 
-            var view = Matrix4x4.CreateLookAt(directionalLight.WorldTransform.Translation, directionalLight.WorldTransform.Translation + directionalLight.WorldTransform.ForwardVector(), directionalLight.WorldTransform.UpVector());
-            var projection = Matrix4x4.CreateOrthographic(directionalLight.ShadowConfig.Width , directionalLight.ShadowConfig.Height, directionalLight.ShadowConfig.NearPlane, directionalLight.ShadowConfig.FarPlane);
-            
-            RenderMesh(view, projection);
+                gl.Viewport(0, 0, rt.Width, rt.Height);
+
+                gl.BindFramebuffer(GLEnum.Framebuffer, rt.FrameBufferId);
+                gl.Clear(ClearBufferMask.DepthBufferBit);
+                gl.ClearDepth(1.0f);
+
+                var view = Matrix4x4.CreateLookAt(directionalLight.WorldTransform.Translation,
+                    directionalLight.WorldTransform.Translation + directionalLight.WorldTransform.ForwardVector(),
+                    directionalLight.WorldTransform.UpVector());
+                var projection = Matrix4x4.CreateOrthographic(
+                    directionalLight.ShadowConfig.Width, directionalLight.ShadowConfig.Height,
+                    directionalLight.ShadowConfig.NearPlane, directionalLight.ShadowConfig.FarPlane);
+
+                RenderMesh(view, projection);
+            }
         }
     }
 
@@ -238,5 +360,53 @@ public class ShadowMapPass : RenderPass
             }
         }
         base.RenderMesh(mesh, view, projection);
+    }
+
+    /// <summary>
+    /// 计算 PSSM 级联分割深度。
+    /// </summary>
+    private static void CalculateCascadeSplits(float near, float far, int count, float lambda, Span<float> splits)
+    {
+        splits[0] = near;
+        splits[count] = far;
+        for (int i = 1; i < count; i++)
+        {
+            float p = (float)i / count;
+            float logSplit = near * MathF.Pow(far / near, p);
+            float uniformSplit = near + (far - near) * p;
+            splits[i] = lambda * logSplit + (1.0f - lambda) * uniformSplit;
+        }
+    }
+
+    /// <summary>
+    /// 获取相机视锥体在指定深度范围内的 8 个角点（世界空间）。
+    /// </summary>
+    private static void GetFrustumSliceCorners(Camera camera, float near, float far, Span<Vector3> corners)
+    {
+        float fovRadians = camera.FieldOfView.DegreeToRadians();
+        float tanHalfFov = MathF.Tan(fovRadians / 2.0f);
+        float aspect = camera.RenderTarget.Width / (float)camera.RenderTarget.Height;
+
+        float nearHalfH = near * tanHalfFov;
+        float nearHalfW = nearHalfH * aspect;
+        float farHalfH = far * tanHalfFov;
+        float farHalfW = farHalfH * aspect;
+
+        var forward = camera.WorldTransform.ForwardVector();
+        var right = camera.WorldTransform.RightVector();
+        var up = camera.WorldTransform.UpVector();
+        var pos = camera.WorldTransform.Translation;
+
+        var nearCenter = pos + forward * near;
+        var farCenter = pos + forward * far;
+
+        corners[0] = nearCenter - right * nearHalfW - up * nearHalfH;
+        corners[1] = nearCenter + right * nearHalfW - up * nearHalfH;
+        corners[2] = nearCenter - right * nearHalfW + up * nearHalfH;
+        corners[3] = nearCenter + right * nearHalfW + up * nearHalfH;
+        corners[4] = farCenter - right * farHalfW - up * farHalfH;
+        corners[5] = farCenter + right * farHalfW - up * farHalfH;
+        corners[6] = farCenter - right * farHalfW + up * farHalfH;
+        corners[7] = farCenter + right * farHalfW + up * farHalfH;
     }
 }

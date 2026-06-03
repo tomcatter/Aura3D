@@ -59,4 +59,20 @@ public class PipelineSettings
     /// 是否启用视锥体剔除。
     /// </summary>
     public bool EnableFrustumCulling { get; set; } = true;
+
+    // ═══════════════════════════════════════════════
+    //  CSM（级联阴影贴图）
+    // ═══════════════════════════════════════════════
+
+    /// <summary>
+    /// 方向光 CSM 级联数量。设为 1 退化为普通阴影，建议值 3。
+    /// 更多级联 = 更好的大场景阴影质量，但会增加 GPU 开销。
+    /// </summary>
+    public int CsmCascadeCount { get; set; } = 3;
+
+    /// <summary>
+    /// PSSM 分割参数。0 = 均匀分割，1 = 对数分割（近处更密），默认 0.5。
+    /// 场景越大越建议增大该值，让近处级联覆盖更小的范围。
+    /// </summary>
+    public float CsmSplitLambda { get; set; } = 0.5f;
 }
