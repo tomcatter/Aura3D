@@ -28,6 +28,13 @@ public class Scene
     public Camera MainCamera { get; private set; }
 
     /// <summary>
+    /// 获取或设置场景的主方向光源。
+    /// 主方向光会使用 CSM（级联阴影贴图），其余方向光使用普通单张阴影贴图。
+    /// 设置为 <c>null</c> 时禁用 CSM。
+    /// </summary>
+    public DirectionalLight? MainDirectionalLight { get; set; }
+
+    /// <summary>
     /// 获取或设置场景的静态网格八叉树空间索引。
     /// </summary>
     public Octree<Mesh> StaticMeshOctree { get; set; }

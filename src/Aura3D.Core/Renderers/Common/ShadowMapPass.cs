@@ -2,6 +2,7 @@ using Aura3D.Core.Math;
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
+using System.Linq;
 using System.Numerics;
 
 namespace Aura3D.Core.Renderers;
@@ -127,6 +128,10 @@ public class ShadowMapPass : RenderPass
         Span<float> csmSplits = stackalloc float[MaxCascades + 1];
         Span<Vector3> frustumCorners = stackalloc Vector3[8];
 
+        // 主方向光：显式设置优先，否则自动选取第一个启用且投射阴影的方向光
+        var mainLight = renderPipeline.Scene.MainDirectionalLight
+            ?? renderPipeline.DirectionalLights.FirstOrDefault(l => l.Enable && l.CastShadow);
+
         foreach (var directionalLight in renderPipeline.DirectionalLights)
         {
             if (directionalLight.Enable == false)
@@ -136,7 +141,8 @@ public class ShadowMapPass : RenderPass
             if (index++ >= renderPipeline.Settings.DirectionalLightLimit)
                 break;
 
-            bool useCsm = csmCascadeCount > 1 && renderPipeline.SupportsCSM;
+            bool isMainLight = directionalLight == mainLight;
+            bool useCsm = isMainLight && csmCascadeCount > 1 && renderPipeline.SupportsCSM;
 
             if (useCsm)
             {

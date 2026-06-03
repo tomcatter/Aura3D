@@ -109,6 +109,7 @@ public partial class CascadedShadowMapsPage : UserControl
             }
         };
         scene.AddNode(_dl);
+        scene.MainDirectionalLight = _dl;
 
         // 摄像机位置
         scene.MainCamera.Position = new Vector3(8, 12, -8);
