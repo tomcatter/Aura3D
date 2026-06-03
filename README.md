@@ -4,7 +4,7 @@
     <div id="link">
         <span>English</span> | 
         <a href="./README_CN.md">中文</a> |
-        <a href="./doc/en/home.md">Document</a> 
+        <a href="./doc/cn/home.md">文档（中文）</a> 
     </div>
 </div>
 <br/>
@@ -41,7 +41,7 @@ Then use the Aura3DView control in your project and bind the SceneInitialized ev
 ```xaml
 <Window
     ...
-    xmlns:a="https://sunce.tech/aura3d"
+    xmlns:a="https://github.com/CeSun/Aura3D"
     ...>
 	<a:Aura3DView x:Name="aura3Dview" SceneInitialized="OnSceneInitialized"/>
 </Window>
@@ -57,7 +57,7 @@ Initialize your scene in the SceneInitialized event:
     
     var camera = view.MainCamera;
 
-    camera.ClearColor = Color.Gray;
+    view.Scene.Background = Texture.CreateFromColor(Color.Gray);
 
 	var model = ModelLoader.LoadGlbModel("your model file path(*.glb)");
 

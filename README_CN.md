@@ -1,74 +1,111 @@
-
 <div id="header" align="center">
-	<img width="200px" src="./logo.svg" ></img> 
-	<h4><i>一个轻量级、可扩展、高性能的3D渲染控件</i></h4>
-	<div id="link" >
-		<a href="./README.md">English</a> | 
-		<span>中文</span> |
-		<a href="./doc/cn/home.md">文档</a> 
-	</div>
+    <img width="200px" src="./logo.svg" ></img> 
+    <h4><i>轻量级、可扩展、高性能的 3D 渲染控件</i></h4>
+    <div id="link">
+        <a href="./README.md">English</a> | 
+        <span>中文</span> |
+        <a href="./doc/cn/home.md">文档</a>
+    </div>
 </div>
 <br/>
 
 ![demo](./doc/images/demo.png)
 
-
 > [!IMPORTANT]
-> 项目正在积极开发中，欢迎大家踊跃提出建议。
+> 项目正在积极开发中，欢迎通过 [Issue](https://github.com/CeSun/Aura3d/issues) 提交建议和反馈。
 
+## 简介
+
+Aura3D 是一个基于 Avalonia 的 3D 渲染控件，底层使用 OpenGL ES 3.0。它提供了从模型加载、场景管理、光照阴影到自定义渲染管线的完整能力，适合在 .NET 桌面应用中集成 3D 内容展示。
 
 ## 特性
-### 1. 基础功能
-- 模型渲染
-- 光源
-- 阴影
-- 蒙皮动画
-- 视锥体剔除
-- 默认布林冯渲染管线
 
-### 2. 进阶功能
-- 自定义管线 
-### 3. 支持平台
-- Avalonia
+### 场景与模型
+- **多格式模型加载** — 原生支持 glTF/GLB，通过 Assimp 扩展支持 FBX、OBJ、3DS 等 50+ 格式
+- **内置基础几何体** — 盒子、球体、圆柱体、平面
+- **场景图** — 层次化的节点树，支持父子变换继承
 
-## 开始上手
+### 光照与阴影
+- **方向光 / 点光 / 聚光灯** — 三种光源类型，支持颜色、衰减半径、阴影投射
+- **Blinn-Phong 光照模型** — 默认前向渲染管线
+- **HDR 环境贴图** — 天空盒 / 环境光背景
 
-在 Avalonia 项目中添加 Aura3D.Avalonia 包：
+### 动画系统
+- **骨骼动画** — 支持 glTF 蒙皮动画和 Assimp 导入的外部动画
+- **动画混合空间** — 2D 混合空间，在多个动画间平滑过渡
+- **动画状态图** — 基于条件的状态机，支持状态间的混合过渡
+
+### 渲染管线
+- **可替换渲染管线** — 内置 BlinnPhong（写实）、NoLight（无光照）
+- **PBR 延迟管线** — 基于物理的渲染，支持 Metallic-Roughness 工作流
+- **卡通渲染管线** — Cel Shading 风格
+- **自定义管线** — 自由组合 RenderPass，无需处理 VAO/VBO
+
+### 高级渲染
+- **GPU 实例化** — `InstancedMesh`，万级实例高性能渲染
+- **层次化实例化** — `InstancedMeshGroup`（类似 UE 的 HISM），支持增量更新与自动分组
+- **视锥体剔除** — 可开关，大幅减少不可见物体的绘制
+- **点云渲染** — 基于实例化的高性能点云
+- **图元渲染** — Triangles、Lines、LineStrip、LineLoop、Points、TriangleStrip、TriangleFan
+
+### 平台
+- **Avalonia** — 支持 Windows、Linux、macOS、Android、iOS
+
+## 快速开始
+
+### 1. 安装
 
 ```shell
 dotnet add package Aura3D.Avalonia
 ```
 
-然后在你的项目中使用 Aura3DView 控件, 并绑定 SceneInitialized 事件：
+### 2. 在 XAML 中使用
 
 ```xaml
 <Window
-    ...
-    xmlns:a="https://sunce.tech/aura3d"
+    xmlns:a="https://github.com/CeSun/Aura3D"
     ...>
-	<a:Aura3DView x:Name="aura3Dview" SceneInitialized="OnSceneInitialized"/>
+    <a:Aura3DView x:Name="aura3Dview" SceneInitialized="OnSceneInitialized"/>
 </Window>
 ```
 
-在 SceneInitialized 事件中，初始化你的场景：
+### 3. 加载一个模型
 
-```CSharp
- public void OnSceneInitialized(object sender, RoutedEventArgs args)
- {
-
+```csharp
+public void OnSceneInitialized(object sender, InitializedRoutedEventArgs args)
+{
     var view = (Aura3DView)sender;
-
     var camera = view.MainCamera;
 
-    camera.ClearColor = Color.Gray;
+    // 设置背景色
+    view.Scene.Background = Texture.CreateFromColor(Color.Gray);
 
+    // 加载 glTF/GLB 模型
+    var model = ModelLoader.LoadGlbModel("model.glb");
+    model.Position = camera.Forward * 3;
+    view.AddNode(model);
 
-	var model = ModelLoader.LoadGlbModel("your model file path(*.glb)");
-
-	model.Position = camera.Forward * 3;
-
-	view.AddNode(model);
-
- }
+    // 添加方向光（默认管线需要光源才能看到模型）
+    var dl = new DirectionalLight();
+    dl.RotationDegrees = new Vector3(-30, 0, 0);
+    dl.LightColor = Color.White;
+    view.AddNode(dl);
+}
 ```
 
+> 更多特性的使用方法请参阅 [文档目录](doc/cn/home.md)。
+
+## NuGet 包
+
+| 包名 | 说明 |
+|---|---|
+| [Aura3D.Avalonia](https://www.nuget.org/packages/Aura3D.Avalonia) | Avalonia 3D 渲染控件（依赖 Aura3D.Core） |
+| [Aura3D.Core](https://www.nuget.org/packages/Aura3D.Core) | 核心引擎：场景图、节点、资源、默认管线 |
+| [Aura3D.Model.GltfLoader](https://www.nuget.org/packages/Aura3D.Model.GltfLoader) | glTF/GLB 模型加载器 |
+| [Aura3D.Model.AssimpLoader](https://www.nuget.org/packages/Aura3D.Model.AssimpLoader) | Assimp 模型加载器（支持 50+ 格式） |
+| [Aura3D.Pipeline.PBR](https://www.nuget.org/packages/Aura3D.Pipeline.PBR) | PBR 延迟渲染管线 |
+| [Aura3D.Pipeline.CelShading](https://www.nuget.org/packages/Aura3D.Pipeline.CelShading) | 卡通渲染管线 |
+
+## 许可证
+
+[MIT](LICENSE)
