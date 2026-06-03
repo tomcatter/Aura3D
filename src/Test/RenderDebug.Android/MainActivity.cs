@@ -24,7 +24,7 @@ public class MainActivity : SilkActivity
 
         var view = Silk.NET.Windowing.Window.GetView(ViewOptions.Default with { API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 0))});
 
-        scene = new Scene(scene => new PBRDeferredPipeline(scene));
+        scene = new Scene(scene => new Aura3D.Core.Renderers.BlinnPhongPipeline(scene), new Aura3D.Core.Renderers.PipelineSettings());
 
         view.Load += () =>
         {
