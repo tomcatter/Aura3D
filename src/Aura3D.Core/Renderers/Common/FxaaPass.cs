@@ -238,29 +238,57 @@ void main() {
 
 ";
         FragmentShader = fs;
+        _fxaaFragmentShader = fs;
     }
 
+    private string _fxaaFragmentShader;
+
+    private string _copyFragmentShader = @"#version 300 es
+precision mediump float;
+
+in vec2 v_texCoord;
+
+uniform sampler2D u_texture;
+
+out vec4 outColor;
+
+void main()
+{
+    vec4 color = texture(u_texture, v_texCoord);
+    color.a = min(color.a, 1.0);
+    outColor = color;
+}
+";
 
     public override void Render(Camera camera)
     {
-        if (!renderPipeline.Settings.EnableFxaa)
-            return;
-
         var size = new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height);
         gl.BindFramebuffer(GLEnum.Framebuffer, camera.RenderTarget.FrameBufferId);
 
         var rt = GetRenderTarget(inputRenderTargetName, size);
 
         gl.Disable(EnableCap.DepthTest);
-        gl.Disable(EnableCap.Blend); 
-        UseShader();
-        ClearTextureUnit();
-        UseShader_Internal();
-        UniformTexture("u_texture", rt.GetTexture(inputRenderTargetTextureName));
-        UniformVector2("u_textureSize", new Vector2(rt.GetTexture(inputRenderTargetTextureName).Width, rt.GetTexture(inputRenderTargetTextureName).Height));
+        gl.Disable(EnableCap.Blend);
+
+        if (renderPipeline.Settings.EnableFxaa)
+        {
+            FragmentShader = _fxaaFragmentShader;
+            UseShader();
+            ClearTextureUnit();
+            UseShader_Internal();
+            UniformTexture("u_texture", rt.GetTexture(inputRenderTargetTextureName));
+            UniformVector2("u_textureSize", new Vector2(rt.GetTexture(inputRenderTargetTextureName).Width, rt.GetTexture(inputRenderTargetTextureName).Height));
+        }
+        else
+        {
+            FragmentShader = _copyFragmentShader;
+            UseShader("FXAA_DISABLED");
+            ClearTextureUnit();
+            UseShader_Internal();
+            UniformTexture("u_texture", rt.GetTexture(inputRenderTargetTextureName));
+        }
+
         RenderQuad();
-
-
     }
 
 
