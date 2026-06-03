@@ -69,23 +69,55 @@ public class CelLightPass : RenderPass
 
     }
 
+    private bool IsMeshFaceRender(Mesh mesh)
+    {
+        if (mesh.Material != null)
+        {
+            foreach (var channel in mesh.Material.Channels)
+            {
+                if(channel.Name == "SDF" && channel.Texture != null)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public override void Render(Camera camera)
     {
 		BindOutPutRenderTarget(camera);
 
+        // Render Body
         UseShader();
-        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && mesh.IsStaticMesh, camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && !IsMeshFaceRender(mesh) && mesh.IsStaticMesh, camera.View, camera.Projection);
 
         UseShader("BLENDMODE_MASKED");
-        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && mesh.IsStaticMesh, camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && !IsMeshFaceRender(mesh) && mesh.IsStaticMesh, camera.View, camera.Projection);
 
 
         UseShader("SKINNED_MESH");
-        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && !IsMeshFaceRender(mesh) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
 
 
         UseShader("SKINNED_MESH", "BLENDMODE_MASKED");
-        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && !IsMeshFaceRender(mesh) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
+
+        // Render Face
+
+        UseShader("FACE_RENDER");
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && IsMeshFaceRender(mesh) && mesh.IsStaticMesh, camera.View, camera.Projection);
+
+        UseShader("FACE_RENDER", "BLENDMODE_MASKED");
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && IsMeshFaceRender(mesh) && mesh.IsStaticMesh, camera.View, camera.Projection);
+
+
+        UseShader("FACE_RENDER", "SKINNED_MESH");
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && IsMeshFaceRender(mesh) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
+
+
+        UseShader("FACE_RENDER", "SKINNED_MESH", "BLENDMODE_MASKED");
+        RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && IsMeshFaceRender(mesh) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
 
     }
 
@@ -185,7 +217,7 @@ public class CelLightPass : RenderPass
             Vector4 tempVector4;
             if(mesh.Material.TryGetParameterValue<Vector4>("_LightAreaColorTint", out tempVector4))
                 UniformVector4("_LightAreaColorTint", tempVector4);
-            if(mesh.Material.TryGetParameterValue<Vector4>("_DarkShadowColor", out tempVector4))
+            if (mesh.Material.TryGetParameterValue<Vector4>("_DarkShadowColor", out tempVector4))
                 UniformVector4("_DarkShadowColor", tempVector4);
             if(mesh.Material.TryGetParameterValue<Vector4>("_CoolDarkShadowColor", out tempVector4))
                 UniformVector4("_CoolDarkShadowColor", tempVector4);
@@ -205,6 +237,13 @@ public class CelLightPass : RenderPass
                         {
                             UniformTexture("SDFTextures", channel.Texture);
                             textureFlags |= (int)CelShadingTextureBit.SDFBit;
+
+                            // debug：临时设置脸部朝向
+                            Matrix4x4 faceM = new Matrix4x4(0, 1, 0, 0,
+                                                            -1, 0, 0, 0, 
+                                                            0, 0, -1, 0,
+                                                            0, 0, 0, 1);
+                            UniformMatrix4("faceModelMatrix", faceM);
                         }
                         break;
                     case "ShadowRamp":

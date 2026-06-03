@@ -73,7 +73,7 @@ public class CelMaterialExtensionLoader : MaterialExtensionLoaderBase
             logicMaterial.SetParameterValue<float>("_DarkFac", celExt.DarkFac);
             logicMaterial.SetParameterValue<float>("_BrightAreaShadowFac", celExt.BrightAreaShadowFac);
 
-            logicMaterial.SetParameterValue<Vector4>("_BrightAreaShadowFac", celExt.LightAreaColorTint);
+            logicMaterial.SetParameterValue<Vector4>("_LightAreaColorTint", celExt.LightAreaColorTint);
             logicMaterial.SetParameterValue<Vector4>("_DarkShadowColor", celExt.DarkShadowColor);
             logicMaterial.SetParameterValue<Vector4>("_CoolDarkShadowColor", celExt.CoolDarkShadowColor);
 
