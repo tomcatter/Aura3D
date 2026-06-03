@@ -40,7 +40,6 @@ public class CameraController : IDisposable
     public CameraController(Aura3DViewBase view)
     {
         _view = view ?? throw new ArgumentNullException(nameof(view));
-        _view.Focusable = true;
 
         _view.KeyDown += OnKeyDown;
         _view.KeyUp += OnKeyUp;

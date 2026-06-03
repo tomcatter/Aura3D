@@ -36,6 +36,11 @@ public abstract class Aura3DViewBase : global::Avalonia.OpenGL.Controls.OpenGlCo
     public Aura3DViewBase()
     {
         Stopwatch = new Stopwatch();
+
+        // 控件加载后自动获取键盘焦点，确保按键事件无需先点击即可响应
+        Focusable = true;
+        Loaded += (s, e) => Focus();
+        PointerEntered += (s, e) => Focus();
     }
 
     /// <summary>
