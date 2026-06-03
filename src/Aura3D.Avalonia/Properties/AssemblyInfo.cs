@@ -1,4 +1,7 @@
 using Avalonia.Metadata;
 
-[assembly: XmlnsPrefix("https://sunce.tech/aura3d", "a")]
 [assembly: XmlnsDefinition("https://sunce.tech/aura3d", "Aura3D.Avalonia")]
+
+
+[assembly: XmlnsPrefix("https://github.com/CeSun/Aura3D", "a")]
+[assembly: XmlnsDefinition("https://github.com/CeSun/Aura3D", "Aura3D.Avalonia")]

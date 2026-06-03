@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:a="https://sunce.tech/aura3d"
+             xmlns:a="https://github.com/CeSun/Aura3D"
              x:Class="Example.Pages.PointCloudPage">
     <DockPanel>
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="10" Spacing="10">
