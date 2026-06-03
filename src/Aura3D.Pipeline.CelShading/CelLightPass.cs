@@ -1,4 +1,4 @@
-﻿using Aura3D.Core.Math;
+using Aura3D.Core.Math;
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
 using Silk.NET.OpenGLES;
@@ -45,7 +45,7 @@ public class CelLightPass : RenderPass
 
         this.directionalLightLimit = directionalLightLimit;
     }
-    
+
 
     public float AmbientIntensity = 0.1f;
 
@@ -64,28 +64,23 @@ public class CelLightPass : RenderPass
         gl.DepthMask(true);
         gl.DepthFunc(DepthFunction.Less);
         gl.CullFace(TriangleFace.Back);
-
-
     }
 
-    private bool IsMeshFaceRender(Mesh mesh)
+    private static bool IsMeshFaceRender(Mesh mesh)
     {
-        if (mesh.Material != null)
+        if (mesh.Material == null)
+            return false;
+        foreach (var channel in mesh.Material.Channels)
         {
-            foreach (var channel in mesh.Material.Channels)
-            {
-                if(channel.Name == "SDF" && channel.Texture != null)
-                {
-                    return true;
-                }
-            }
+            if (channel.Name == "SDF" && channel.Texture != null)
+                return true;
         }
         return false;
     }
 
     public override void Render(Camera camera)
     {
-		BindOutPutRenderTarget(camera);
+        BindOutPutRenderTarget(camera);
 
         // Render Body
         UseShader();
@@ -94,42 +89,47 @@ public class CelLightPass : RenderPass
         UseShader("BLENDMODE_MASKED");
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && !IsMeshFaceRender(mesh) && mesh.IsStaticMesh, camera.View, camera.Projection);
 
-
         UseShader("SKINNED_MESH");
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && !IsMeshFaceRender(mesh) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
-
 
         UseShader("SKINNED_MESH", "BLENDMODE_MASKED");
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && !IsMeshFaceRender(mesh) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
 
-        // Render Face
+        // Instanced Mesh
+        UseShader("INSTANCED_MESH");
+        RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
 
+        UseShader("INSTANCED_MESH", "BLENDMODE_MASKED");
+        RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
+
+        // Render Face
         UseShader("FACE_RENDER");
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && IsMeshFaceRender(mesh) && mesh.IsStaticMesh, camera.View, camera.Projection);
 
         UseShader("FACE_RENDER", "BLENDMODE_MASKED");
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && IsMeshFaceRender(mesh) && mesh.IsStaticMesh, camera.View, camera.Projection);
 
-
         UseShader("FACE_RENDER", "SKINNED_MESH");
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && IsMeshFaceRender(mesh) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
 
-
         UseShader("FACE_RENDER", "SKINNED_MESH", "BLENDMODE_MASKED");
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && IsMeshFaceRender(mesh) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
-
     }
 
-    protected void SetupUniform(Matrix4x4 view, Matrix4x4 projection)
+    // ==================== 共享 Uniform 设置 ====================
+
+    /// <summary>
+    /// 设置相机和方向光相关的 Uniform（RenderMesh 和 RenderInstancedMesh 共用）。
+    /// </summary>
+    private void SetupLightUniforms(Matrix4x4 view, Matrix4x4 projection)
     {
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
         UniformFloat("ambientIntensity", AmbientIntensity);
         UniformVector3("cameraPosition", view.Inverse().Translation);
-
         UniformTexture("ShadowRamp", rampTexture);
 
-        for(int i = 0; i < directionalLightLimit; i++)
+        for (int i = 0; i < directionalLightLimit; i++)
         {
             if (i >= renderPipeline.DirectionalLights.Count)
             {
@@ -141,19 +141,15 @@ public class CelLightPass : RenderPass
             else
             {
                 var directionalLight = renderPipeline.DirectionalLights[i];
-
                 UniformVector3($"DirectionalLights[{i}].direction", directionalLight.Forward);
                 UniformVector3($"DirectionalLights[{i}].color", new Vector3(directionalLight.LightColor.R / 255f, directionalLight.LightColor.G / 255f, directionalLight.LightColor.B / 255f));
-
                 UniformFloat($"DirectionalLights[{i}].castShadow", directionalLight.CastShadow ? 1.0f : 0.0f);
 
                 var rt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
-
                 if (directionalLight.CastShadow && rt != null)
                 {
                     var dlview = Matrix4x4.CreateLookAt(directionalLight.WorldTransform.Translation, directionalLight.WorldTransform.Translation + directionalLight.WorldTransform.ForwardVector(), directionalLight.WorldTransform.UpVector());
                     var dlprojection = Matrix4x4.CreateOrthographic(directionalLight.ShadowConfig.Width, directionalLight.ShadowConfig.Height, directionalLight.ShadowConfig.NearPlane, directionalLight.ShadowConfig.FarPlane);
-                   
                     UniformTexture($"DirectionalLightShadowMaps[{i}]", rt.DepthStencilTexture);
                     UniformMatrix4($"DirectionalLights[{i}].shadowMapMatrix", dlview * dlprojection);
                 }
@@ -162,154 +158,175 @@ public class CelLightPass : RenderPass
                     UniformTexture($"DirectionalLightShadowMaps[{i}]", 0);
                     UniformMatrix4($"DirectionalLights[{i}].shadowMapMatrix", Matrix4x4.Identity);
                 }
-
-
-
             }
-
         }
     }
+
+    /// <summary>
+    /// 设置材质的通用纹理通道和参数（RenderMesh 和 RenderInstancedMesh 共用）。
+    /// 返回纹理标志位掩码。
+    /// </summary>
+    private int SetupMaterialTextures(Material? material)
+    {
+        int textureFlags = 0;
+
+        if (material == null)
+            return textureFlags;
+
+        foreach (var channel in material.Channels)
+        {
+            switch (channel.Name)
+            {
+                case "BaseColor":
+                    if (channel.Texture != null)
+                    {
+                        UniformTexture("BaseColorTexture", channel.Texture);
+                        textureFlags |= (int)CelShadingTextureBit.BaseColorBit;
+                    }
+                    else
+                    {
+                        UniformTexture("BaseColorTexture", 0);
+                        UniformColor("BaseColor", Color.Red);
+                    }
+                    break;
+                case "Normal":
+                    if (channel.Texture != null)
+                    {
+                        UniformTexture("NormalTexture", channel.Texture);
+                        textureFlags |= (int)CelShadingTextureBit.NormalBit;
+                    }
+                    else
+                    {
+                        UniformTexture("NormalTexture", 0);
+                    }
+                    break;
+                case "ILM":
+                    if (channel.Texture != null)
+                    {
+                        UniformTexture("ILMTextures", channel.Texture);
+                        textureFlags |= (int)CelShadingTextureBit.ILMBit;
+                    }
+                    break;
+                case "ShadowRamp":
+                    if (channel.Texture != null)
+                    {
+                        UniformTexture("ShadowRamp", channel.Texture);
+                        textureFlags |= (int)CelShadingTextureBit.ShadowRampBit;
+                    }
+                    break;
+                case "SpecularRamp":
+                    if (channel.Texture != null)
+                    {
+                        UniformTexture("SpecularRamp", channel.Texture);
+                        textureFlags |= (int)CelShadingTextureBit.SpecularRampBit;
+                    }
+                    break;
+            }
+        }
+
+        UniformInt("TexturesFlags", textureFlags);
+        UniformFloat("alphaCutoff", material.AlphaCutoff);
+
+        if (material.DoubleSided == false)
+            gl.Enable(EnableCap.CullFace);
+        else
+            gl.Disable(EnableCap.CullFace);
+
+        return textureFlags;
+    }
+
+    // ==================== RenderInstancedMesh ====================
+
+    public override void RenderInstancedMesh(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        ClearTextureUnit();
+        SetupLightUniforms(view, projection);
+        SetupMaterialTextures(instancedMesh.Material);
+        base.RenderInstancedMesh(instancedMesh, view, projection);
+    }
+
+    // ==================== RenderMesh ====================
 
     public override void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
     {
         ClearTextureUnit();
 
-        SetupUniform(view, projection);
-        //gl.Enable(EnableCap.CullFace);
-        //gl.CullFace(TriangleFace.Back);
+        SetupLightUniforms(view, projection);
 
         // 控制昼夜
         UniformInt("_UseCoolShadowColorOrTex", 1);
 
-        int textureFlags = 0;
+        int textureFlags = SetupMaterialTextures(mesh.Material);
 
         if (mesh.Material != null)
         {
-            // 处理卡通渲染扩展参数以及扩展贴图
-            //Aura3DCelMaterialExtension matExt = (Aura3DCelMaterialExtension)outVal;
+            // 卡通渲染扩展参数
             float tempValue = 0;
-            if(mesh.Material.TryGetParameterValue<float>("_RampIndex0", out tempValue))
+            if (mesh.Material.TryGetParameterValue<float>("_RampIndex0", out tempValue))
                 UniformFloat("_RampIndex0", tempValue);
             if (mesh.Material.TryGetParameterValue<float>("_RampIndex1", out tempValue))
                 UniformFloat("_RampIndex1", tempValue);
-            if(mesh.Material.TryGetParameterValue<float>("_RampIndex2", out tempValue))
+            if (mesh.Material.TryGetParameterValue<float>("_RampIndex2", out tempValue))
                 UniformFloat("_RampIndex2", tempValue);
-            if(mesh.Material.TryGetParameterValue<float>("_RampIndex3", out tempValue))
+            if (mesh.Material.TryGetParameterValue<float>("_RampIndex3", out tempValue))
                 UniformFloat("_RampIndex3", tempValue);
-            if(mesh.Material.TryGetParameterValue<float>("_RampIndex4", out tempValue))
+            if (mesh.Material.TryGetParameterValue<float>("_RampIndex4", out tempValue))
                 UniformFloat("_RampIndex4", tempValue);
 
-            if(mesh.Material.TryGetParameterValue<float>("_BrightFac", out tempValue))
+            if (mesh.Material.TryGetParameterValue<float>("_BrightFac", out tempValue))
                 UniformFloat("_BrightFac", tempValue);
-            if(mesh.Material.TryGetParameterValue<float>("_GreyFac", out tempValue))
+            if (mesh.Material.TryGetParameterValue<float>("_GreyFac", out tempValue))
                 UniformFloat("_GreyFac", tempValue);
-            if(mesh.Material.TryGetParameterValue<float>("_DarkFac", out tempValue))
+            if (mesh.Material.TryGetParameterValue<float>("_DarkFac", out tempValue))
                 UniformFloat("_DarkFac", tempValue);
 
-            if(mesh.Material.TryGetParameterValue<float>("_FaceShadowOffset", out tempValue))
+            if (mesh.Material.TryGetParameterValue<float>("_FaceShadowOffset", out tempValue))
                 UniformFloat("_FaceShadowOffset", tempValue);
-            if(mesh.Material.TryGetParameterValue<float>("_BrightAreaShadowFac", out tempValue))
+            if (mesh.Material.TryGetParameterValue<float>("_BrightAreaShadowFac", out tempValue))
                 UniformFloat("_BrightAreaShadowFac", tempValue);
-            if(mesh.Material.TryGetParameterValue<float>("_FaceShadowTransitionSoftness", out tempValue))
+            if (mesh.Material.TryGetParameterValue<float>("_FaceShadowTransitionSoftness", out tempValue))
                 UniformFloat("_FaceShadowTransitionSoftness", tempValue);
 
             Vector4 tempVector4;
-            if(mesh.Material.TryGetParameterValue<Vector4>("_LightAreaColorTint", out tempVector4))
+            if (mesh.Material.TryGetParameterValue<Vector4>("_LightAreaColorTint", out tempVector4))
                 UniformVector4("_LightAreaColorTint", tempVector4);
             if (mesh.Material.TryGetParameterValue<Vector4>("_DarkShadowColor", out tempVector4))
                 UniformVector4("_DarkShadowColor", tempVector4);
-            if(mesh.Material.TryGetParameterValue<Vector4>("_CoolDarkShadowColor", out tempVector4))
+            if (mesh.Material.TryGetParameterValue<Vector4>("_CoolDarkShadowColor", out tempVector4))
                 UniformVector4("_CoolDarkShadowColor", tempVector4);
 
+            // SDF 脸部贴图
             foreach (var channel in mesh.Material.Channels)
             {
-                switch(channel.Name){
-                    case "ILM":
-                        if (channel.Texture != null)
-                        {
-                            UniformTexture("ILMTextures", channel.Texture);
-                            textureFlags |= (int)CelShadingTextureBit.ILMBit;
-                        }
-                        break;
-                    case "SDF":
-                        if (channel.Texture != null)
-                        {
-                            UniformTexture("SDFTextures", channel.Texture);
-                            textureFlags |= (int)CelShadingTextureBit.SDFBit;
+                if (channel.Name == "SDF" && channel.Texture != null)
+                {
+                    UniformTexture("SDFTextures", channel.Texture);
+                    textureFlags |= (int)CelShadingTextureBit.SDFBit;
 
-                            // debug：临时设置脸部朝向
-                            Matrix4x4 faceM = new Matrix4x4(0, 1, 0, 0,
-                                                            -1, 0, 0, 0, 
-                                                            0, 0, -1, 0,
-                                                            0, 0, 0, 1);
-                            UniformMatrix4("faceModelMatrix", faceM);
-                        }
-                        break;
-                    case "ShadowRamp":
-                        if (channel.Texture != null)
-                        {
-                            UniformTexture("ShadowRamp", channel.Texture);
-                            textureFlags |= (int)CelShadingTextureBit.ShadowRampBit;
-                        }
-                        break;
-                    case "SpecularRamp":
-                        if (channel.Texture != null)
-                        {
-                            UniformTexture("SpecularRamp", channel.Texture);
-                            textureFlags |= (int)CelShadingTextureBit.SpecularRampBit;
-                        }
-                        break;
-                    case "BaseColor":
-                        if (channel.Texture != null)
-                        {
-                            UniformTexture("BaseColorTexture", channel.Texture);
-                            textureFlags |= (int)CelShadingTextureBit.BaseColorBit;
-                        }
-                        else
-                        {
-                            UniformTexture("BaseColorTexture", 0);
-                            UniformColor("BaseColor", Color.Red);
-                        }
-                        break;
-                    case "Normal":
-                        if (channel.Texture != null)
-                        {
-                            UniformTexture("NormalTexture", channel.Texture);
-                            textureFlags |= (int)CelShadingTextureBit.NormalBit;
-                        }
-                        else
-                        {
-                            UniformTexture("NormalTexture", 0);
-                        }
-                        break;
-                }  
+                    Matrix4x4 faceM = new Matrix4x4(0, 1, 0, 0,
+                                                    -1, 0, 0, 0,
+                                                    0, 0, -1, 0,
+                                                    0, 0, 0, 1);
+                    UniformMatrix4("faceModelMatrix", faceM);
+                }
             }
-            if (mesh.Material.DoubleSided == false)
-            {
-                gl.Enable(EnableCap.CullFace);
-            }
-            else
-            {
-                gl.Disable(EnableCap.CullFace);
-            }
+
+            // 更新 textureFlags（SDF 位可能在上面被添加）
             UniformInt("TexturesFlags", textureFlags);
-            UniformFloat("alphaCutoff", mesh.Material.AlphaCutoff);
         }
 
         var normalMatrix = mesh.WorldTransform.Inverse();
         normalMatrix = Matrix4x4.Transpose(normalMatrix);
         UniformMatrix4("normalMatrix", normalMatrix);
 
-
         if (mesh.IsSkinnedMesh)
         {
-            var skinnedMesh = mesh;
-            var skeleton = skinnedMesh!.Skeleton!;
-            if (skinnedMesh!.Model!.AnimationSampler != null)
+            var skeleton = mesh.Skeleton;
+            if (mesh.Model.AnimationSampler != null)
             {
                 for (int i = 0; i < skeleton.Bones.Count; i++)
                 {
-                    UniformMatrix4($"BoneMatrices[{i}]", skeleton.Bones[i].InverseWorldMatrix * skinnedMesh!.Model!.AnimationSampler.BonesTransform[i]);
+                    UniformMatrix4($"BoneMatrices[{i}]", skeleton.Bones[i].InverseWorldMatrix * mesh.Model.AnimationSampler.BonesTransform[i]);
                 }
             }
             else
@@ -320,8 +337,7 @@ public class CelLightPass : RenderPass
                 }
             }
         }
+
         base.RenderMesh(mesh, view, projection);
     }
-
-
 }
