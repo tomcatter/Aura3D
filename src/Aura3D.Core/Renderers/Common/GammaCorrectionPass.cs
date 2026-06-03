@@ -75,6 +75,7 @@ void main()
         var rt = GetRenderTarget(inputRenderTargetName,
             new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height));
 
+        gl.Disable(EnableCap.CullFace);
         gl.Disable(EnableCap.DepthTest);
         gl.Disable(EnableCap.Blend);
 
