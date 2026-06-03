@@ -45,10 +45,10 @@ public class InstancedMeshGroup : Node
     public Mesh SourceMesh { get; }
 
     /// <summary>
-    /// 每个 InstancedMesh 分组最多容纳的实例数。默认 64。
+    /// 每个 InstancedMesh 分组最多容纳的实例数。默认 1024。
     /// 数值越小分组越细，剔除精度越高但 DrawCall 也越多。
     /// </summary>
-    public int MaxInstancesPerGroup { get; set; } = 64;
+    public int MaxInstancesPerGroup { get; set; } = 1024;
 
     /// <summary>
     /// 八叉树最大深度。默认 6。
