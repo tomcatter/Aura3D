@@ -111,17 +111,17 @@ public class AnimationBlendSpace : IAnimationSampler
 
             if (distance < 0.000001)
             {
-                anim.Update(deltaTime);
-
-                for(int i = 0; i < BonesTransform.Count; i++)
-                {
-                    bonesTransform[i] = anim.BonesTransform[i];
-                }
-                return;
+                // Exact match: clear all previous weights and assign full weight
+                for (int j = 0; j < weights.Count; j++)
+                    weights[j] = 0f;
+                weights[index] = 1f;
+                totalRawWeight = 1f;
+                index++;
+                break;
             }
+
             weights[index] = 1f / (float)MathF.Pow(distance, IdwPower);
             totalRawWeight += weights[index];
-
             index++;
         }
 
@@ -137,6 +137,7 @@ public class AnimationBlendSpace : IAnimationSampler
         }
 
         index = 0;
+        bool firstContributor = true;
         foreach (var weight in weights)
         {
             if (weight > 0)
@@ -144,11 +145,12 @@ public class AnimationBlendSpace : IAnimationSampler
                 animationSamplers[index].Item2.Update(deltaTime);
                 for (int j = 0; j < BonesTransform.Count; j++)
                 {
-                    if (index == 0)
+                    if (firstContributor)
                         bonesTransform[j] = animationSamplers[index].Item2.BonesTransform[j] * weight;
                     else
-                        bonesTransform[j] = bonesTransform[j] + animationSamplers[index].Item2.BonesTransform[j] * weight;
+                        bonesTransform[j] += animationSamplers[index].Item2.BonesTransform[j] * weight;
                 }
+                firstContributor = false;
             }
             index++;
         }

@@ -589,8 +589,8 @@ public enum AttachToParentRule
 /// </summary>
 public enum UpdateTransformMode
 {
-    Local = 1 >> 0,
-    World = 1 >> 1,
-    ChildrenWorld = 1 >> 2,
+    Local = 1 << 0,
+    World = 1 << 1,
+    ChildrenWorld = 1 << 2,
     All = Local | World | ChildrenWorld
 }

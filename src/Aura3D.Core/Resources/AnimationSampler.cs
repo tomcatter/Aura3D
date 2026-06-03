@@ -55,20 +55,34 @@ public class AnimationSampler : IAnimationSampler
             startTime = DateTime.Now;
         }
 
-        if (DateTime.Now - startTime > TimeSpan.FromSeconds(animation.Duration / TimeScale))
+        var now = DateTime.Now;
+        var elapsed = now - startTime;
+        var duration = TimeSpan.FromSeconds(animation.Duration / TimeScale);
+
+        while (elapsed > duration && duration > TimeSpan.Zero)
         {
-            if (LoopMode == LoopMode.Loop || LoopMode == LoopMode.PingPong)
+            if (LoopMode == LoopMode.Loop)
             {
-                startTime = DateTime.Now;
+                startTime += duration;
+                elapsed = now - startTime;
+            }
+            else if (LoopMode == LoopMode.PingPong)
+            {
+                startTime += duration;
                 pingPongForward = !pingPongForward;
+                elapsed = now - startTime;
             }
             else if (LoopMode == LoopMode.Once)
             {
                 return;
             }
+            else
+            {
+                break;
+            }
         }
 
-        var time = (float)(DateTime.Now - startTime).TotalSeconds * TimeScale;
+        var time = (float)elapsed.TotalSeconds * TimeScale;
 
         if (pingPongForward == false)
         {
@@ -81,7 +95,7 @@ public class AnimationSampler : IAnimationSampler
 
     private void processBoneTransform(Bone bone, float time)
     {
-        var channelMatrix = animation.Sample(bone.Name, (float)((DateTime.Now - startTime).TotalSeconds * TimeScale));
+        var channelMatrix = animation.Sample(bone.Name, time);
         if (bone.Parent != null)
         {
             bonesTransform[bone.Index] = channelMatrix * BonesTransform[bone.Parent.Index];

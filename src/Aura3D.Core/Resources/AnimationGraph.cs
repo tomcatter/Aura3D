@@ -92,16 +92,20 @@ public class AnimationGraph : IAnimationSampler
             }
         }
 
-        foreach(var (fun, nextNode) in currentNode.NextNodes)
+        // Only check transitions when the current blend is complete
+        if (currentWeight >= 1)
         {
-            if (fun(currentNode.Sampler, deltaTime) == true)
+            foreach(var (fun, nextNode) in currentNode.NextNodes)
             {
-                lastNode = currentNode;
-                currentNode = nextNode;
-                currentNode.Sampler.Reset();
-                startTime = DateTime.Now;
-                currentWeight = 0;
-                break;
+                if (fun(currentNode.Sampler, deltaTime) == true)
+                {
+                    lastNode = currentNode;
+                    currentNode = nextNode;
+                    currentNode.Sampler.Reset();
+                    startTime = DateTime.Now;
+                    currentWeight = 0;
+                    break;
+                }
             }
         }
 

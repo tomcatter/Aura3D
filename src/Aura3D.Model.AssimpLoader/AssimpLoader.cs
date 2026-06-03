@@ -338,20 +338,13 @@ public static class AssimpLoader
             {
                 var slot = assimpMaterial.TextureNormal;
                 normalTexture = processTexture(scene, slot, path, loadTextureFunc);
-
-                material.Channels.Add(new Channel
-                {
-                    Name = "Normal",
-                    Texture = texture,
-                });
-
             }
 
             if (normalTexture == null)
             {
                 normalTexture = Texture.CreateFromColor(Color.FromArgb(255, 128, 128, 255));
             }
-            
+
             material.Channels.Add(new Channel
             {
                 Name = "Normal",

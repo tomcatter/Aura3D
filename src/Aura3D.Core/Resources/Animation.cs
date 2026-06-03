@@ -120,7 +120,19 @@ public static class SamplerHelper
             }
         }
 
-        throw new Exception("Time value is out of range.");
+        // Fallback: find nearest keyframe (reached due to float precision gap)
+        float minDist = float.MaxValue;
+        T nearest = list[0].Value;
+        for (int i = 0; i < list.Count; i++)
+        {
+            float dist = MathF.Abs(time - list[i].Time);
+            if (dist < minDist)
+            {
+                minDist = dist;
+                nearest = list[i].Value;
+            }
+        }
+        return nearest;
     }
 
 

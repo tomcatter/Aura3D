@@ -341,7 +341,7 @@ public class Mesh : Node, IOctreeObject
 
         foreach (var (index, boundingBox) in SkeletalMeshBoundingBox)
         {
-            if (index < AnimationSampler.BonesTransform.Count)
+            if (index < AnimationSampler.BonesTransform.Count && index < Skeleton.Bones.Count)
             {
                 _animatedBoundingBoxes.Add(boundingBox.Transform(Skeleton.Bones[index].InverseWorldMatrix * AnimationSampler.BonesTransform[index]));
             }
