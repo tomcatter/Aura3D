@@ -57,7 +57,11 @@ Aura3D is an Avalonia-based 3D rendering control built on OpenGL ES 3.0. It prov
 
 ```shell
 dotnet add package Aura3D.Avalonia
+dotnet add package Aura3D.Model.GltfLoader
 ```
+
+> At minimum you need one model loader. `Aura3D.Model.GltfLoader` handles glTF/GLB.
+> For FBX, OBJ, 3DS and 50+ other formats, also add `Aura3D.Model.AssimpLoader`.
 
 ### 2. Use in XAML
 
