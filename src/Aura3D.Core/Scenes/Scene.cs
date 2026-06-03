@@ -72,11 +72,19 @@ public class Scene
     private OneOf<CubeTexture, Texture> _background;
 
     /// <summary>
+    /// 获取场景的渲染管线配置。
+    /// </summary>
+    public PipelineSettings PipelineSettings { get; }
+
+    /// <summary>
     /// 初始化 <see cref="Scene"/> 类的新实例。
     /// </summary>
     /// <param name="createRenderPipeline">用于创建渲染管线的委托函数。</param>
-    public Scene(Func<Scene, RenderPipeline> createRenderPipeline)
+    /// <param name="pipelineSettings">渲染管线配置，为 <c>null</c> 时使用默认值。</param>
+    public Scene(Func<Scene, RenderPipeline> createRenderPipeline,
+                PipelineSettings? pipelineSettings = null)
     {
+        PipelineSettings = pipelineSettings ?? new PipelineSettings();
         RenderPipeline = createRenderPipeline(this);
 
         StaticMeshOctree = new Octree<Mesh>(new System.Numerics.Vector3(100, 100, 100), 5);

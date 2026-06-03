@@ -32,12 +32,22 @@ public abstract partial class RenderPipeline
     public RenderPipeline(Scene scene)
     {
         this.Scene = scene;
+        this.Settings = scene.PipelineSettings;
     }
+
+    /// <summary>
+    /// 获取渲染管线的用户可配置设置。
+    /// </summary>
+    public PipelineSettings Settings { get; }
 
     /// <summary>
     /// 获取或设置是否启用视锥体剔除。
     /// </summary>
-    public bool EnableFrustumCulling { get; set; } = true;
+    public bool EnableFrustumCulling
+    {
+        get => Settings.EnableFrustumCulling;
+        set => Settings.EnableFrustumCulling = value;
+    }
 
     /// <summary>
     /// 获取当前渲染管线关联的场景。
@@ -105,17 +115,29 @@ public abstract partial class RenderPipeline
     /// <summary>
     /// 获取或设置方向光源的最大数量限制。
     /// </summary>
-    public int DirectionalLightLimit { get; set; } = 4;
+    public int DirectionalLightLimit
+    {
+        get => Settings.DirectionalLightLimit;
+        set => Settings.DirectionalLightLimit = value;
+    }
 
     /// <summary>
     /// 获取或设置点光源的最大数量限制。
     /// </summary>
-    public int PointLightLimit { get; set; } = 4;
+    public int PointLightLimit
+    {
+        get => Settings.PointLightLimit;
+        set => Settings.PointLightLimit = value;
+    }
 
     /// <summary>
     /// 获取或设置聚光灯的最大数量限制。
     /// </summary>
-    public int SpotLightLimit { get; set; } = 4;
+    public int SpotLightLimit
+    {
+        get => Settings.SpotLightLimit;
+        set => Settings.SpotLightLimit = value;
+    }
 
     private int lastDirectionalLightLimit;
 

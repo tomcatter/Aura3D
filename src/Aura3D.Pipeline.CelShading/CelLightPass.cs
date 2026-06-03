@@ -47,8 +47,6 @@ public class CelLightPass : RenderPass
     }
 
 
-    public float AmbientIntensity = 0.1f;
-
     public CelLightPass(RenderPipeline renderPipeline) : base(renderPipeline)
     {
         VertexShader = ShaderResource.MeshVert;
@@ -125,7 +123,7 @@ public class CelLightPass : RenderPass
     {
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
-        UniformFloat("ambientIntensity", AmbientIntensity);
+        UniformFloat("ambientIntensity", renderPipeline.Settings.AmbientIntensity);
         UniformVector3("cameraPosition", view.Inverse().Translation);
         UniformTexture("ShadowRamp", rampTexture);
 

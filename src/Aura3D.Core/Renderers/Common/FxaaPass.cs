@@ -243,6 +243,9 @@ void main() {
 
     public override void Render(Camera camera)
     {
+        if (!renderPipeline.Settings.EnableFxaa)
+            return;
+
         var size = new System.Drawing.Size((int)camera.RenderTarget.Width, (int)camera.RenderTarget.Height);
         gl.BindFramebuffer(GLEnum.Framebuffer, camera.RenderTarget.FrameBufferId);
 

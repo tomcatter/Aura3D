@@ -425,19 +425,137 @@ material.SetShaderPassParametersCallback("LightPass", pass =>
 
 这种方式适合局部定制——只想改变某个特定材质的渲染方式，而不需要创建整个管线。
 
-## 视锥体剔除
+## 管线配置（PipelineSettings）
 
-任何管线都可以开启视锥体剔除，大幅减少不可见物体的绘制调用：
+通过 `PipelineSettings` 可以调整渲染管线的行为和画面效果。部分设置只能在管线创建前指定，另一部分可以随时调整、即时看到变化。
 
-```csharp
-// 开启
-view.Scene.RenderPipeline.EnableFrustumCulling = true;
+### 配置方式
 
-// 关闭
-view.Scene.RenderPipeline.EnableFrustumCulling = false;
+**XAML：**
+
+```xml
+<Window xmlns:core="clr-namespace:Aura3D.Core.Renderers;assembly=Aura3D.Core" ...>
+    <a:Aura3DView x:TypeArguments="cel:CelShadingPipeline">
+        <a:Aura3DView.PipelineSettings>
+            <core:PipelineSettings DepthFormat="DepthComponent32f"
+                                   DirectionalLightLimit="2"
+                                   ToneMappingExposure="1.2f" />
+        </a:Aura3DView.PipelineSettings>
+    </a:Aura3DView>
+</Window>
 ```
 
-建议在场景中有大量物体时开启，可以显著提升性能。
+**代码：**
+
+```csharp
+// 管线创建前设置（用于深度格式、光源上限等）
+var view = new Aura3DView<CelShadingPipeline>
+{
+    PipelineSettings = new PipelineSettings
+    {
+        DepthFormat = TextureFormat.DepthComponent32f,
+        DirectionalLightLimit = 2,
+    }
+};
+
+// 运行时随时调整（曝光、环境光、开关等，改完下帧立刻看到效果）
+view.Scene.RenderPipeline.Settings.ToneMappingExposure = 1.3f;
+view.Scene.RenderPipeline.Settings.EnableFxaa = false;
+```
+
+### 参数一览
+
+#### 深度格式（DepthFormat）
+
+控制场景中物体前后遮挡判断的精度。可以理解为"判断谁在前面谁在后面的标尺刻度有多密"。
+
+| 取值 | 精度 | 适用场景 |
+|---|---|---|
+| `DepthComponent16` | 16 位（默认） | 普通场景 |
+| `DepthComponent24` | 24 位 | 较大场景，或需要更精细的深度判断 |
+| `DepthComponent32f` | 32 位浮点 | 超大规模场景（城市、地形），16 位精度不够用时 |
+
+> 如果场景中出现远处物体闪烁、前后叠在一起分不清谁在前面（俗称 Z-Fighting[^1]），说明精度不够，换用 `DepthComponent32f` 即可。
+
+#### 光源数量上限
+
+限制同时生效的光源个数。超出上限的光源不会产生光照和阴影。
+
+| 参数 | 说明 |
+|---|---|
+| `DirectionalLightLimit` | 方向光上限（默认 4）—— 模拟太阳光、全局平行光 |
+| `PointLightLimit` | 点光源上限（默认 4）—— 灯泡、蜡烛等向四周发光的光源 |
+| `SpotLightLimit` | 聚光灯上限（默认 4）—— 手电筒、舞台追光等锥形光源 |
+
+> 调小可以提升性能，调大可以支持更多光源。如果放了 6 盏灯只有 4 盏亮，把这个值调大就行。
+
+#### 色调映射与亮度（ToneMapping）
+
+色调映射[^2]是把 HDR（高动态范围）颜色压缩到屏幕能显示的范围的过程。这两个参数控制画面的明暗感觉。
+
+| 参数 | 作用 | 默认值 |
+|---|---|---|
+| `ToneMappingExposure` | 整体亮度，类似相机的曝光补偿。值越大画面越亮 | `0.7` |
+| `BrightnessClamp` | 最亮能有多亮。超过就会被截断，防止局部过曝 | `4.0` |
+
+> 画面偏暗时加大 `ToneMappingExposure`；高亮区域白成一片时加大 `BrightnessClamp`。
+
+#### 环境光强度（AmbientIntensity）
+
+没有光源直接照射的地方也不是全黑——环境光模拟场景中各处散射反射的微弱光线。值越大暗部越亮。
+
+| 取值范围 | 效果 |
+|---|---|
+| `0` | 暗部完全黑 |
+| `0.1`（默认） | 轻微提亮暗部 |
+| `0.5` 以上 | 暗部明显偏亮，风格化效果 |
+
+> 注意：PBR 管线使用基于物理的 IBL 环境光，不受此参数影响。
+
+#### 功能开关
+
+| 参数 | 作用 | 默认值 |
+|---|---|---|
+| `EnableFxaa` | 是否开启 FXAA 抗锯齿[^3]——让物体边缘更平滑 | `true` |
+| `EnableFrustumCulling` | 是否只渲染相机视野内的物体。看不见的物体自动跳过 | `true` |
+
+> 性能不足时关闭 `EnableFxaa` 可节省一点开销。`EnableFrustumCulling` 一般不需要关，场景物体多时能显著提速。
+
+### 哪些设置需要什么时候设
+
+| 设置 | 必须在管线创建前设？ | 适用管线 |
+|---|---|---|
+| `DepthFormat` | ✅ 是，之后改了不生效 | 全部 |
+| `DirectionalLightLimit` | ✅ 是 | BlinnPhong / PBR / CelShading |
+| `PointLightLimit` | ✅ 是 | BlinnPhong / PBR / CelShading |
+| `SpotLightLimit` | ✅ 是 | BlinnPhong / PBR / CelShading |
+| `ToneMappingExposure` | ❌ 随时可改 | BlinnPhong / PBR / CelShading |
+| `BrightnessClamp` | ❌ 随时可改 | BlinnPhong / PBR / CelShading |
+| `AmbientIntensity` | ❌ 随时可改 | BlinnPhong / CelShading |
+| `EnableFxaa` | ❌ 随时可改 | 全部 |
+| `EnableFrustumCulling` | ❌ 随时可改 | 全部 |
+
+> NoLight 管线不涉及光照和色调映射，光源、曝光、环境光参数对它无效。
+
+### 向后兼容
+
+`RenderPipeline` 上原有的属性（`EnableFrustumCulling` 等）仍然正常工作，内部会自动转发到 `Settings`：
+
+```csharp
+// 以下两种写法等价
+pipeline.EnableFrustumCulling = false;
+pipeline.Settings.EnableFrustumCulling = false;
+```
+
+[^1]: Z-Fighting：当两个面几乎重叠时，GPU 无法准确判断前后关系，导致两个面的像素交替出现，产生闪烁效果。增大深度缓冲精度可以缓解。参考：https://en.wikipedia.org/wiki/Z-fighting
+
+[^2]: 色调映射（Tone Mapping）：将高动态范围（HDR）的颜色值映射到显示器能显示的低动态范围（LDR）。人眼在暗处和亮处都能看清细节，但显示器亮度范围有限，需要色调映射来保留高亮和阴影区域的细节。参考：https://en.wikipedia.org/wiki/Tone_mapping
+
+[^3]: FXAA（Fast Approximate Anti-Aliasing）：一种轻量的抗锯齿算法，通过分析画面找到物体边缘并模糊处理，消除锯齿感。
+
+## 视锥体剔除
+
+视锥体剔除让渲染器只绘制相机视野内的物体，减少不必要的绘制开销。通过 `PipelineSettings.EnableFrustumCulling` 控制（默认开启），详见 [管线配置](#管线配置pipelinesettings)。
 
 ## Pipeline 生命周期钩子
 

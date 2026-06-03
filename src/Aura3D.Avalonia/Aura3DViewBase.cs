@@ -48,6 +48,11 @@ public abstract class Aura3DViewBase : global::Avalonia.OpenGL.Controls.OpenGlCo
     /// </summary>
     public Func<Scene, RenderPipeline> CreateRenderPipeline = scene => new BlinnPhongPipeline(scene);
 
+    /// <summary>
+    /// 渲染管线的用户可配置设置。需在 OpenGL 初始化前设置，构造时配置在管线创建后修改不会再生效。
+    /// </summary>
+    public PipelineSettings PipelineSettings { get; set; } = new PipelineSettings();
+
     protected override void OnOpenGlInit(GlInterface gl)
     {
         base.OnOpenGlInit(gl);
@@ -56,7 +61,7 @@ public abstract class Aura3DViewBase : global::Avalonia.OpenGL.Controls.OpenGlCo
 
         UpdateControlRenderTargetsSize();
 
-        Scene = new Scene(CreateRenderPipeline);
+        Scene = new Scene(CreateRenderPipeline, PipelineSettings);
 
         Scene.RenderPipeline.Initialize(gl.GetProcAddress);
 

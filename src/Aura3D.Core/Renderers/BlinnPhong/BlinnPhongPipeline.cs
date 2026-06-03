@@ -16,7 +16,6 @@ public class BlinnPhongPipeline : RenderPipeline, IRenderPipelineCreateInstance
     public BlinnPhongPipeline(Scene scene) : base(scene)
     {
         var shadowMapPass = new ShadowMapPass(this);
-        LightLimitChangedEvent += shadowMapPass.UpdateLightNumLimit;
         RegisterRenderPass(shadowMapPass, RenderPassGroup.Once);
 
         
@@ -40,11 +39,11 @@ public class BlinnPhongPipeline : RenderPipeline, IRenderPipelineCreateInstance
 
         RegisterRenderTarget("BaseRenderTarget")
             .AddTexture("Color", TextureFormat.Rgba16f)
-            .SetDepthTexture(TextureFormat.DepthComponent16);
+            .SetDepthTexture(Settings.DepthFormat);
 
         RegisterRenderTarget("GammaOutput")
             .AddTexture("Color", TextureFormat.Rgba8)
-            .SetDepthTexture(TextureFormat.DepthComponent16);
+            .SetDepthTexture(Settings.DepthFormat);
 
 
     }

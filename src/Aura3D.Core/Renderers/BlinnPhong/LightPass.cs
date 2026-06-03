@@ -66,8 +66,6 @@ public class LightPass : RenderPass
     }
     
 
-    public float AmbientIntensity = 0.1f;
-
     public LightPass(RenderPipeline renderPipeline) : base(renderPipeline)
     {
         VertexShader = ShaderResource.MeshVert;
@@ -222,7 +220,7 @@ public class LightPass : RenderPass
     {
         UniformMatrix4("viewMatrix", view);
         UniformMatrix4("projectionMatrix", projection);
-        UniformFloat("ambientIntensity", AmbientIntensity);
+        UniformFloat("ambientIntensity", renderPipeline.Settings.AmbientIntensity);
         UniformVector3("cameraPosition", view.Inverse().Translation);
     }
 

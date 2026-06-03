@@ -8,16 +8,6 @@ namespace Aura3D.Core.Renderers;
 
 public class ShadowMapPass : RenderPass
 {
-    private int directionalLightLimit;
-    private int pointLightLimit;
-    private int spotLightLimit;
-    public void UpdateLightNumLimit(int directionalLightLimit, int pointLightLimit, int spotLightLimit)
-    {
-        this.directionalLightLimit = directionalLightLimit;
-        this.pointLightLimit = pointLightLimit;
-        this.spotLightLimit = spotLightLimit;
-
-    }
     public ShadowMapPass(RenderPipeline renderPipeline) : base(renderPipeline)
     {
         VertexShader = ShaderResource.ShadowMapVert;
@@ -56,7 +46,7 @@ public class ShadowMapPass : RenderPass
                 continue;
             if (pointLight.CastShadow == false)
                 continue;
-            if (index++ >= pointLightLimit)
+            if (index++ >= renderPipeline.Settings.PointLightLimit)
                 break;
 
             var rt = pointLight.GetPipelineGpuResource<CubeRenderTarget>("ShadowMapRenderTarget");
@@ -102,7 +92,7 @@ public class ShadowMapPass : RenderPass
                 continue;
             if (spotLight.CastShadow == false)
                 continue;
-            if (index++ >= spotLightLimit)
+            if (index++ >= renderPipeline.Settings.SpotLightLimit)
                 break;
 
             var rt = spotLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
@@ -134,7 +124,7 @@ public class ShadowMapPass : RenderPass
                 continue;
             if (directionalLight.CastShadow == false)
                 continue;
-            if (index++ >= directionalLightLimit)
+            if (index++ >= renderPipeline.Settings.DirectionalLightLimit)
                 break;
 
             var rt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");

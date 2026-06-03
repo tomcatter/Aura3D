@@ -59,9 +59,6 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
         }
 
         var shadowPass = new ShadowMapPass(this);
-
-        shadowPass.UpdateLightNumLimit(10, 10, 10);
-
         RegisterRenderPass(shadowPass, RenderPassGroup.Once);
 
         RegisterRenderPass(new IrradianceMapPass(this), RenderPassGroup.EveryCamera);
@@ -101,21 +98,21 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
             .AddTexture("BaseColor", TextureFormat.Rgba8)
             .AddTexture("NormalRoughness", TextureFormat.Rgba8)
             .AddTexture("MetallicEmissive", TextureFormat.Rgba8)
-            .SetDepthTexture(TextureFormat.DepthComponent16);
+            .SetDepthTexture(Settings.DepthFormat);
 
 
         RegisterRenderTarget("BaseRenderTarget")
             .AddTexture("Color", TextureFormat.Rgba32f)
-            .SetDepthTexture(TextureFormat.DepthComponent16);
+            .SetDepthTexture(Settings.DepthFormat);
 
         RegisterRenderTarget("BackgroundRenderTarget")
             .AddTexture("Color", TextureFormat.Rgba32f)
-            .SetDepthTexture(TextureFormat.DepthComponent16);
+            .SetDepthTexture(Settings.DepthFormat);
 
 
         RegisterRenderTarget("GammaOutput")
             .AddTexture("Color", TextureFormat.Rgba32f)
-            .SetDepthTexture(TextureFormat.DepthComponent16);
+            .SetDepthTexture(Settings.DepthFormat);
 
         DefaultBaseColor = Texture.CreateFromColor(Color.White);
 

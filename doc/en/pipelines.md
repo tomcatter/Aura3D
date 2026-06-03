@@ -425,19 +425,137 @@ material.SetShaderPassParametersCallback("LightPass", pass =>
 
 This approach is for local customization — changing how a specific material renders without creating an entire pipeline.
 
-## Frustum Culling
+## Pipeline Settings
 
-Any pipeline can enable frustum culling to dramatically reduce draw calls for invisible objects:
+Use `PipelineSettings` to adjust rendering behavior and visual quality. Some settings must be configured before the pipeline is created, while others can be adjusted on the fly and take effect immediately.
 
-```csharp
-// Enable
-view.Scene.RenderPipeline.EnableFrustumCulling = true;
+### Configuration
 
-// Disable
-view.Scene.RenderPipeline.EnableFrustumCulling = false;
+**XAML:**
+
+```xml
+<Window xmlns:core="clr-namespace:Aura3D.Core.Renderers;assembly=Aura3D.Core" ...>
+    <a:Aura3DView x:TypeArguments="cel:CelShadingPipeline">
+        <a:Aura3DView.PipelineSettings>
+            <core:PipelineSettings DepthFormat="DepthComponent32f"
+                                   DirectionalLightLimit="2"
+                                   ToneMappingExposure="1.2f" />
+        </a:Aura3DView.PipelineSettings>
+    </a:Aura3DView>
+</Window>
 ```
 
-Recommended when the scene contains many objects, as it significantly improves performance.
+**Code:**
+
+```csharp
+// Set before pipeline creation (for depth format, light limits, etc.)
+var view = new Aura3DView<CelShadingPipeline>
+{
+    PipelineSettings = new PipelineSettings
+    {
+        DepthFormat = TextureFormat.DepthComponent32f,
+        DirectionalLightLimit = 2,
+    }
+};
+
+// Adjust at any time (exposure, ambient light, toggles — takes effect next frame)
+view.Scene.RenderPipeline.Settings.ToneMappingExposure = 1.3f;
+view.Scene.RenderPipeline.Settings.EnableFxaa = false;
+```
+
+### Settings Reference
+
+#### Depth Format (DepthFormat)
+
+Controls the precision of depth testing — how accurately the GPU determines which object is in front of another. Think of it as "how finely divided the ruler is" when measuring depth.
+
+| Value | Precision | When to use |
+|---|---|---|
+| `DepthComponent16` | 16-bit (default) | Normal scenes |
+| `DepthComponent24` | 24-bit | Larger scenes, or when finer depth precision is needed |
+| `DepthComponent32f` | 32-bit floating point | Very large scenes (cities, terrain) where 16-bit isn't enough |
+
+> If distant objects flicker or appear to overlap incorrectly (a visual artifact known as Z-Fighting[^1]), switch to `DepthComponent32f`.
+
+#### Light Limits
+
+Cap the number of lights that take effect simultaneously. Lights beyond the limit won't produce illumination or shadows.
+
+| Parameter | Description |
+|---|---|
+| `DirectionalLightLimit` | Max directional lights (default 4) — for sun-like, parallel light sources |
+| `PointLightLimit` | Max point lights (default 4) — for bulbs, candles, omnidirectional sources |
+| `SpotLightLimit` | Max spot lights (default 4) — for flashlights, stage spotlights |
+
+> Lower limits improve performance; raise them to support more lights. If you placed 6 lights but only 4 are working, increase the corresponding limit.
+
+#### Tone Mapping & Brightness
+
+Tone mapping[^2] compresses HDR (high dynamic range) colors into the range a display can show. These two parameters control the overall brightness feel of the scene.
+
+| Parameter | Effect | Default |
+|---|---|---|
+| `ToneMappingExposure` | Global brightness, like a camera's exposure compensation. Higher = brighter | `0.7` |
+| `BrightnessClamp` | The brightness ceiling. Values above this are cut off to prevent blown-out highlights | `4.0` |
+
+> If the scene looks too dark, increase `ToneMappingExposure`. If bright areas are washed out in white, increase `BrightnessClamp`.
+
+#### Ambient Light Intensity (AmbientIntensity)
+
+Areas not directly lit by any light source aren't pitch black — ambient light simulates the subtle scattered and reflected light that fills a scene. Higher values brighten shadow areas.
+
+| Range | Visual effect |
+|---|---|
+| `0` | Shadows are completely black |
+| `0.1` (default) | Slightly lifts dark areas |
+| `0.5`+ | Noticeably bright shadows; stylistic look |
+
+> Note: The PBR pipeline uses physically-based IBL ambient lighting and is not affected by this parameter.
+
+#### Feature Toggles
+
+| Parameter | Effect | Default |
+|---|---|---|
+| `EnableFxaa` | Enables FXAA anti-aliasing[^3] — smooths jagged edges on objects | `true` |
+| `EnableFrustumCulling` | Only render objects inside the camera's view. Invisible objects are automatically skipped | `true` |
+
+> Disable `EnableFxaa` for a small performance gain. `EnableFrustumCulling` is generally best left on — it significantly speeds up scenes with many objects.
+
+### Quick Reference
+
+| Setting | Must set before creation? | Applies to |
+|---|---|---|
+| `DepthFormat` | ✅ Yes — won't take effect later | All pipelines |
+| `DirectionalLightLimit` | ✅ Yes | BlinnPhong / PBR / CelShading |
+| `PointLightLimit` | ✅ Yes | BlinnPhong / PBR / CelShading |
+| `SpotLightLimit` | ✅ Yes | BlinnPhong / PBR / CelShading |
+| `ToneMappingExposure` | ❌ Anytime | BlinnPhong / PBR / CelShading |
+| `BrightnessClamp` | ❌ Anytime | BlinnPhong / PBR / CelShading |
+| `AmbientIntensity` | ❌ Anytime | BlinnPhong / CelShading |
+| `EnableFxaa` | ❌ Anytime | All pipelines |
+| `EnableFrustumCulling` | ❌ Anytime | All pipelines |
+
+> The NoLight pipeline skips lighting and tone mapping passes, so light limits, exposure, and ambient parameters have no effect on it.
+
+### Backward Compatibility
+
+Existing properties on `RenderPipeline` (such as `EnableFrustumCulling`) still work and internally forward to `Settings`:
+
+```csharp
+// These two lines are equivalent
+pipeline.EnableFrustumCulling = false;
+pipeline.Settings.EnableFrustumCulling = false;
+```
+
+[^1]: Z-Fighting: When two surfaces are nearly coplanar, the GPU can't reliably determine which is in front, causing pixels from both surfaces to flicker. Increasing depth buffer precision helps. Reference: https://en.wikipedia.org/wiki/Z-fighting
+
+[^2]: Tone Mapping: The process of mapping HDR color values to the limited range a display can show. The human eye can perceive detail in both dark and bright areas, but displays have a limited brightness range; tone mapping preserves detail in both highlights and shadows. Reference: https://en.wikipedia.org/wiki/Tone_mapping
+
+[^3]: FXAA (Fast Approximate Anti-Aliasing): A lightweight anti-aliasing technique that analyzes the rendered image, detects edges, and applies smoothing to reduce the jagged "staircase" appearance.
+
+## Frustum Culling
+
+Frustum culling makes the renderer only draw objects within the camera's view, skipping everything outside. Controlled by `PipelineSettings.EnableFrustumCulling` (enabled by default). See [Pipeline Settings](#pipeline-settings) for details.
 
 ## Pipeline Lifecycle Hooks
 

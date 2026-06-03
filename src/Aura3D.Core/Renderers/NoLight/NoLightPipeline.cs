@@ -32,12 +32,12 @@ public class NoLightPipeline : RenderPipeline, IRenderPipelineCreateInstance
 
         RegisterRenderTarget("BaseRenderTarget")
             .AddTexture("Color", TextureFormat.Rgba16f)
-            .SetDepthTexture(TextureFormat.DepthComponent16);
+            .SetDepthTexture(Settings.DepthFormat);
 
 
         RegisterRenderTarget("GammaOutput")
             .AddTexture("Color", TextureFormat.Rgba8)
-            .SetDepthTexture(TextureFormat.DepthComponent16);
+            .SetDepthTexture(Settings.DepthFormat);
     }
 
     /// <summary>

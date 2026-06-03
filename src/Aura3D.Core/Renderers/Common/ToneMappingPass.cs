@@ -98,8 +98,8 @@ void main()
         UseShader_Internal();
         ClearTextureUnit();
         UniformTexture("u_texture", source);
-        UniformFloat("u_exposure", 0.7f);
-        UniformFloat("u_brightnessClamp", 4.0f);
+        UniformFloat("u_exposure", renderPipeline.Settings.ToneMappingExposure);
+        UniformFloat("u_brightnessClamp", renderPipeline.Settings.BrightnessClamp);
         RenderQuad();
     }
 }
