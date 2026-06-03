@@ -35,6 +35,9 @@ public class BlinnPhongPipeline : RenderPipeline, IRenderPipelineCreateInstance
         RegisterRenderPass(new GammaCorrectionPass(this, "BaseRenderTarget", "Color").SetOutPutRenderTarget("GammaOutput"), RenderPassGroup.EveryCamera);
         RegisterRenderPass(new FxaaPass(this, "GammaOutput", "Color"), RenderPassGroup.EveryCamera);
 
+        // 调试绘制通道（方向轴、网格等），最后渲染以覆盖在所有内容之上
+        RegisterRenderPass(new DebugDrawPass(this), RenderPassGroup.EveryCamera);
+
         RegisterRenderTarget("BaseRenderTarget")
             .AddTexture("Color", TextureFormat.Rgba16f)
             .SetDepthTexture(TextureFormat.DepthComponent16);

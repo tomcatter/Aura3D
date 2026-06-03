@@ -85,12 +85,48 @@ public class Scene
         Background = Texture.CreateFromColor(Color.AliceBlue);
 
         AddNode(MainCamera);
+
+        // 添加内置的方向轴和参考网格（默认隐藏）
+        AxisGizmo = new AxisGizmo(1.0f);
+        Grid = new Grid(10.0f, 10);
+        AddNode(AxisGizmo);
+        AddNode(Grid);
+        ShowAxisGizmo = false;
+        ShowGrid = false;
     }
 
     /// <summary>
     /// 获取场景中所有控制渲染目标的集合。
     /// </summary>
     public HashSet<ControlRenderTarget> ControlRenderTargets { get; } = new HashSet<ControlRenderTarget>();
+
+    /// <summary>
+    /// 获取场景中内置的方向轴可视化节点。
+    /// </summary>
+    public AxisGizmo AxisGizmo { get; private set; }
+
+    /// <summary>
+    /// 获取场景中内置的网格可视化节点。
+    /// </summary>
+    public Grid Grid { get; private set; }
+
+    /// <summary>
+    /// 获取或设置是否显示方向轴。
+    /// </summary>
+    public bool ShowAxisGizmo
+    {
+        get => AxisGizmo.Enable;
+        set => AxisGizmo.Enable = value;
+    }
+
+    /// <summary>
+    /// 获取或设置是否显示参考网格。
+    /// </summary>
+    public bool ShowGrid
+    {
+        get => Grid.Enable;
+        set => Grid.Enable = value;
+    }
 
     /// <summary>
     /// 将节点添加到场景中，并递归添加其所有子节点。
