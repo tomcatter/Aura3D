@@ -5,6 +5,7 @@ using SharpGLTF.IO;
 using SharpGLTF.Schema2;
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Material = Aura3D.Core.Resources.Material;
 using Mesh = Aura3D.Core.Nodes.Mesh;
 using Node = Aura3D.Core.Nodes.Node;
@@ -18,9 +19,10 @@ public static class ModelLoader
 {
 
     static Dictionary<Type, Func<MaterialExtensionLoaderBase>> _materialExtensionFactories = new();
-    public static void RegisterMaterialExtension<TExtension>(Func<MaterialExtensionLoaderBase> factory) where TExtension: JsonSerializable
+
+    public static void RegisterMaterialExtension<T1>(Func<MaterialExtensionLoaderBase> factory) where T1: JsonSerializable
     {
-        _materialExtensionFactories[typeof(TExtension)] = factory;
+        _materialExtensionFactories[typeof(T1)] = factory;
     }
 
     public static (Core.Nodes.Model, List<Core.Resources.Animation>) LoadGlbModelAndAnimations(Stream stream)

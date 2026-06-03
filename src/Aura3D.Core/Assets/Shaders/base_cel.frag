@@ -1,4 +1,4 @@
-﻿#version 300 es
+#version 300 es
 precision mediump float;
 out vec4 outColor;
 
@@ -48,8 +48,9 @@ in vec3 vNormal;
 // Bit value represent texture exist or not, start from low side: BaseColorTexture | NormalTexture | ILMTextures | ShadowRamp | SpecularRamp
 uniform int TexturesFlags;
 
-// SDF
+// SDF (Face Shadow Map)
 uniform sampler2D SDFTextures;
+uniform int _UseFaceLightMapChannel_R;
 
 // ILM
 uniform sampler2D ILMTextures;
@@ -85,6 +86,12 @@ uniform float ambientIntensity;
 
 uniform vec3 cameraPosition;
 
+#ifdef FACE_RENDER
+// Model matrix for face SDF calculation
+uniform mat4 faceModelMatrix;
+#endif
+
+
 #if defined(BLENDMODE_MASKED) || defined(BLENDMODE_TRANSLUCENT)
 
 uniform float alphaCutoff;
@@ -119,7 +126,7 @@ float GetShadow(vec3 normalWS, vec3 lightDirection, float aoFactor, float shadow
     float shadow = clamp(2.0 * halfLambert * aoFactor, 0.0, 1.0) * shadowAttenuation;
     // Return 1.0 when AO factor is high (>= 0.9), otherwise return calculated shadow
     return mix(shadow, 1.0, step(0.9, aoFactor));
-	// return aoFactor;
+	// return shadow;
 }
 
 // Calculate shadow ramp color using half Lambert and lightmap data
@@ -165,6 +172,56 @@ vec3 GetShadowRampColor(float halfLambert, vec4 lightmap)
     return shadowRamp;
 }
 
+
+#ifdef FACE_RENDER
+// Calculate face shadow using SDF (Signed Distance Field)
+// This creates smooth, art-directable shadows on character faces
+float GetFaceShadow(vec2 uv, vec3 lightDirection)
+{
+    // Extract head directions from model matrix
+    // The character head bone is rotated, so we extract the transformed axes
+    vec3 headDirWSUp = normalize(-vec3(faceModelMatrix[0][0], faceModelMatrix[1][0], faceModelMatrix[2][0]));
+    vec3 headDirWSForward = normalize(vec3(faceModelMatrix[0][1], faceModelMatrix[1][1], faceModelMatrix[2][1]));
+    vec3 headDirWSRight = normalize(-vec3(faceModelMatrix[0][2], faceModelMatrix[1][2], faceModelMatrix[2][2]));
+
+
+    // Project light direction onto head plane (removing up component)
+    vec3 lightDirProj = normalize(lightDirection - dot(lightDirection, headDirWSUp) * headDirWSUp);
+
+    // Determine if light is coming from right side
+    bool isRight = dot(lightDirProj, headDirWSRight) > 0.0;
+
+    // Flip U coordinate when light is from right side
+    // This is because the SDF map is authored for right-side lighting
+    float sdfUVx = isRight ? (1.0 - uv.x) : uv.x;
+    vec2 sdfUV = vec2(sdfUVx, uv.y);
+
+    // Sample SDF value from face shadow map
+    float sdfValue = 0.0;
+    if (_UseFaceLightMapChannel_R == 1) {
+        sdfValue = texture(SDFTextures, sdfUV).r;
+    } else {
+        sdfValue = texture(SDFTextures, sdfUV).a;
+    }
+    sdfValue += _FaceShadowOffset;
+
+    // Calculate forward-light dot product, remap from [-1,1] to [0,1]
+    float FoL01 = dot(headDirWSForward, lightDirProj) * 0.5 + 0.5;
+
+    // Compare SDF value with light angle to determine shadow
+    // Uses smoothstep for soft shadow transition
+    float sdfShadow = smoothstep(
+        FoL01 - _FaceShadowTransitionSoftness,
+        FoL01 + _FaceShadowTransitionSoftness,
+        1.0 - sdfValue
+    );
+
+	// debug
+	//return sdfValue;
+    return sdfShadow;
+}
+#endif
+
 void main()
 {
 	// BaseColor
@@ -186,6 +243,9 @@ void main()
  		normal = normalize(normal * 2.0 - 1.0);
  		normal = normalize(vTBN * normal);
  	}
+	else{
+		normal = vTBN[2];
+	}
 	if (!gl_FrontFacing) 
 	{
 		normal = -normal;
@@ -207,29 +267,63 @@ void main()
 		ilmTexCol = texture(ILMTextures, vTexCoord);
 	}
 	float aoFactor = ilmTexCol.y;
+	//debug
 	float shadow = GetShadow(normal, mainLightDirection, aoFactor, 1.0);
-	
+
 	// Diffuse
 	vec3 diffuseColor = vec3(0);
+
+#ifdef FACE_RENDER
+	// Face rendering with SDF shadow
+	bool HasSDFTexture = (TexturesFlags & SDFBit) != 0;
+
+	if (HasSDFTexture)
+	{
+		// Calculate SDF-based face shadow
+		float sdfShadow = GetFaceShadow(vTexCoord, mainLightDirection);
+		float shadowAttenuation = 1.0; // Can be replaced with actual shadow map attenuation
+		float brightAreaMask = (1.0 - sdfShadow) * shadowAttenuation;
+
+		// Get ramp color
+		vec3 rampTexCol = GetShadowRampColor(sdfShadow, ilmTexCol);
+
+		// Calculate shadow colors
+		vec3 brightAreaColor = rampTexCol * _LightAreaColorTint.rgb;
+		vec3 darkShadowColor = rampTexCol * mix(_DarkShadowColor.rgb, _CoolDarkShadowColor.rgb, float(_UseCoolShadowColorOrTex));
+		vec3 ShadowColorTint = mix(darkShadowColor, brightAreaColor, brightAreaMask);
+
+		diffuseColor = ShadowColorTint * baseColor.xyz;
+
+		// ILM red channel masks areas affected by lighting
+		// Areas with ilmTexCol.r = 0 won't be affected by lighting (like eyes)
+		diffuseColor = mix(baseColor.xyz, diffuseColor, ilmTexCol.r);
+
+		// debug
+		// diffuseColor = vec3(brightAreaMask, brightAreaMask, brightAreaMask);
+		// diffuseColor = rampTexCol;
+	}
+	else
+	{
+		// Fallback to regular body rendering if no SDF texture
+		vec3 rampTexCol = GetShadowRampColor(shadow, ilmTexCol);
+		vec3 brightAreaColor = rampTexCol * _LightAreaColorTint.rgb;
+		vec3 darkShadowColor = rampTexCol * mix(_DarkShadowColor.rgb, _CoolDarkShadowColor.rgb, float(_UseCoolShadowColorOrTex));
+		vec3 ShadowColorTint = mix(darkShadowColor.rgb, brightAreaColor, _BrightAreaShadowFac);
+		diffuseColor = ShadowColorTint * baseColor.xyz;
+	}
+#else
+	// Body rendering (original logic)
 	vec3 rampTexCol = GetShadowRampColor(shadow, ilmTexCol);
 	vec3 brightAreaColor = rampTexCol * _LightAreaColorTint.rgb;
 	vec3 darkShadowColor = rampTexCol * mix(_DarkShadowColor.rgb, _CoolDarkShadowColor.rgb, float(_UseCoolShadowColorOrTex));
     vec3 ShadowColorTint = mix(darkShadowColor.rgb, brightAreaColor, _BrightAreaShadowFac);
 	diffuseColor = ShadowColorTint * baseColor.xyz;
 
-	// diffuseColor = vec3(shadow, shadow, shadow);
-	// diffuseColor = normal;
+#endif
+
 
 	vec3 ambient = ambientIntensity * baseColor.xyz;
 	vec3 finalColor = diffuseColor;
-
-//	if (!gl_FrontFacing) 
-//	{
-//		finalColor = vec3(1.0, 0.0, 0.0);
-//	}
-//	else{
-//		finalColor = vec3(0.0, 1.0, 0.0);
-//	}
 
 
 #ifdef BLENDMODE_TRANSLUCENT
