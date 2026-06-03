@@ -24,10 +24,6 @@ namespace Example.ViewModels
                     ViewModel = new ModelPreviewViewModel()
                 },
                 new MenuViewModel {
-                    Title = "Frustum Culling ",
-                    ViewModel = new FrustumCullingViewModel()
-                },
-                new MenuViewModel {
                     Title = "Animation",
                     ViewModel = new AnimationFeaturesViewModel()
                 },
@@ -44,12 +40,8 @@ namespace Example.ViewModels
                     ViewModel = new CelShadingViewModel()
                 },
                 new MenuViewModel {
-                    Title = "Instanced Rendering",
-                    ViewModel = new InstancedRenderingViewModel()
-                },
-                new MenuViewModel {
-                    Title = "HISM (Hierarchical Instanced)",
-                    ViewModel = new HISMViewModel()
+                    Title = "Rendering Performance",
+                    ViewModel = new RenderingPerformanceViewModel()
                 },
                 new MenuViewModel {
                     Title = "Point Cloud",
