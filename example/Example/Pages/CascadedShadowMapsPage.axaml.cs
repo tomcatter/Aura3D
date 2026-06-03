@@ -13,12 +13,12 @@ using System.Numerics;
 
 namespace Example.Pages;
 
-public partial class CsmTestPage : UserControl
+public partial class CascadedShadowMapsPage : UserControl
 {
     private CameraController _cameraController;
     private DirectionalLight _dl;
 
-    public CsmTestPage()
+    public CascadedShadowMapsPage()
     {
         InitializeComponent();
     }

@@ -121,7 +121,8 @@ public class ShadowMapPass : RenderPass
         int csmCascadeCount = renderPipeline.Settings.CsmCascadeCount;
         float csmSplitLambda = renderPipeline.Settings.CsmSplitLambda;
         var mainCamera = renderPipeline.Scene.MainCamera;
-        const int ShadowMapRes = 1024;
+        int csmRes = renderPipeline.Settings.CsmShadowMapResolution;
+        const int DefaultShadowMapRes = 1024;
         const int MaxCascades = 8;
         Span<float> csmSplits = stackalloc float[MaxCascades + 1];
         Span<Vector3> frustumCorners = stackalloc Vector3[8];
@@ -135,7 +136,7 @@ public class ShadowMapPass : RenderPass
             if (index++ >= renderPipeline.Settings.DirectionalLightLimit)
                 break;
 
-            bool useCsm = csmCascadeCount > 1;
+            bool useCsm = csmCascadeCount > 1 && renderPipeline.SupportsCSM;
 
             if (useCsm)
             {
@@ -150,7 +151,7 @@ public class ShadowMapPass : RenderPass
                 // 获取或创建 CSM 资源（通过管线缓存，IGpuResource 生命周期由管线管理）
                 var csmData = directionalLight.GetPipelineGpuResource<CsmShadowData>(nameof(CsmShadowData));
                 if (csmData == null ||
-                    csmData.Resolution != ShadowMapRes ||
+                    csmData.Resolution != csmRes ||
                     csmData.CascadeCount != cascades)
                 {
                     // 销毁旧资源
@@ -158,7 +159,7 @@ public class ShadowMapPass : RenderPass
 
                     csmData = new CsmShadowData
                     {
-                        Resolution = ShadowMapRes,
+                        Resolution = csmRes,
                         CascadeCount = cascades,
                         CascadeMatrices = new Matrix4x4[cascades],
                         CascadeSplitDepths = new float[cascades + 1],
@@ -168,7 +169,7 @@ public class ShadowMapPass : RenderPass
                     csmData.TextureArrayId = gl.GenTexture();
                     gl.BindTexture(GLEnum.Texture2DArray, csmData.TextureArrayId);
                     gl.TexImage3D(GLEnum.Texture2DArray, 0, (int)InternalFormat.DepthComponent24,
-                        (uint)ShadowMapRes, (uint)ShadowMapRes, (uint)cascades, 0,
+                        (uint)csmRes, (uint)csmRes, (uint)cascades, 0,
                         GLEnum.DepthComponent, GLEnum.UnsignedInt, ReadOnlySpan<byte>.Empty);
                     gl.TexParameter(GLEnum.Texture2DArray, GLEnum.TextureMinFilter, (int)GLEnum.Nearest);
                     gl.TexParameter(GLEnum.Texture2DArray, GLEnum.TextureMagFilter, (int)GLEnum.Nearest);
@@ -186,7 +187,7 @@ public class ShadowMapPass : RenderPass
                     csmData.CascadeSplitDepths[c] = csmSplits[c];
 
                 gl.BindFramebuffer(GLEnum.Framebuffer, csmData.FboId);
-                gl.Viewport(0, 0, ShadowMapRes, ShadowMapRes);
+                gl.Viewport(0, 0, (uint)csmRes, (uint)csmRes);
 
                 var lightPos = directionalLight.WorldTransform.Translation;
                 var lightForward = directionalLight.WorldTransform.ForwardVector();
@@ -225,7 +226,7 @@ public class ShadowMapPass : RenderPass
                     RenderMesh(lightView, lightProjection);
                 }
 
-                // 清除旧的单张 shadow map
+                // 清除旧的单张 shadow map（BlinnPhong 改用 CSM，不再需要）
                 var oldRt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
                 if (oldRt != null)
                 {
@@ -248,7 +249,7 @@ public class ShadowMapPass : RenderPass
 
                 if (rt == null)
                 {
-                    rt = new RenderTarget().SetDepthTexture(TextureFormat.DepthComponent24).SetSize(ShadowMapRes, ShadowMapRes);
+                    rt = new RenderTarget().SetDepthTexture(TextureFormat.DepthComponent24).SetSize(DefaultShadowMapRes, DefaultShadowMapRes);
                     rt.Upload(gl);
                     directionalLight.SetPipelineGpuResource("ShadowMapRenderTarget", rt);
                 }

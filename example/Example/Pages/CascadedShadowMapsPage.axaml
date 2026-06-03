@@ -6,7 +6,7 @@
              xmlns:a="https://github.com/CeSun/Aura3D"
              xmlns:pbr="clr-namespace:Aura3D.Pipeline.PBR;assembly=Aura3D.Pipeline.PBR"
              xmlns:core="clr-namespace:Aura3D.Core.Renderers;assembly=Aura3D.Core"
-             x:Class="Example.Pages.CsmTestPage">
+             x:Class="Example.Pages.CascadedShadowMapsPage">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />

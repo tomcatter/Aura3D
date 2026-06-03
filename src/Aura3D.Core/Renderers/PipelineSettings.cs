@@ -75,4 +75,9 @@ public class PipelineSettings
     /// 场景越大越建议增大该值，让近处级联覆盖更小的范围。
     /// </summary>
     public float CsmSplitLambda { get; set; } = 0.5f;
+
+    /// <summary>
+    /// CSM 每级联的阴影贴图分辨率（宽高相同）。默认 1024，大场景建议 2048。
+    /// </summary>
+    public int CsmShadowMapResolution { get; set; } = 1024;
 }

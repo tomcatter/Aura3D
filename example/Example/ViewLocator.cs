@@ -20,7 +20,7 @@ public class ViewLocator : IDataTemplate
             RenderingPerformanceViewModel renderingPerformanceViewModel => new RenderingPerformancePage(),
             AnimationFeaturesViewModel animationFeaturesViewModel => new AnimationFeaturesPage(),
             PickingTestViewModel pickingTestViewModel => new PickingTestPage(),
-            CsmTestViewModel csmTestViewModel => new CsmTestPage(),
+            CascadedShadowMapsViewModel cascadedShadowMapsViewModel => new CascadedShadowMapsPage(),
             _ => new TextBlock() { Text = "NotFound" }
         };
     }

@@ -15,6 +15,8 @@ namespace Aura3D.Pipeline.PBR;
 
 public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
 {
+    /// <inheritdoc />
+    public override bool SupportsCSM => true;
 
     public Texture DefaultBaseColor { get; private set; }
 

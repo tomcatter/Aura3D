@@ -56,8 +56,8 @@ namespace Example.ViewModels
                     ViewModel = new PickingTestViewModel()
                 },
                 new MenuViewModel {
-                    Title = "CSM Test",
-                    ViewModel = new CsmTestViewModel()
+                    Title = "Cascaded Shadow Maps",
+                    ViewModel = new CascadedShadowMapsViewModel()
                 }
             ];
             OnNavigation(this, _menus.First());

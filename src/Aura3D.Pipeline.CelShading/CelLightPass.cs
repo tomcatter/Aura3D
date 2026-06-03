@@ -143,30 +143,18 @@ public class CelLightPass : RenderPass
                 UniformVector3($"DirectionalLights[{i}].color", new Vector3(directionalLight.LightColor.R / 255f, directionalLight.LightColor.G / 255f, directionalLight.LightColor.B / 255f));
                 UniformFloat($"DirectionalLights[{i}].castShadow", directionalLight.CastShadow ? 1.0f : 0.0f);
 
-                var csmData = directionalLight.GetPipelineGpuResource<CsmShadowData>(nameof(CsmShadowData));
-                bool useCsm = directionalLight.CastShadow && csmData != null;
-
-                if (useCsm)
+                var rt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
+                if (directionalLight.CastShadow && rt != null)
                 {
-                    // CSM: first cascade as fallback shadow
-                    UniformTexture($"DirectionalLightShadowMaps[{i}]", 0);
-                    UniformMatrix4($"DirectionalLights[{i}].shadowMapMatrix", csmData.CascadeMatrices[0]);
+                    var dlview = Matrix4x4.CreateLookAt(directionalLight.WorldTransform.Translation, directionalLight.WorldTransform.Translation + directionalLight.WorldTransform.ForwardVector(), directionalLight.WorldTransform.UpVector());
+                    var dlprojection = Matrix4x4.CreateOrthographic(directionalLight.ShadowConfig.Width, directionalLight.ShadowConfig.Height, directionalLight.ShadowConfig.NearPlane, directionalLight.ShadowConfig.FarPlane);
+                    UniformTexture($"DirectionalLightShadowMaps[{i}]", rt.DepthStencilTexture);
+                    UniformMatrix4($"DirectionalLights[{i}].shadowMapMatrix", dlview * dlprojection);
                 }
                 else
                 {
-                    var rt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
-                    if (directionalLight.CastShadow && rt != null)
-                    {
-                        var dlview = Matrix4x4.CreateLookAt(directionalLight.WorldTransform.Translation, directionalLight.WorldTransform.Translation + directionalLight.WorldTransform.ForwardVector(), directionalLight.WorldTransform.UpVector());
-                        var dlprojection = Matrix4x4.CreateOrthographic(directionalLight.ShadowConfig.Width, directionalLight.ShadowConfig.Height, directionalLight.ShadowConfig.NearPlane, directionalLight.ShadowConfig.FarPlane);
-                        UniformTexture($"DirectionalLightShadowMaps[{i}]", rt.DepthStencilTexture);
-                        UniformMatrix4($"DirectionalLights[{i}].shadowMapMatrix", dlview * dlprojection);
-                    }
-                    else
-                    {
-                        UniformTexture($"DirectionalLightShadowMaps[{i}]", 0);
-                        UniformMatrix4($"DirectionalLights[{i}].shadowMapMatrix", Matrix4x4.Identity);
-                    }
+                    UniformTexture($"DirectionalLightShadowMaps[{i}]", 0);
+                    UniformMatrix4($"DirectionalLights[{i}].shadowMapMatrix", Matrix4x4.Identity);
                 }
             }
         }
