@@ -87,77 +87,13 @@ public partial class ModelPreviewPage : UserControl
             }
         }
     }
-    double deltaTime = 0;
-    bool _isPressed = false;
+    private CameraController _cameraController;
 
-    Avalonia.Point point = new(-1, -1);
     public ModelPreviewPage()
     {
         node = new Node();
         InitializeComponent();
-        aura3d.Focusable = true;
-        this.aura3d.PointerPressed += (s, e) =>
-        {
-            _isPressed = true;
-            point = new(-1, -1);
-
-        };
-
-        this.aura3d.PointerReleased += (s, e) =>
-        {
-            _isPressed = false;
-            point = new(-1, -1);
-        };
-
-        this.aura3d.PointerMoved += (s, e) =>
-        {
-            if (_isPressed == false)
-                return;
-            if (e.Pointer.IsPrimary == false)
-                return;
-
-            var newPosition = e.GetCurrentPoint(this).Position;
-            if (point.X != -1 && point.Y != -1)
-            {
-                var delta = newPosition - point;
-
-                if (aura3d.MainCamera != null)
-                {
-
-                    aura3d.MainCamera!.RotationDegrees = new Vector3(
-                        (float)(aura3d.MainCamera.RotationDegrees.X + (float)delta.Y * (float)deltaTime * 20),
-                        (float)(aura3d.MainCamera.RotationDegrees.Y + (float)delta.X * (float)deltaTime * 20f), 0);
-                }
-
-            }
-            point = newPosition;
-
-        };
-
-        this.aura3d.KeyDown += (s, e) =>
-        {
-
-            if (aura3d.MainCamera == null)
-            {
-                return;
-            }
-            if (e.Key == Avalonia.Input.Key.W)
-            {
-                aura3d.MainCamera!.Position += aura3d.MainCamera.Forward * (float)deltaTime;
-            }
-            else if (e.Key == Avalonia.Input.Key.S)
-            {
-                aura3d.MainCamera!.Position -= aura3d.MainCamera.Forward * (float)deltaTime;
-            }
-            else if (e.Key == Avalonia.Input.Key.A)
-            {
-                aura3d.MainCamera!.Position -= aura3d.MainCamera.Right * (float)deltaTime;
-            }
-            else if (e.Key == Avalonia.Input.Key.D)
-            {
-                aura3d.MainCamera!.Position += aura3d.MainCamera.Right * (float)deltaTime;
-            }
-        };
+        _cameraController = new CameraController(aura3d);
     }
 
     private async void Button_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -309,7 +245,6 @@ public partial class ModelPreviewPage : UserControl
 
     private void Aura3DView_SceneUpdated(object? sender, Aura3D.Avalonia.UpdateRoutedEventArgs e)
     {
-        deltaTime = e.DeltaTime;
     }
 
     private async void Button_Click_1(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

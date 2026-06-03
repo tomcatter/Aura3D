@@ -15,9 +15,7 @@ namespace Example.Pages;
 
 public partial class HISMPage : UserControl
 {
-    bool _isPressed = false;
-    Avalonia.Point point = new(-1, -1);
-    double deltaTime = 0;
+    private CameraController _cameraController;
 
     InstancedMeshGroup? _group;
     int currentGridSize = 100;
@@ -33,58 +31,9 @@ public partial class HISMPage : UserControl
     public HISMPage()
     {
         InitializeComponent();
-        aura3Dview.Focusable = true;
-
-        // 鼠标旋转视角
-        this.aura3Dview.PointerPressed += (s, e) =>
+        _cameraController = new CameraController(aura3Dview)
         {
-            _isPressed = true;
-            point = new(-1, -1);
-        };
-
-        this.aura3Dview.PointerReleased += (s, e) =>
-        {
-            _isPressed = false;
-            point = new(-1, -1);
-        };
-
-        this.aura3Dview.PointerMoved += (s, e) =>
-        {
-            if (_isPressed == false) return;
-            if (e.Pointer.IsPrimary == false) return;
-
-            var newPosition = e.GetCurrentPoint(this).Position;
-            if (point.X != -1 && point.Y != -1)
-            {
-                var delta = newPosition - point;
-                if (aura3Dview.MainCamera != null)
-                {
-                    aura3Dview.MainCamera!.RotationDegrees = new Vector3(
-                        (float)(aura3Dview.MainCamera.RotationDegrees.X + (float)delta.Y * (float)deltaTime * 20),
-                        (float)(aura3Dview.MainCamera.RotationDegrees.Y + (float)delta.X * (float)deltaTime * 20f), 0);
-                }
-            }
-            point = newPosition;
-        };
-
-        // WASD 飞行
-        this.aura3Dview.KeyDown += (s, e) =>
-        {
-            if (aura3Dview.MainCamera == null) return;
-
-            float speed = 30f * (float)deltaTime;
-            if (e.Key == Avalonia.Input.Key.W)
-                aura3Dview.MainCamera!.Position += aura3Dview.MainCamera.Forward * speed;
-            else if (e.Key == Avalonia.Input.Key.S)
-                aura3Dview.MainCamera!.Position -= aura3Dview.MainCamera.Forward * speed;
-            else if (e.Key == Avalonia.Input.Key.A)
-                aura3Dview.MainCamera!.Position -= aura3Dview.MainCamera.Right * speed;
-            else if (e.Key == Avalonia.Input.Key.D)
-                aura3Dview.MainCamera!.Position += aura3Dview.MainCamera.Right * speed;
-            else if (e.Key == Avalonia.Input.Key.Q)
-                aura3Dview.MainCamera!.Position -= Vector3.UnitY * speed;
-            else if (e.Key == Avalonia.Input.Key.E)
-                aura3Dview.MainCamera!.Position += Vector3.UnitY * speed;
+            MoveSpeed = 30f
         };
 
         // 剔除开关
@@ -189,11 +138,9 @@ public partial class HISMPage : UserControl
 
     private void Aura3DView_SceneUpdated(object? sender, UpdateRoutedEventArgs args)
     {
-        deltaTime = args.DeltaTime;
-
         // FPS 统计
         if (deltaTimes.Count >= 10) deltaTimes.RemoveAt(0);
-        deltaTimes.Add(deltaTime);
+        deltaTimes.Add(args.DeltaTime);
         var avgDt = deltaTimes.Average();
 
         if (_group != null)
