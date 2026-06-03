@@ -3,6 +3,7 @@ using Aura3D.Core;
 using Aura3D.Core.Geometries;
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
+using Aura3D.Model;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -95,7 +96,14 @@ public partial class PbrPipelinePage : UserControl
                 scene.Background = cubemap;
             }
 
-
+            // 加载狮子头和凳子模型，Z 轴与球阵对齐
+            var gridZ = scene.MainCamera.Position.Z + scene.MainCamera.Forward.Z * 2;
+            await Task.WhenAll(
+                LoadModel("avares://Example/Assets/Models/lion_head_1k.glb",
+                    m => { m.Position = new Vector3(-5, 9, gridZ); m.Scale = new Vector3(5f); }),
+                LoadModel("avares://Example/Assets/Models/wooden_stool_02_1k.glb",
+                    m => { m.Position = new Vector3(5, 9, gridZ); m.Scale = new Vector3(3f); })
+            );
         }
         catch (Exception ex)
         {
@@ -113,6 +121,27 @@ public partial class PbrPipelinePage : UserControl
             return;
         pitch += (float)(e.DeltaTime * 10);
         mesh.RotationDegrees = new Vector3(pitch, 0, 0);
+    }
+
+    private async Task LoadModel(string uri, Action<Model> configure)
+    {
+        try
+        {
+            var model = await Task.Run(() =>
+            {
+                using var stream = AssetLoader.Open(new Uri(uri));
+                return ModelLoader.LoadGlbModel(stream);
+            });
+            if (model != null && aura3Dview.Scene != null)
+            {
+                configure(model);
+                aura3Dview.Scene.AddNode(model);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load {uri}: {ex.Message}");
+        }
     }
 
     private void Button_Click(object? sender, RoutedEventArgs e)
