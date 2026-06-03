@@ -201,6 +201,37 @@ public class InstancedMesh : Node, IGpuResource
     }
 
     /// <summary>
+    /// 获取指定索引实例的世界变换矩阵。
+    /// </summary>
+    /// <param name="index">实例索引。</param>
+    /// <returns>世界变换矩阵；如果索引无效则返回 null。</returns>
+    public unsafe Matrix4x4? GetInstanceTransform(int index)
+    {
+        if (!InstanceAttributes.TryGetValue("InstanceTransform", out var attr))
+            return null;
+
+        int baseIdx = index * 16;
+        if (baseIdx < 0 || baseIdx + 15 >= attr.Data.Count)
+            return null;
+
+        var m = new Matrix4x4();
+        float* p = (float*)&m;
+        for (int i = 0; i < 16; i++)
+            p[i] = attr.Data[baseIdx + i];
+
+        return m;
+    }
+
+    /// <summary>
+    /// 获取底层几何体数据，用于射线三角形相交检测等。
+    /// </summary>
+    /// <returns>底层 <see cref="Geometry"/> 实例。</returns>
+    public Geometry? GetGeometry()
+    {
+        return geometry;
+    }
+
+    /// <summary>
     /// 测试此 InstancedMesh 的合并世界包围盒是否在给定视锥体内。
     /// </summary>
     /// <param name="planes">视锥体的 6 个裁剪平面。</param>

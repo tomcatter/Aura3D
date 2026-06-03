@@ -2,6 +2,7 @@ using Aura3D.Core.Nodes;
 using Aura3D.Core.Scenes;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.OpenGL;
 using Avalonia.Rendering;
 using System.Diagnostics;
@@ -180,4 +181,67 @@ public abstract class Aura3DViewBase : global::Avalonia.OpenGL.Controls.OpenGlCo
     /// 获取场景的主相机。
     /// </summary>
     public Camera MainCamera => Scene.MainCamera;
+
+    /// <summary>
+    /// 获取或设置是否启用点击拾取物体功能。默认为 true。
+    /// 设置为 false 后，点击将不会触发 <see cref="ObjectPicked"/> 事件。
+    /// </summary>
+    public bool EnablePicking { get; set; } = true;
+
+    /// <summary>
+    /// 当在视图中点击拾取到物体时触发。
+    /// </summary>
+    public event EventHandler<ObjectPickedEventArgs>? ObjectPicked;
+
+    /// <summary>
+    /// 在指定屏幕坐标处执行射线拾取，返回所有命中结果。
+    /// </summary>
+    /// <param name="x">相对于控件的 X 坐标（像素）。</param>
+    /// <param name="y">相对于控件的 Y 坐标（像素）。</param>
+    /// <returns>按距离排序的命中结果列表。</returns>
+    public List<PickResult> PickAt(double x, double y)
+    {
+        if (Scene == null)
+            return [];
+
+        var source = this.GetPresentationSource();
+        float scale = source != null ? (float)source.RenderScaling : 1.0f;
+
+        return Scene.Pick((float)x * scale, (float)y * scale);
+    }
+
+    /// <summary>
+    /// 在指定屏幕坐标处拾取最近的物体。
+    /// </summary>
+    /// <param name="x">相对于控件的 X 坐标（像素）。</param>
+    /// <param name="y">相对于控件的 Y 坐标（像素）。</param>
+    /// <returns>最近的命中结果，无命中时返回 null。</returns>
+    public PickResult? PickClosestAt(double x, double y)
+    {
+        if (Scene == null)
+            return null;
+
+        var source = this.GetPresentationSource();
+        float scale = source != null ? (float)source.RenderScaling : 1.0f;
+
+        return Scene.PickClosest((float)x * scale, (float)y * scale);
+    }
+
+    /// <inheritdoc/>
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+
+        if (!EnablePicking || Scene == null)
+            return;
+
+        var position = e.GetPosition(this);
+        var result = PickClosestAt(position.X, position.Y);
+
+        if (result != null)
+        {
+            var args = new ObjectPickedEventArgs(result);
+            ObjectPicked?.Invoke(this, args);
+        }
+    }
 }

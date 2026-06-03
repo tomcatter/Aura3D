@@ -1,3 +1,4 @@
+using Aura3D.Core.Nodes;
 using Aura3D.Core.Renderers;
 using Aura3D.Core.Scenes;
 using Avalonia.Input;
@@ -6,6 +7,7 @@ using Avalonia.OpenGL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -117,5 +119,45 @@ public class DestroyedRoutedEventArgs : RoutedEventArgs
     public DestroyedRoutedEventArgs(RoutedEvent routedEvent, Scene scene) : base(routedEvent)
     {
         Scene = scene;
+    }
+}
+
+/// <summary>
+/// 物体拾取事件参数，包含被拾取命中的节点信息。
+/// </summary>
+public class ObjectPickedEventArgs : EventArgs
+{
+    /// <summary>
+    /// 拾取命中的结果。
+    /// </summary>
+    public PickResult PickResult { get; }
+
+    /// <summary>
+    /// 被拾取到的节点（Mesh、Model 或 InstancedMesh）。
+    /// </summary>
+    public Node Node => PickResult.Node;
+
+    /// <summary>
+    /// 命中点在世界空间中的坐标。
+    /// </summary>
+    public Vector3 WorldPosition => PickResult.WorldPosition;
+
+    /// <summary>
+    /// 从射线原点到命中点的距离。
+    /// </summary>
+    public float Distance => PickResult.Distance;
+
+    /// <summary>
+    /// 如果是 InstancedMesh 实例被命中，则为实例索引。
+    /// </summary>
+    public int? InstanceIndex => PickResult.InstanceIndex;
+
+    /// <summary>
+    /// 初始化 <see cref="ObjectPickedEventArgs"/> 类的新实例。
+    /// </summary>
+    /// <param name="pickResult">拾取结果。</param>
+    public ObjectPickedEventArgs(PickResult pickResult)
+    {
+        PickResult = pickResult;
     }
 }
