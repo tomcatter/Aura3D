@@ -50,6 +50,10 @@ namespace Example.ViewModels
                 new MenuViewModel {
                     Title = "Primitive Types",
                     ViewModel = new PrimitiveTypeViewModel()
+                },
+                new MenuViewModel {
+                    Title = "Picking Test",
+                    ViewModel = new PickingTestViewModel()
                 }
             ];
             OnNavigation(this, _menus.First());

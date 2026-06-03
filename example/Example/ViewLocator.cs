@@ -19,6 +19,7 @@ public class ViewLocator : IDataTemplate
             PrimitiveTypeViewModel primitiveTypeViewModel => new PrimitiveTypePage(),
             RenderingPerformanceViewModel renderingPerformanceViewModel => new RenderingPerformancePage(),
             AnimationFeaturesViewModel animationFeaturesViewModel => new AnimationFeaturesPage(),
+            PickingTestViewModel pickingTestViewModel => new PickingTestPage(),
             _ => new TextBlock() { Text = "NotFound" }
         };
     }
