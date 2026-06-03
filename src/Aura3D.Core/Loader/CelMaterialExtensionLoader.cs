@@ -21,7 +21,9 @@ public class CelMaterialExtensionLoader : MaterialExtensionLoaderBase
     internal static void Init()
     {
         // Register Extension
-        ModelLoader.RegisterMaterialExtensions<Aura3DCelExtraProperties, CelMaterialExtensionLoader>();
+        ModelLoader.RegisterMaterialExtensions<Aura3DCelExtraProperties>(
+            () =>  new CelMaterialExtensionLoader()
+            );
     }
 
     private static Resources.Texture? GetTextureAtIndex(ModelRoot modelRoot, int index)

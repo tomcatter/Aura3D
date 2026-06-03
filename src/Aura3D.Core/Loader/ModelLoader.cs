@@ -5,6 +5,7 @@ using SharpGLTF.IO;
 using SharpGLTF.Schema2;
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Material = Aura3D.Core.Resources.Material;
 using Mesh = Aura3D.Core.Nodes.Mesh;
 using Node = Aura3D.Core.Nodes.Node;
@@ -17,10 +18,11 @@ namespace Aura3D.Core;
 public static class ModelLoader
 {
 
-    static Dictionary<Type, Type> _materialExtensionTypes = new();
-    public static void RegisterMaterialExtensions<T1, T2>() where T1: JsonSerializable where T2: MaterialExtensionLoaderBase
+    static Dictionary<Type, Func<MaterialExtensionLoaderBase>> _materialExtensionTypes = new();
+
+    public static void RegisterMaterialExtensions<T1>(Func<MaterialExtensionLoaderBase> getExtensionInstanceFunc) where T1: JsonSerializable
     {
-        _materialExtensionTypes[typeof(T1)] = typeof(T2);
+        _materialExtensionTypes[typeof(T1)] = getExtensionInstanceFunc;
     }
 
     public static (Model, List<Resources.Animation>) LoadGlbModelAndAnimations(Stream stream)
@@ -310,11 +312,11 @@ public static class ModelLoader
     {
         foreach (var ext in material.Extensions)
         {
-            _materialExtensionTypes.TryGetValue(ext.GetType(), out Type extType);
-            if (extType == null)
+            _materialExtensionTypes.TryGetValue(ext.GetType(), out var getExtensionInstanceFunc);
+            if (getExtensionInstanceFunc == null)
                 continue;
 
-            MaterialExtensionLoaderBase materialExtension = (MaterialExtensionLoaderBase)Activator.CreateInstance(extType);
+            MaterialExtensionLoaderBase materialExtension = getExtensionInstanceFunc();
             if (materialExtension == null)
                 continue;
 
