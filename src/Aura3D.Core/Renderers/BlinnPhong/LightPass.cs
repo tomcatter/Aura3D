@@ -44,6 +44,14 @@ public class LightPass : RenderPass
     private readonly string[] _spotLightShadowMapMatrixUniforms;
 
     private const int MaxLightLimit = 10;
+    private const int MaxCsmCascades = 4;
+
+    // CSM uniform names for the main directional light
+    private const string MainLightUseCSMUniform = "MainLightUseCSM";
+    private const string MainLightCSMShadowMapUniform = "MainLightCSMShadowMap";
+    private const string MainLightCSMCascadeCountUniform = "MainLightCSMCascadeCount";
+    private readonly string[] _mainLightCSMMatricesUniforms;
+    private readonly string[] _mainLightCSMSplitDepthsUniforms;
 
     public void UpdateLightNumLimit(int directionalLightLimit, int pointLightLimit, int spotLightLimit)
     {
@@ -136,6 +144,19 @@ public class LightPass : RenderPass
             _spotLightShadowMapUniforms[i] = $"SpotLightShadowMaps[{i}]";
             _spotLightShadowMapMatrixUniforms[i] = $"SpotLights[{i}].shadowMapMatrix";
         }
+
+        // 初始化 CSM Uniform 名称缓存
+        _mainLightCSMMatricesUniforms = new string[MaxCsmCascades];
+        _mainLightCSMSplitDepthsUniforms = new string[MaxCsmCascades + 1];
+
+        for (int i = 0; i < MaxCsmCascades; i++)
+        {
+            _mainLightCSMMatricesUniforms[i] = $"MainLightCSMMatrices[{i}]";
+        }
+        for (int i = 0; i < MaxCsmCascades + 1; i++)
+        {
+            _mainLightCSMSplitDepthsUniforms[i] = $"MainLightCSMSplitDepths[{i}]";
+        }
     }
     public override void Setup()
     {
@@ -156,8 +177,6 @@ public class LightPass : RenderPass
         gl.DepthMask(true);
         gl.DepthFunc(DepthFunction.Less);
         gl.CullFace(TriangleFace.Back);
-
-
     }
 
     public override void Render(Camera camera)
@@ -226,6 +245,9 @@ public class LightPass : RenderPass
 
     private void SetupDirectionalLights()
     {
+        // 重置 CSM 标志，仅在主方向光有 CSM 数据时由 SetupActiveDirectionalLight 设为 1.0
+        UniformFloat(MainLightUseCSMUniform, 0.0f);
+
         for (int i = 0; i < directionalLightLimit; i++)
         {
             if (i >= renderPipeline.DirectionalLights.Count)
@@ -258,9 +280,24 @@ public class LightPass : RenderPass
 
         if (useCsm)
         {
-            // CSM: first cascade as fallback shadow
+            // CSM: 绑定级联阴影贴图数组和所有级联矩阵、分割深度
+            UniformFloat(MainLightUseCSMUniform, 1.0f);
+            UniformTextureArray(MainLightCSMShadowMapUniform, csmData.TextureArrayId);
+            UniformInt(MainLightCSMCascadeCountUniform, csmData.CascadeCount);
+
+            for (int c = 0; c < csmData.CascadeCount && c < _mainLightCSMMatricesUniforms.Length; c++)
+            {
+                UniformMatrix4(_mainLightCSMMatricesUniforms[c], csmData.CascadeMatrices[c]);
+            }
+
+            for (int c = 0; c < csmData.CascadeCount + 1 && c < _mainLightCSMSplitDepthsUniforms.Length; c++)
+            {
+                UniformFloat(_mainLightCSMSplitDepthsUniforms[c], csmData.CascadeSplitDepths[c]);
+            }
+
+            // 绑定一个空纹理到常规阴影贴图槽位（CSM 路径不使用此槽位）
             UniformTexture(_directionalLightShadowMapUniforms[index], 0);
-            UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], csmData.CascadeMatrices[0]);
+            UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], Matrix4x4.Identity);
         }
         else
         {

@@ -8,6 +8,10 @@ namespace Aura3D.Core.Renderers;
 /// </summary>
 public class BlinnPhongPipeline : RenderPipeline, IRenderPipelineCreateInstance
 {
+    /// <summary>
+    /// Blinn-Phong 管线支持 CSM（级联阴影贴图），为主方向光生成多级联阴影。
+    /// </summary>
+    public override bool SupportsCSM => true;
 
     /// <summary>
     /// 初始化 Blinn-Phong 渲染管线
