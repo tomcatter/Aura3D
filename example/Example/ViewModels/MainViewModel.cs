@@ -29,15 +29,7 @@ namespace Example.ViewModels
                 },
                 new MenuViewModel {
                     Title = "Animation",
-                    ViewModel = new AnimationViewModel()
-                },
-                new MenuViewModel {
-                    Title ="Animation BlendSpace",
-                    ViewModel = new BlendSpaceViewModel()
-                },
-                new MenuViewModel {
-                    Title ="Animation Graph",
-                    ViewModel = new AnimationGraphViewModel()
+                    ViewModel = new AnimationFeaturesViewModel()
                 },
                 new MenuViewModel {
                     Title = "Robotic Arm",

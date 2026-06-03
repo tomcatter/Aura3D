@@ -13,16 +13,14 @@ public class ViewLocator : IDataTemplate
             BaseGeometriesViewModel baseGeometriesViewModel => new BaseGeometriesPage(),
             ModelPreviewViewModel gltfModelViewModel => new ModelPreviewPage(),
             FrustumCullingViewModel frustumCullingViewModel => new FrustumCullingPage(),
-            AnimationViewModel animationViewModel => new AnimationPage(),
             RoboticArmViewModel roboticArmViewModel => new RoboticArmPage(),
-            BlendSpaceViewModel blendSpaceViewModel => new BlendSpacePage(),
-            AnimationGraphViewModel animationGraphViewModel => new AnimationGraphPage(),
             PbrViewModel pbrViewModel => new PbrPipelinePage(),
             CelShadingViewModel celShadingViewModel => new CelShadingPage(),
             InstancedRenderingViewModel instancedRenderingViewModel => new InstancedRenderingPage(),
             PointCloudViewModel pointCloudViewModel => new PointCloudPage(),
             HISMViewModel hismViewModel => new HISMPage(),
             PrimitiveTypeViewModel primitiveTypeViewModel => new PrimitiveTypePage(),
+            AnimationFeaturesViewModel animationFeaturesViewModel => new AnimationFeaturesPage(),
             _ => new TextBlock() { Text = "NotFound" }
         };
     }
