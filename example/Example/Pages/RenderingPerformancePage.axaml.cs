@@ -241,11 +241,11 @@ public partial class RenderingPerformancePage : UserControl
 
     private void BuildHISM()
     {
-        var maxPerGroup = 64;
+        var maxPerGroup = 1024;
         var maxDepth = 6;
         if (DataContext is RenderingPerformanceViewModel vm)
         {
-            if (!int.TryParse(vm.HismMaxPerGroupText?.Trim(), out maxPerGroup) || maxPerGroup <= 0) maxPerGroup = 64;
+            if (!int.TryParse(vm.HismMaxPerGroupText?.Trim(), out maxPerGroup) || maxPerGroup <= 0) maxPerGroup = 1024;
             if (!int.TryParse(vm.HismMaxDepthText?.Trim(), out maxDepth) || maxDepth <= 0) maxDepth = 6;
         }
 

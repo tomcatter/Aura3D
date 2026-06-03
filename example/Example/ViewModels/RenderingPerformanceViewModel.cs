@@ -37,7 +37,7 @@ public partial class RenderingPerformanceViewModel : ViewModelBase
 
     // ─── HISM ───────────────────────────────────────────────
 
-    [ObservableProperty] private string _hismMaxPerGroupText = "64";
+    [ObservableProperty] private string _hismMaxPerGroupText = "1024";
     [ObservableProperty] private string _hismMaxDepthText = "6";
 
     [ObservableProperty] private string _instanceIdxText = "0";
