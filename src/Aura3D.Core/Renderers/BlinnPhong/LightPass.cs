@@ -183,25 +183,27 @@ public class LightPass : RenderPass
     {
         BindOutPutRenderTarget(camera);
 
-        UseShader();
+        var csm = CheckCsmEnabled() ? new[] { "ENABLE_CSM" } : [];
+
+        UseShader(csm);
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && mesh.IsStaticMesh, camera.View, camera.Projection);
 
-        UseShader("BLENDMODE_MASKED");
+        UseShader([..csm, "BLENDMODE_MASKED"]);
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && mesh.IsStaticMesh, camera.View, camera.Projection);
-        
 
-        UseShader("SKINNED_MESH");
+
+        UseShader([..csm, "SKINNED_MESH"]);
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
 
 
-        UseShader("SKINNED_MESH", "BLENDMODE_MASKED");
+        UseShader([..csm, "SKINNED_MESH", "BLENDMODE_MASKED"]);
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
 
 
-        UseShader("INSTANCED_MESH");
+        UseShader([..csm, "INSTANCED_MESH"]);
         RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
 
-        UseShader("INSTANCED_MESH", "BLENDMODE_MASKED");
+        UseShader([..csm, "INSTANCED_MESH", "BLENDMODE_MASKED"]);
         RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
     }
 
@@ -259,6 +261,23 @@ public class LightPass : RenderPass
                 SetupActiveDirectionalLight(i, renderPipeline.DirectionalLights[i]);
             }
         }
+    }
+
+    /// <summary>
+    /// 检查当前帧是否有方向光启用了 CSM（级联阴影贴图）。
+    /// 用于决定是否在着色器编译时启用 ENABLE_CSM 宏。
+    /// </summary>
+    private bool CheckCsmEnabled()
+    {
+        foreach (var light in renderPipeline.DirectionalLights)
+        {
+            if (!light.CastShadow)
+                continue;
+            var csmData = light.GetPipelineGpuResource<CsmShadowData>(nameof(CsmShadowData));
+            if (csmData != null)
+                return true;
+        }
+        return false;
     }
 
     private void SetupInactiveDirectionalLight(int index)
