@@ -50,27 +50,6 @@ public class Mesh : Node, IOctreeObject
     [MemberNotNullWhen(returnValue: false, nameof(Model), nameof(Skeleton))]
     public bool IsStaticMesh => !IsSkinnedMesh;
 
-    private bool _enableSkeletonBoundingBox = false;
-
-    /// <summary>
-    /// 获取或设置一个值，指示是否启用骨骼包围盒。
-    /// </summary>
-    public bool EnableSkeletonBoundingBox
-    {
-        get => _enableSkeletonBoundingBox;
-
-        set
-        {
-            if (_enableSkeletonBoundingBox != value)
-            {
-                _enableSkeletonBoundingBox = value;
-                localBoundingBox = null;
-                boundingBox = null;
-                OnBoundingBoxChanged?.Invoke(this);
-            }
-        }
-    }
-
     /// <summary>
     /// 网格的边界框
     /// </summary>
@@ -183,15 +162,8 @@ public class Mesh : Node, IOctreeObject
             boundingBox = null;
             return;
         }
-        
-        if (IsSkinnedMesh == false || EnableSkeletonBoundingBox == false)
-        {
-            CalcStaticMeshBoundingBox();
-        }
-        else
-        {
-            calcSkeletalMeshBoundingBox();
-        }
+
+        CalcStaticMeshBoundingBox();
     }
     
     /// <summary>
@@ -216,18 +188,6 @@ public class Mesh : Node, IOctreeObject
     /// 获取动画采样器。
     /// </summary>
     public IAnimationSampler? AnimationSampler => Model?.AnimationSampler;
-
-    private Dictionary<int, BoundingBox> SkeletalMeshBoundingBox = new();
-
-    /// <summary>
-    /// 动画播放过程中的动态边界框缓存列表。
-    /// </summary>
-    private List<BoundingBox> _animatedBoundingBoxes = new();
-
-    /// <summary>
-    /// 骨骼权重阈值，用于判断顶点是否受某个骨骼影响。默认值为 0.3。
-    /// </summary>
-    public const float BoneWeightThreshold = 0.3f;
 
     protected override void OnWorldTransformChanged()
     {
@@ -265,90 +225,7 @@ public class Mesh : Node, IOctreeObject
         }
 
         localBoundingBox = BoundingBox.CreateFromPoints(positions);
-
-        // 骨骼网格体 加大BoundingBox以减少误差
-        if (IsSkinnedMesh)
-        {
-            var size = localBoundingBox.Size;
-
-            var center = localBoundingBox.Center;
-
-            float length = MathF.Max(size.X, MathF.Max(size.Y, size.Z));
-
-            localBoundingBox = new BoundingBox(center - new Vector3(length / 2), center + new Vector3(length / 2));
-
-        }
     }
 
-    private void calcSkeletalMeshBoundingBox()
-    {
-        if (IsSkinnedMesh == false)
-            return;
 
-        SkeletalMeshBoundingBox.Clear();
-
-        Dictionary<int, List<Vector3>> JointPoints = new Dictionary<int, List<Vector3>>();
-
-        var mesh = this;
-
-        if (mesh.Geometry == null)
-            return;
-
-        var positions = mesh.Geometry.GetAttributeData(BuildInVertexAttribute.Position);
-
-        var joints = mesh.Geometry.GetAttributeData(BuildInVertexAttribute.Joints_0);
-
-        var weights = mesh.Geometry.GetAttributeData(BuildInVertexAttribute.Weights_0);
-
-        if (positions != null && joints != null && weights != null)
-        {
-            for (var i = 0; i < positions.Count / 3; i++)
-            {
-                var position = new Vector3(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
-                for (var j = 0; j < 4; j++)
-                {
-                    if (weights[i * 4 + j] > BoneWeightThreshold)
-                    {
-                        var jointIndex = (int)joints[i * 4 + j];
-                        if (JointPoints.TryGetValue(jointIndex, out _) == false)
-                            JointPoints[jointIndex] = new();
-                        JointPoints[jointIndex].Add(position);
-                    }
-                }
-
-            }
-        }
-        foreach (var (index, points) in JointPoints)
-        {
-            var boundingBox = BoundingBox.CreateFromPoints(points);
-            SkeletalMeshBoundingBox.Add(index, boundingBox);
-
-            localBoundingBox = BoundingBox.CreateMerged(SkeletalMeshBoundingBox.Values);
-        }
-    }
-
-    /// <summary>
-    /// 在动画播放过程中计算骨骼网格的边界框。
-    /// </summary>
-    public void CalcSkeletalMeshBoundingBoxInPlayAnimation()
-    {
-        if (IsSkinnedMesh == false)
-            return;
-        if (AnimationSampler == null)
-            return;
-
-        _animatedBoundingBoxes.Clear();
-
-        foreach (var (index, boundingBox) in SkeletalMeshBoundingBox)
-        {
-            if (index < AnimationSampler.BonesTransform.Count && index < Skeleton.Bones.Count)
-            {
-                _animatedBoundingBoxes.Add(boundingBox.Transform(Skeleton.Bones[index].InverseWorldMatrix * AnimationSampler.BonesTransform[index]));
-            }
-        }
-
-        localBoundingBox = BoundingBox.CreateMerged(_animatedBoundingBoxes);
-
-        boundingBox = null;
-    }
 }

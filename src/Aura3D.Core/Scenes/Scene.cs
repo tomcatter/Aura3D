@@ -264,15 +264,6 @@ public class Scene
                 continue;
 
             node.Update(deltaTime);
-            if (node is Mesh mesh)
-            {
-                if (mesh.IsSkinnedMesh && mesh.AnimationSampler != null && mesh.EnableSkeletonBoundingBox == true)
-                {
-                    mesh.CalcSkeletalMeshBoundingBoxInPlayAnimation();
-                    StaticMeshOctree.Update(mesh);
-                }
-
-            }
         }
 
         foreach (var node in _dirtyNodes)
