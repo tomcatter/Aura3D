@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<TargetFramework>net10.0</TargetFramework>
+	<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <Authors>CeSun</Authors>
     <Description>Three Dimensional Control for Avalonia</Description>
     <RepositoryUrl>https://github.com/CeSun/Aura3d</RepositoryUrl>        
