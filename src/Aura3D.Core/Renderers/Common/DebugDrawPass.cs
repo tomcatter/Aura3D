@@ -88,6 +88,11 @@ public class DebugDrawPass : RenderPass
         {
             DrawGrid(grid);
         }
+
+        if (renderPipeline.Settings.ShowBoundingBox)
+        {
+            DrawBoundingBoxes();
+        }
     }
 
     private void DrawAxisGizmo(AxisGizmo axis)
@@ -158,6 +163,53 @@ public class DebugDrawPass : RenderPass
         Begin();
         Line(-halfSize, 0, 0, halfSize, 0, 0);
         Line(0, 0, -halfSize, 0, 0, halfSize);
+        End();
+    }
+
+    private void DrawBoundingBoxes()
+    {
+        UniformMatrix4("modelMatrix", Matrix4x4.Identity);
+        UniformVector3("uColor", new Vector3(0.25f, 1.0f, 0.25f));
+
+        Begin();
+        foreach (var mesh in Meshes)
+        {
+            if (!mesh.Enable)
+                continue;
+            var bb = mesh.BoundingBox;
+            if (bb == null)
+                continue;
+            WireBox(bb.Min, bb.Max);
+        }
+
+        foreach (var im in renderPipeline.InstancedMeshes)
+        {
+            if (!im.Enable)
+                continue;
+            var bb = im.WorldBoundingBox;
+            if (bb == null)
+                continue;
+            WireBox(bb.Min, bb.Max);
+        }
+        End();
+
+        // 骨骼包围盒用不同颜色
+        UniformVector3("uColor", new Vector3(1.0f, 0.6f, 0.2f));
+        Begin();
+        foreach (var mesh in Meshes)
+        {
+            if (!mesh.Enable || !mesh.IsSkinnedMesh)
+                continue;
+            var boneBounds = mesh.GetBoneWorldBounds();
+            if (boneBounds == null)
+                continue;
+            foreach (var boneBB in boneBounds)
+            {
+                if (boneBB == null)
+                    continue;
+                WireBox(boneBB.Min, boneBB.Max);
+            }
+        }
         End();
     }
 

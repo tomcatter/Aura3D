@@ -296,6 +296,36 @@ public class Mesh : Node, IOctreeObject
     /// </summary>
     public IAnimationSampler? AnimationSampler => Model?.AnimationSampler;
 
+    /// <summary>
+    /// 获取每根骨骼在当前动画姿态下的世界空间包围盒列表。
+    /// 仅对骨骼网格有效，返回 null 表示非骨骼网格或数据未就绪。
+    /// 列表索引与 Skeleton.Bones 索引对应，null 元素表示该骨骼无顶点权重。
+    /// </summary>
+    public List<BoundingBox?>? GetBoneWorldBounds()
+    {
+        if (!IsSkinnedMesh || !_boneBoundsReady || _boneLocalBounds == null)
+            return null;
+
+        var bones = Skeleton.Bones;
+        var sampler = AnimationSampler;
+        var result = new BoundingBox?[_boneLocalBounds.Length];
+
+        for (int i = 0; i < _boneLocalBounds.Length; i++)
+        {
+            if (_boneLocalBounds[i] == null)
+                continue;
+
+            var skinMat = sampler != null
+                ? bones[i].InverseWorldMatrix * sampler.BonesTransform[i]
+                : bones[i].InverseWorldMatrix * bones[i].WorldMatrix;
+
+            var boneBB = _boneLocalBounds[i]!.Transform(skinMat);
+            result[i] = boneBB.Transform(WorldTransform);
+        }
+
+        return result.ToList();
+    }
+
     protected override void OnWorldTransformChanged()
     {
         base.OnWorldTransformChanged();

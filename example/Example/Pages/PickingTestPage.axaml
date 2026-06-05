@@ -17,6 +17,8 @@
                 <Separator Width="1" Height="24" Background="#555" Margin="5,0"/>
                 <CheckBox IsChecked="{Binding EnablePicking}"
                           Content="启用拾取" Foreground="#CCC" VerticalAlignment="Center"/>
+                <CheckBox IsChecked="{Binding ShowBoundingBox}"
+                          Content="包围盒" Foreground="#CCC" VerticalAlignment="Center"/>
                 <Separator Width="1" Height="24" Background="#555" Margin="5,0"/>
                 <TextBlock Text="{Binding PickInfo}" FontSize="13"
                            VerticalAlignment="Center" Foreground="#0F0"

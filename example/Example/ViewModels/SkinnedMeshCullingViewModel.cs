@@ -11,6 +11,9 @@ public partial class SkinnedMeshCullingViewModel : ViewModelBase
     private bool _enableFrustumCulling = true;
 
     [ObservableProperty]
+    private bool _showBoundingBox;
+
+    [ObservableProperty]
     private int _currentFps;
 
     [ObservableProperty]

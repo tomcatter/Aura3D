@@ -60,6 +60,11 @@ public class PipelineSettings
     /// </summary>
     public bool EnableFrustumCulling { get; set; } = true;
 
+    /// <summary>
+    /// 是否显示网格包围盒。
+    /// </summary>
+    public bool ShowBoundingBox { get; set; } = false;
+
     // ═══════════════════════════════════════════════
     //  CSM（级联阴影贴图）
     // ═══════════════════════════════════════════════

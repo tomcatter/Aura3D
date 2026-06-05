@@ -45,6 +45,15 @@ public partial class SkinnedMeshCullingPage : UserControl
     {
         aura3DView.AutoRequestNextFrameRendering = false;
 
+        if (DataContext is SkinnedMeshCullingViewModel vm)
+        {
+            vm.PropertyChanged += (s, args) =>
+            {
+                if (args.PropertyName == nameof(SkinnedMeshCullingViewModel.ShowBoundingBox))
+                    ApplyBoundingBox();
+            };
+        }
+
         // ── Lighting ──
         var dl = new DirectionalLight
         {
@@ -245,6 +254,15 @@ public partial class SkinnedMeshCullingPage : UserControl
         if (DataContext is SkinnedMeshCullingViewModel vm)
         {
             aura3DView.Scene.RenderPipeline.EnableFrustumCulling = vm.EnableFrustumCulling;
+        }
+    }
+
+    private void ApplyBoundingBox()
+    {
+        if (aura3DView.Scene?.RenderPipeline == null) return;
+        if (DataContext is SkinnedMeshCullingViewModel vm)
+        {
+            aura3DView.Scene.RenderPipeline.Settings.ShowBoundingBox = vm.ShowBoundingBox;
         }
     }
 }

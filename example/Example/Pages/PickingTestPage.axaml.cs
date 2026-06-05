@@ -37,6 +37,8 @@ public partial class PickingTestPage : UserControl
             {
                 if (args.PropertyName == nameof(PickingTestViewModel.EnablePicking))
                     view.EnablePicking = _vm.EnablePicking;
+                if (args.PropertyName == nameof(PickingTestViewModel.ShowBoundingBox))
+                    view.Scene!.RenderPipeline.Settings.ShowBoundingBox = _vm.ShowBoundingBox;
             };
             view.EnablePicking = _vm.EnablePicking;
         }

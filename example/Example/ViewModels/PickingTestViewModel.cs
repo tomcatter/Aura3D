@@ -12,4 +12,7 @@ public partial class PickingTestViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _modelCount = "模型: 加载中...";
+
+    [ObservableProperty]
+    private bool _showBoundingBox;
 }

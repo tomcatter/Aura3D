@@ -42,6 +42,10 @@
                       IsChecked="{Binding EnableFrustumCulling}">
               Enable Frustum Culling
             </CheckBox>
+            <CheckBox x:Name="boundingBoxCheck"
+                      IsChecked="{Binding ShowBoundingBox}">
+              Show Bounding Box
+            </CheckBox>
             <TextBlock FontSize="11" FontStyle="Italic"
                        Foreground="{DynamicResource SemiGrey10}"
                        Text="💡 Toggle to compare FPS with/without culling" />
