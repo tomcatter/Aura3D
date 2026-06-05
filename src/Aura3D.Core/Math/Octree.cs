@@ -186,7 +186,8 @@ public class Octree<T> where T : IOctreeObject
     }
 
     /// <summary>
-    /// 更新物体在八叉树中的位置（移除后重新添加，含扩张检查）
+    /// 更新物体在八叉树中的位置。
+    /// 如果物体仍在所有所属节点内则跳过（快速路径），否则移除后重新添加并检查扩张。
     /// </summary>
     /// <param name="obj">待更新的物体</param>
     /// <exception cref="ArgumentNullException">obj 为 null 时抛出</exception>
@@ -202,7 +203,11 @@ public class Octree<T> where T : IOctreeObject
         if (bb == null)
             throw new InvalidOperationException("物体的包围盒在更新时为 null");
 
-        // 从所有所属节点移除
+        // 快速路径：如果仍在所有所属节点内，无需重插
+        if (StillContainedInCurrentNodes(obj, bb))
+            return;
+
+        // 慢路径：移除后重新添加
         foreach (var objNode in obj.BelongingNodes.ToArray())
         {
             if (objNode is OctreeNode<T> node)
@@ -210,11 +215,34 @@ public class Octree<T> where T : IOctreeObject
         }
         obj.BelongingNodes.Clear();
 
-        // 扩张检查：物体可能已移出根节点范围
         EnsureRootContains(bb);
 
-        // 重新添加
         _rootNode.Add(obj);
+    }
+
+    /// <summary>
+    /// 检查物体是否仍被其所有所属节点完全包含。
+    /// </summary>
+    private static bool StillContainedInCurrentNodes(T obj, BoundingBox bb)
+    {
+        var nodes = obj.BelongingNodes;
+        if (nodes.Count == 0)
+            return false; // 异常状态：应重新插入
+
+        foreach (var objNode in nodes)
+        {
+            if (objNode is OctreeNode<T> node)
+            {
+                if (!node.BoundingBox.Contains(bb))
+                    return false;
+            }
+            else
+            {
+                return false; // 非节点引用，异常状态
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -411,7 +439,8 @@ internal class OctreeNode<T> where T : IOctreeObject
     }
 
     /// <summary>
-    /// 从节点移除物体（递归，同时清理 BelongingNodes 中指向此节点的引用）
+    /// 从节点移除物体（递归，同时清理 BelongingNodes 中指向此节点的引用）。
+    /// 移除后自动剪枝：如果当前节点及所有子节点均为空，释放子节点。
     /// </summary>
     internal void Remove(T obj)
     {
@@ -422,12 +451,15 @@ internal class OctreeNode<T> where T : IOctreeObject
         {
             foreach (var child in _children)
                 child.Remove(obj);
+
+            TryPruneChildren();
         }
     }
 
     /// <summary>
     /// 仅从节点的物体集合中移除，不触碰 BelongingNodes。
     /// 用于 Rebuild / EnsureRootContains 等由调用者统一管理 BelongingNodes 的场景。
+    /// 移除后自动剪枝。
     /// </summary>
     internal void RemoveFromNodeOnly(T obj)
     {
@@ -437,7 +469,26 @@ internal class OctreeNode<T> where T : IOctreeObject
         {
             foreach (var child in _children)
                 child.RemoveFromNodeOnly(obj);
+
+            TryPruneChildren();
         }
+    }
+
+    /// <summary>
+    /// 如果当前节点及其所有子节点均为空，则停用子节点列表以节省内存和加速遍历。
+    /// </summary>
+    private void TryPruneChildren()
+    {
+        if (_children == null || _objects.Count > 0)
+            return;
+
+        foreach (var child in _children)
+        {
+            if (child._objects.Count > 0 || child._children != null)
+                return;
+        }
+
+        _children = null;
     }
 
     /// <summary>
@@ -485,17 +536,12 @@ internal class OctreeNode<T> where T : IOctreeObject
     }
 
     /// <summary>
-    /// 清空节点所有物体（递归），不触碰 BelongingNodes
+    /// 清空节点所有物体（递归），释放子节点以回收内存。
     /// </summary>
     internal void Clear()
     {
         _objects.Clear();
-
-        if (_children != null)
-        {
-            foreach (var child in _children)
-                child.Clear();
-        }
+        _children = null;
     }
 
     /// <summary>

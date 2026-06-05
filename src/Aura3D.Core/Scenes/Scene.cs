@@ -23,6 +23,11 @@ public class Scene
     private readonly HashSet<Node> _dirtyNodes = [];
 
     /// <summary>
+    /// 复用快照列表，避免每帧分配。
+    /// </summary>
+    private readonly List<Node> _nodesSnapshot = [];
+
+    /// <summary>
     /// 获取场景的主相机。
     /// </summary>
     public Camera MainCamera { get; private set; }
@@ -194,6 +199,8 @@ public class Scene
 
         _nodes.Remove(node);
 
+        _dirtyNodes.Remove(node);
+
         node.CurrentScene = null;
 
         RenderPipeline.RemoveNode(node);
@@ -257,8 +264,9 @@ public class Scene
     {
 
         // 快照避免节点 Update 过程中增删子节点导致集合被修改
-        var nodesSnapshot = new List<Node>(_nodes);
-        foreach(var node in nodesSnapshot)
+        _nodesSnapshot.Clear();
+        _nodesSnapshot.AddRange(_nodes);
+        foreach (var node in _nodesSnapshot)
         {
             if (!_nodes.Contains(node))
                 continue;

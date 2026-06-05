@@ -28,13 +28,17 @@ public partial class Node
     private Vector3 _position;
 
     /// <summary>
-    /// 获取或设置节点的位置。
+    /// 获取或设置节点的位置。设置相同值时不触发变换更新。
+    /// 连续修改多个属性时建议使用 <see cref="BeginTransformUpdate"/> 包裹。
     /// </summary>
-    public Vector3 Position 
-    { 
+    public Vector3 Position
+    {
         get => _position;
-        set 
+        set
         {
+            if (_position == value)
+                return;
+
             _position = value;
 
             if (_autoUpdateTransform)
@@ -53,13 +57,16 @@ public partial class Node
     private Vector3 _rotation;
 
     /// <summary>
-    /// 获取或设置节点的旋转（弧度）。
+    /// 获取或设置节点的旋转（弧度）。设置相同值时不触发变换更新。
     /// </summary>
-    public Vector3 Rotation 
-    { 
+    public Vector3 Rotation
+    {
         get => _rotation;
         set
         {
+            if (_rotation == value)
+                return;
+
             _rotation = value;
 
             _rotationDegrees = new Vector3(value.X.RadiansToDegree(), value.Y.RadiansToDegree(), value.Z.RadiansToDegree());
@@ -84,11 +91,14 @@ public partial class Node
     /// <summary>
     /// 获取或设置节点的旋转（度数）。
     /// </summary>
-    public Vector3 RotationDegrees 
-    { 
+    public Vector3 RotationDegrees
+    {
         get => _rotationDegrees;
         set
         {
+            if (_rotationDegrees == value)
+                return;
+
             _rotationDegrees = value;
 
             _rotation = new Vector3(value.X.DegreeToRadians(), value.Y.DegreeToRadians(), value.Z.DegreeToRadians());
@@ -112,11 +122,14 @@ public partial class Node
     /// <summary>
     /// 获取或设置节点的旋转（四元数）。
     /// </summary>
-    public Quaternion RotationQuaternion 
-    { 
+    public Quaternion RotationQuaternion
+    {
         get => _rotationQuaternion;
         set
         {
+            if (_rotationQuaternion == value)
+                return;
+
             _rotationQuaternion = value;
 
             _rotation = _rotationQuaternion.ToEulerAngles();
@@ -129,7 +142,6 @@ public partial class Node
                 updateWorldTransform();
                 updateChildrenWorldTransform();
             }
-
         }
     }
 
@@ -139,11 +151,17 @@ public partial class Node
     /// <summary>
     /// 获取或设置节点的缩放。缩放值必须为正数。
     /// </summary>
+    /// <summary>
+    /// 获取或设置节点的缩放。设置相同值时不触发变换更新。
+    /// </summary>
     public Vector3 Scale
     {
         get => _scale;
         set
         {
+            if (_scale == value)
+                return;
+
             _scale = value;
 
             if (_autoUpdateTransform)
