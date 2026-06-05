@@ -468,6 +468,7 @@ public static class AssimpLoader
         List<float> uvs = new List<float>();
         List<float> bones = new List<float>();
         List<float> boneWeight = new List<float>();
+        List<float> colors = new List<float>();
 
         for (int j = 0; j < assimpMesh.VertexCount; j++)
         {
@@ -490,6 +491,13 @@ public static class AssimpLoader
                 uvs.Add(assimpMesh.TextureCoordinateChannels[0][j].Y);
             }
 
+            if (assimpMesh.HasVertexColors(0))
+            {
+                colors.Add(assimpMesh.VertexColorChannels[0][j].X);
+                colors.Add(assimpMesh.VertexColorChannels[0][j].Y);
+                colors.Add(assimpMesh.VertexColorChannels[0][j].Z);
+                colors.Add(assimpMesh.VertexColorChannels[0][j].W);
+            }
 
         }
 
@@ -503,7 +511,10 @@ public static class AssimpLoader
         {
             geometry.SetVertexAttribute(BuildInVertexAttribute.Normal, 3, normals);
         }    
-
+        if (assimpMesh.HasVertexColors(0))
+        {
+            geometry.SetVertexAttribute(BuildInVertexAttribute.Color_0, 4, colors);
+        }
 
         List<uint> indices = [];
 
