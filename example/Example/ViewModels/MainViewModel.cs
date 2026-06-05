@@ -52,16 +52,12 @@ namespace Example.ViewModels
                     ViewModel = new PrimitiveTypeViewModel()
                 },
                 new MenuViewModel {
-                    Title = "Picking Test",
-                    ViewModel = new PickingTestViewModel()
+                    Title = "🔬 Debug Test",
+                    ViewModel = new DebugTestViewModel()
                 },
                 new MenuViewModel {
                     Title = "Cascaded Shadow Maps",
                     ViewModel = new CascadedShadowMapsViewModel()
-                },
-                new MenuViewModel {
-                    Title = "Skinned Mesh Culling",
-                    ViewModel = new SkinnedMeshCullingViewModel()
                 }
             ];
             OnNavigation(this, _menus.First());

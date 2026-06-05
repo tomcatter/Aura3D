@@ -19,9 +19,8 @@ public class ViewLocator : IDataTemplate
             PrimitiveTypeViewModel primitiveTypeViewModel => new PrimitiveTypePage(),
             RenderingPerformanceViewModel renderingPerformanceViewModel => new RenderingPerformancePage(),
             AnimationFeaturesViewModel animationFeaturesViewModel => new AnimationFeaturesPage(),
-            PickingTestViewModel pickingTestViewModel => new PickingTestPage(),
             CascadedShadowMapsViewModel cascadedShadowMapsViewModel => new CascadedShadowMapsPage(),
-            SkinnedMeshCullingViewModel skinnedMeshCullingViewModel => new SkinnedMeshCullingPage(),
+            DebugTestViewModel debugTestViewModel => new DebugTestPage(),
             _ => new TextBlock() { Text = "NotFound" }
         };
     }

@@ -1,0 +1,207 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:a="https://github.com/CeSun/Aura3D"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Example.ViewModels"
+             x:DataType="vm:DebugTestViewModel"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+             x:Class="Example.Pages.DebugTestPage">
+
+  <Design.DataContext>
+    <vm:DebugTestViewModel />
+  </Design.DataContext>
+
+  <DockPanel>
+    <!-- ═══════════════════════════════════════════════ Right Control Panel ═══ -->
+    <ScrollViewer DockPanel.Dock="Right" Width="320">
+      <StackPanel Spacing="8" Margin="8">
+
+        <!-- Build + Axes/Grid -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="8">
+            <TextBlock FontSize="15" FontWeight="Bold"
+                       Foreground="{DynamicResource SemiGrey10}" Text="🔬 Debug Test" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <CheckBox IsChecked="{Binding ShowAxes}" Content="轴" />
+              <CheckBox IsChecked="{Binding ShowGrid}" Content="网格" />
+            </StackPanel>
+            <Button x:Name="buildButton" HorizontalAlignment="Stretch"
+                    FontWeight="Bold" Command="{Binding BuildCommand}">🔨 Build</Button>
+          </StackPanel>
+        </Border>
+
+        <!-- Debug Draw -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SemiGrey10}" Text="🔧 Debug Draw" />
+            <CheckBox IsChecked="{Binding DebugEnable}">
+              <TextBlock Text="Enable All Debug Draw" FontWeight="Bold" />
+            </CheckBox>
+            <Separator Height="1" Background="#444" Margin="0,2" />
+            <CheckBox IsChecked="{Binding ShowBoundingBox}" Content="包围盒 (Bounding Box)" />
+            <CheckBox IsChecked="{Binding ShowDirectionalLight}" Content="方向光 (Directional Light)" />
+            <CheckBox IsChecked="{Binding ShowPointLight}" Content="点光源 (Point Light)" />
+            <CheckBox IsChecked="{Binding ShowSpotLight}" Content="聚光灯 (Spot Light)" />
+            <CheckBox IsChecked="{Binding ShowCamera}" Content="相机 (Camera)" />
+            <CheckBox IsChecked="{Binding ShowBone}" Content="骨骼 (Bones)" />
+          </StackPanel>
+        </Border>
+
+        <!-- Picking -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SemiGrey10}" Text="🎯 Picking" />
+            <CheckBox IsChecked="{Binding EnablePicking}" Content="启用拾取" />
+            <TextBlock Text="{Binding PickInfo}" FontSize="11"
+                       Foreground="#0F0" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <!-- Lights -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="6">
+            <TextBlock FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SemiGrey10}" Text="💡 Lights" />
+
+            <!-- Directional Light -->
+            <Border Background="#2A2A2A" CornerRadius="4" Padding="6">
+              <StackPanel Spacing="4">
+                <CheckBox IsChecked="{Binding DirLightEnabled}" Content="☀ 方向光" FontWeight="Bold" />
+              </StackPanel>
+            </Border>
+
+            <!-- Point Light -->
+            <Border Background="#2A2A2A" CornerRadius="4" Padding="6">
+              <StackPanel Spacing="4">
+                <CheckBox IsChecked="{Binding PointLightEnabled}" Content="💡 点光源" FontWeight="Bold" />
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="衰减半径:" FontSize="11" Width="60" VerticalAlignment="Center" />
+                  <Slider Minimum="1" Maximum="50" Value="{Binding PointLightRadius}" Width="130" />
+                  <TextBlock Text="{Binding PointLightRadius, StringFormat={}{0:F0}}" FontSize="11"
+                             Width="30" VerticalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <!-- Spot Light -->
+            <Border Background="#2A2A2A" CornerRadius="4" Padding="6">
+              <StackPanel Spacing="4">
+                <CheckBox IsChecked="{Binding SpotLightEnabled}" Content="🔦 聚光灯" FontWeight="Bold" />
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="内锥角:" FontSize="11" Width="60" VerticalAlignment="Center" />
+                  <Slider Minimum="1" Maximum="60" Value="{Binding SpotLightInnerAngle}" Width="130" />
+                  <TextBlock Text="{Binding SpotLightInnerAngle, StringFormat={}{0:F0}°}" FontSize="11"
+                             Width="30" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="外锥角:" FontSize="11" Width="60" VerticalAlignment="Center" />
+                  <Slider Minimum="1" Maximum="80" Value="{Binding SpotLightOuterAngle}" Width="130" />
+                  <TextBlock Text="{Binding SpotLightOuterAngle, StringFormat={}{0:F0}°}" FontSize="11"
+                             Width="30" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="衰减半径:" FontSize="11" Width="60" VerticalAlignment="Center" />
+                  <Slider Minimum="1" Maximum="50" Value="{Binding SpotLightRadius}" Width="130" />
+                  <TextBlock Text="{Binding SpotLightRadius, StringFormat={}{0:F0}}" FontSize="11"
+                             Width="30" VerticalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <!-- Culling & Scene Config -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="6">
+            <TextBlock FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SemiGrey10}" Text="📊 Culling &amp; Scene" />
+            <CheckBox IsChecked="{Binding EnableFrustumCulling}"
+                      Content="启用视锥体剔除 (Frustum Culling)" />
+
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock VerticalAlignment="Center" Text="静态网格:" Width="60" FontSize="11" />
+              <TextBox Text="{Binding StaticMeshCount}" Width="50" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock VerticalAlignment="Center" Text="骨骼网格:" Width="60" FontSize="11" />
+              <TextBox Text="{Binding SkinnedMeshCount}" Width="50" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock VerticalAlignment="Center" Text="BB Padding:" Width="60" FontSize="11" />
+              <TextBox Text="{Binding BoundingBoxPadding}" Width="50" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Visibility Stats -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SemiGrey10}" Text="👁 Visibility" />
+            <TextBlock Text="{Binding DetailText}" FontSize="11"
+                       Foreground="#AAA" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="可见:" Width="36" />
+              <TextBlock Text="{Binding VisibleCount}" FontWeight="Bold" Foreground="#6BCB77" />
+              <TextBlock Text=" / " />
+              <TextBlock Text="{Binding TotalCount}" FontWeight="Bold" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- FPS -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10"
+                Background="#1E1E2E">
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+              <TextBlock Text="{Binding CurrentFps}" FontSize="36" FontWeight="Bold"
+                         Foreground="White" />
+              <TextBlock Text="FPS" FontSize="14" Foreground="#888"
+                         VerticalAlignment="Bottom" Margin="0,0,0,6" />
+            </StackPanel>
+
+            <Border Background="#333" CornerRadius="3" Height="8" HorizontalAlignment="Stretch">
+              <Border Background="{Binding FpsBarColor}" CornerRadius="3"
+                      Width="{Binding FpsBarWidth}" Height="8"
+                      HorizontalAlignment="Left" />
+            </Border>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+              <StackPanel Spacing="0">
+                <TextBlock Text="MIN" FontSize="10" Foreground="#888"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding MinFps}" FontSize="16" FontWeight="Bold"
+                           Foreground="#FF6B6B" HorizontalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Spacing="0">
+                <TextBlock Text="AVG" FontSize="10" Foreground="#888"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding AvgFps}" FontSize="16" FontWeight="Bold"
+                           Foreground="#FFD93D" HorizontalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Spacing="0">
+                <TextBlock Text="MAX" FontSize="10" Foreground="#888"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding MaxFps}" FontSize="16" FontWeight="Bold"
+                           Foreground="#6BCB77" HorizontalAlignment="Center" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <TextBlock Text="🎮 右键拖拽旋转 | 滚轮缩放 | WASD 移动"
+                   FontSize="10" FontStyle="Italic"
+                   Foreground="{DynamicResource SemiGrey10}" Margin="4,0" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ═══════════════════════════════════════════════ 3D Viewport ═══ -->
+    <a:Aura3DView x:Name="aura3DView"
+                  SceneInitialized="Aura3DView_SceneInitialized"
+                  SceneUpdated="Aura3DView_SceneUpdated" />
+  </DockPanel>
+</UserControl>
