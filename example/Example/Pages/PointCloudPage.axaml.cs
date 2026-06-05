@@ -16,12 +16,12 @@ public partial class PointCloudPage : UserControl
 {
     private CameraController _cameraController;
 
-    InstancedMesh? instancedMesh;
+    PointCloudMeshGroup? pointCloudGroup;
     int currentPointCount = 0;
 
     List<double> deltaTimes = new();
 
-    // 逐点顶点着色器：单顶点 + 实例化矩阵 + 逐实例颜色 + gl_PointSize
+    // 逐点顶点着色器：逐顶点位置 + 颜色 + gl_PointSize
     private const string PointCloudVertexShader = """
         #version 300 es
         precision mediump float;
@@ -29,45 +29,38 @@ public partial class PointCloudPage : UserControl
         //{{defines}}
 
         layout(location = 0) in vec3 position;
+        layout(location = 2) in vec4 color;
 
-        #ifdef INSTANCED_MESH
-        layout(location = 7) in mat4 modelMatrix;
-        #endif
-
-        layout(location = 15) in vec4 instanceColor;
-
-        #ifndef INSTANCED_MESH
         uniform mat4 modelMatrix;
-        #endif
-
         uniform mat4 viewMatrix;
         uniform mat4 projectionMatrix;
+        uniform float uPointSize;
 
-        out vec4 vInstanceColor;
+        out vec4 vColor;
 
         void main()
         {
             vec4 worldPosition = modelMatrix * vec4(position, 1.0);
             gl_Position = projectionMatrix * viewMatrix * worldPosition;
-            gl_PointSize = 5.0;
-            vInstanceColor = instanceColor;
+            gl_PointSize = uPointSize;
+            vColor = color;
         }
         """;
 
-    // 逐点片段着色器：圆形裁剪 + 逐实例颜色
+    // 逐点片段着色器：圆形裁剪 + 逐顶点颜色
     private const string PointCloudFragmentShader = """
         #version 300 es
         precision mediump float;
         out vec4 outColor;
 
-        in vec4 vInstanceColor;
+        in vec4 vColor;
 
         void main()
         {
             float dist = length(gl_PointCoord - 0.5);
             if (dist > 0.5) discard;
 
-            outColor = vInstanceColor;
+            outColor = vColor;
         }
         """;
 
@@ -85,7 +78,7 @@ public partial class PointCloudPage : UserControl
 
         view.AutoRequestNextFrameRendering = false;
 
-        view.MainCamera.Position = new Vector3(0, 0, 25);
+        view.MainCamera.Position = new Vector3(0, 0, 30);
         view.MainCamera.RotationDegrees = new Vector3(0, 0, 0);
 
         var dl = new DirectionalLight();
@@ -93,76 +86,179 @@ public partial class PointCloudPage : UserControl
         dl.LightColor = Color.White;
         view.AddNode(dl);
 
-        BuildPointCloud(view, 20000);
+        BuildPointCloud(view);
 
         view.RequestNextFrameRendering();
     }
 
-    private void BuildPointCloud(Aura3DView view, int pointCount)
+    private bool TryParseFloat(TextBox textBox, float defaultValue, out float value)
     {
-        if (instancedMesh != null)
+        if (float.TryParse(textBox.Text?.Trim(), out value))
+            return true;
+        value = defaultValue;
+        return false;
+    }
+
+    private bool TryParseInt(TextBox textBox, int defaultValue, out int value)
+    {
+        if (int.TryParse(textBox.Text?.Trim(), out value))
+            return true;
+        value = defaultValue;
+        return false;
+    }
+
+    private void BuildPointCloud(Aura3DView view)
+    {
+        pointCloudGroup?.RemoveFrom(view);
+        pointCloudGroup = null;
+
+        // 解析参数
+        if (!TryParseInt(pointCountTextBox, 20000, out int pointCount))
+            pointCount = 20000;
+
+        TryParseFloat(sizeXTextBox, 20f, out float sizeX);
+        TryParseFloat(sizeYTextBox, 20f, out float sizeY);
+        TryParseFloat(sizeZTextBox, 20f, out float sizeZ);
+        TryParseFloat(pointSizeTextBox, 5f, out float pointSize);
+        TryParseInt(gridTextBox, 4, out int gridDivisions);
+
+        var shape = (shapeComboBox.SelectedIndex) switch
         {
-            view.Remove(instancedMesh);
-            instancedMesh = null;
-        }
+            1 => PointCloudShape.Sphere,
+            2 => PointCloudShape.Disk,
+            _ => PointCloudShape.Box,
+        };
 
-        // 单顶点几何体：原点处一个点
-        var geometry = new Geometry();
-        geometry.PrimitiveType = Aura3D.Core.Resources.PrimitiveType.Points;
-        geometry.SetVertexAttribute(BuildInVertexAttribute.Position, 3, new List<float> { 0, 0, 0 });
+        var halfSize = Math.Max(Math.Max(sizeX, sizeY), sizeZ) / 2f;
 
-        var sourceMesh = new Mesh();
-        sourceMesh.Geometry = geometry;
+        var rand = new Random(42);
 
+        // 构建材质（所有 mesh 共享同一材质实例）
         var material = new Material
         {
             BlendMode = BlendMode.Opaque,
         };
-
         material.SetShaderSource("LightPass", ShaderType.Vertex, PointCloudVertexShader);
         material.SetShaderSource("LightPass", ShaderType.Fragment, PointCloudFragmentShader);
+        material.SetParameterValue("uPointSize", pointSize);
+        material.SetShaderPassParametersCallback("LightPass", pass =>
+        {
+            if (material.TryGetParameterValue<float>("uPointSize", out var ps))
+            {
+                pass.UniformFloat("uPointSize", ps);
+            }
+        });
 
-        sourceMesh.Material = material;
-
-        instancedMesh = InstancedMesh.FromMesh(sourceMesh);
-
-        // 不需要法线变换矩阵，禁用之
-        instancedMesh.SetAttributeEnabled("InstanceNormalTransform", false);
-
-        var rand = new Random(42);
-        float radius = 10f;
-
-        var colors = new List<Vector4>();
+        pointCloudGroup = new PointCloudMeshGroup(gridDivisions, halfSize);
 
         for (int i = 0; i < pointCount; i++)
         {
-            // 球体内随机分布（均匀体积分布用立方根）
-            float theta = (float)(rand.NextDouble() * Math.PI * 2);
-            float phi = (float)(Math.Acos(2 * rand.NextDouble() - 1));
-            float r = (float)(radius * Math.Cbrt(rand.NextDouble()));
-
-            float x = r * (float)(Math.Sin(phi) * Math.Cos(theta));
-            float y = r * (float)(Math.Sin(phi) * Math.Sin(theta));
-            float z = r * (float)(Math.Cos(phi));
-
-            var transform = Matrix4x4.CreateTranslation(x, y, z);
-            instancedMesh.AddInstance(transform);
-
-            // 基于位置的颜色映射（RGB ← XYZ 归一化到 [0,1]）
-            colors.Add(new Vector4(
-                (x / radius + 1f) / 2f,
-                (y / radius + 1f) / 2f,
-                (z / radius + 1f) / 2f,
-                1.0f));
+            var position = GeneratePoint(rand, shape, sizeX, sizeY, sizeZ);
+            var color = ComputeColor(position, shape, sizeX, sizeY, sizeZ);
+            pointCloudGroup.AddPoint(position, color);
         }
 
-        instancedMesh.SetInstanceAttribute<Vector4>(
-            BuildInVertexAttribute.TexCoord_1, 4, colors);
-
-        view.AddNode(instancedMesh);
+        pointCloudGroup.BuildAndAddTo(view, material);
         currentPointCount = pointCount;
 
-        infoText.Text = $"Points: {pointCount} | FPS: --";
+        var shapeName = shape switch
+        {
+            PointCloudShape.Sphere => "Sphere",
+            PointCloudShape.Disk => "Disk",
+            _ => "Box"
+        };
+        infoText.Text = $"Points: {pointCount} | Shape: {shapeName} | Grid: {gridDivisions}³ | FPS: --";
+    }
+
+    private static Vector3 GeneratePoint(Random rand, PointCloudShape shape, float sx, float sy, float sz)
+    {
+        return shape switch
+        {
+            PointCloudShape.Sphere => GenerateSpherePoint(rand, sx / 2f),
+            PointCloudShape.Disk => GenerateDiskPoint(rand, sx / 2f, sy / 2f),
+            _ => GenerateBoxPoint(rand, sx, sy, sz),
+        };
+    }
+
+    /// <summary>
+    /// Box: 在 [-sx/2, sx/2] × [-sy/2, sy/2] × [-sz/2, sz/2] 范围内均匀分布
+    /// </summary>
+    private static Vector3 GenerateBoxPoint(Random rand, float sx, float sy, float sz)
+    {
+        return new Vector3(
+            (float)(rand.NextDouble() - 0.5) * sx,
+            (float)(rand.NextDouble() - 0.5) * sy,
+            (float)(rand.NextDouble() - 0.5) * sz);
+    }
+
+    /// <summary>
+    /// Sphere: 在半径为 radius 的球体内均匀分布（体积均匀）
+    /// </summary>
+    private static Vector3 GenerateSpherePoint(Random rand, float radius)
+    {
+        float theta = (float)(rand.NextDouble() * Math.PI * 2);
+        float phi = (float)(Math.Acos(2 * rand.NextDouble() - 1));
+        float r = (float)(radius * Math.Cbrt(rand.NextDouble()));
+
+        return new Vector3(
+            r * (float)(Math.Sin(phi) * Math.Cos(theta)),
+            r * (float)(Math.Sin(phi) * Math.Sin(theta)),
+            r * (float)(Math.Cos(phi)));
+    }
+
+    /// <summary>
+    /// Disk: 在 XZ 平面圆盘上分布，Y 轴方向有厚度
+    /// </summary>
+    private static Vector3 GenerateDiskPoint(Random rand, float radius, float thickness)
+    {
+        float angle = (float)(rand.NextDouble() * Math.PI * 2);
+        float r = radius * (float)Math.Sqrt(rand.NextDouble());
+
+        return new Vector3(
+            r * (float)Math.Cos(angle),
+            (float)(rand.NextDouble() - 0.5f) * thickness * 2f,
+            r * (float)Math.Sin(angle));
+    }
+
+    private static Vector4 ComputeColor(Vector3 position, PointCloudShape shape, float sx, float sy, float sz)
+    {
+        return shape switch
+        {
+            PointCloudShape.Sphere => ComputeSphereColor(position, sx / 2f),
+            PointCloudShape.Disk => ComputeDiskColor(position, sx / 2f, sy / 2f),
+            _ => ComputeBoxColor(position, sx, sy, sz),
+        };
+    }
+
+    private static Vector4 ComputeBoxColor(Vector3 p, float sx, float sy, float sz)
+    {
+        float hx = sx / 2f;
+        float hy = sy / 2f;
+        float hz = sz / 2f;
+        return new Vector4(
+            (p.X / hx + 1f) / 2f,
+            (p.Y / hy + 1f) / 2f,
+            (p.Z / hz + 1f) / 2f,
+            1.0f);
+    }
+
+    private static Vector4 ComputeSphereColor(Vector3 p, float radius)
+    {
+        return new Vector4(
+            (p.X / radius + 1f) / 2f,
+            (p.Y / radius + 1f) / 2f,
+            (p.Z / radius + 1f) / 2f,
+            1.0f);
+    }
+
+    private static Vector4 ComputeDiskColor(Vector3 p, float radius, float thickness)
+    {
+        float t = thickness > 0.001f ? thickness : 0.001f;
+        return new Vector4(
+            (p.X / radius + 1f) / 2f,
+            (p.Y / t + 1f) / 2f,
+            (p.Z / radius + 1f) / 2f,
+            1.0f);
     }
 
     private void Aura3DView_SceneUpdated(object? sender, UpdateRoutedEventArgs args)
@@ -171,16 +267,106 @@ public partial class PointCloudPage : UserControl
             deltaTimes.RemoveAt(0);
         deltaTimes.Add(args.DeltaTime);
         var avgDt = deltaTimes.Average();
-        infoText.Text = $"Points: {currentPointCount} | FPS: {(int)(1 / avgDt)}";
+        infoText.Text = infoText.Text?.Split(" | FPS:")[0] + $" | FPS: {(int)(1 / avgDt)}";
 
         (sender as Aura3DView)?.RequestNextFrameRendering();
     }
 
     private void RegenerateButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (int.TryParse(pointCountTextBox.Text?.Trim(), out int count) && count > 0)
+        BuildPointCloud(aura3Dview);
+    }
+}
+
+enum PointCloudShape
+{
+    Box,
+    Sphere,
+    Disk,
+}
+
+/// <summary>
+/// 点云空间划分网格，将点分组到多个 Mesh 中以便引擎自动视锥剔除。
+/// </summary>
+class PointCloudMeshGroup
+{
+    private readonly int _divisions;
+    private readonly float _halfSize;
+    private readonly float _cellSize;
+    private readonly Dictionary<(int, int, int), CellData> _cells = new();
+
+    private readonly List<Mesh> _meshes = new();
+
+    public PointCloudMeshGroup(int divisions, float halfSize)
+    {
+        _divisions = divisions;
+        _halfSize = halfSize;
+        _cellSize = halfSize * 2 / divisions;
+    }
+
+    public void AddPoint(Vector3 position, Vector4 color)
+    {
+        var cell = GetCellIndex(position);
+        if (!_cells.TryGetValue(cell, out var cellData))
         {
-            BuildPointCloud(aura3Dview, count);
+            cellData = new CellData();
+            _cells[cell] = cellData;
         }
+        cellData.Positions.Add(position.X);
+        cellData.Positions.Add(position.Y);
+        cellData.Positions.Add(position.Z);
+        cellData.Colors.Add(color.X);
+        cellData.Colors.Add(color.Y);
+        cellData.Colors.Add(color.Z);
+        cellData.Colors.Add(color.W);
+    }
+
+    public void BuildAndAddTo(Aura3DView view, Material material)
+    {
+        foreach (var (_, cellData) in _cells)
+        {
+            var geometry = new Geometry();
+            geometry.PrimitiveType = Aura3D.Core.Resources.PrimitiveType.Points;
+            geometry.SetVertexAttribute(BuildInVertexAttribute.Position, 3, cellData.Positions);
+            geometry.SetVertexAttribute(BuildInVertexAttribute.Color_0, 4, cellData.Colors);
+
+            var mesh = new Mesh
+            {
+                Geometry = geometry,
+                Material = material
+            };
+
+            _meshes.Add(mesh);
+            view.AddNode(mesh);
+        }
+    }
+
+    public void RemoveFrom(Aura3DView view)
+    {
+        foreach (var mesh in _meshes)
+        {
+            view.Remove(mesh);
+        }
+        _meshes.Clear();
+        _cells.Clear();
+    }
+
+    private (int, int, int) GetCellIndex(Vector3 position)
+    {
+        int ix = (int)MathF.Floor((position.X + _halfSize) / _cellSize);
+        int iy = (int)MathF.Floor((position.Y + _halfSize) / _cellSize);
+        int iz = (int)MathF.Floor((position.Z + _halfSize) / _cellSize);
+
+        ix = Math.Clamp(ix, 0, _divisions - 1);
+        iy = Math.Clamp(iy, 0, _divisions - 1);
+        iz = Math.Clamp(iz, 0, _divisions - 1);
+
+        return (ix, iy, iz);
+    }
+
+    class CellData
+    {
+        public List<float> Positions = new();
+        public List<float> Colors = new();
     }
 }
