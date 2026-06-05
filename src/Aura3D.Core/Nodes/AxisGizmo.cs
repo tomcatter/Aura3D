@@ -1,4 +1,3 @@
-using Aura3D.Core.Math;
 using Aura3D.Core.Resources;
 using System.Drawing;
 using System.Numerics;
@@ -8,6 +7,7 @@ namespace Aura3D.Core.Nodes;
 /// <summary>
 /// 方向轴可视化节点，在场景中显示 RGB 三色坐标轴（X=红, Y=绿, Z=蓝），
 /// 带有箭头尖端作为方向指示器。
+/// 调试绘制数据由 DebugDrawPass 直接渲染，不经过 Mesh 管线。
 /// </summary>
 public class AxisGizmo : Node
 {
@@ -22,19 +22,21 @@ public class AxisGizmo : Node
     public float ArrowheadSize { get; set; } = 0.15f;
 
     /// <summary>
-    /// X 轴（红色）的网格节点。
+    /// X 轴（红色）的调试绘制数据。
     /// </summary>
-    public Mesh XAxisMesh { get; private set; }
+    public DebugDrawData XAxisData { get; private set; }
 
     /// <summary>
-    /// Y 轴（绿色）的网格节点。
+    /// Y 轴（绿色）的调试绘制数据。
     /// </summary>
-    public Mesh YAxisMesh { get; private set; }
+    public DebugDrawData YAxisData { get; private set; }
 
     /// <summary>
-    /// Z 轴（蓝色）的网格节点。
+    /// Z 轴（蓝色）的调试绘制数据。
     /// </summary>
-    public Mesh ZAxisMesh { get; private set; }
+    public DebugDrawData ZAxisData { get; private set; }
+
+    private readonly List<DebugDrawData> _debugDrawDataList;
 
     /// <summary>
     /// 初始化 <see cref="AxisGizmo"/> 类的新实例。
@@ -45,27 +47,22 @@ public class AxisGizmo : Node
         Name = "AxisGizmo";
         AxisLength = axisLength;
 
-        XAxisMesh = CreateAxisMesh(
-            name: "AxisX",
+        XAxisData = CreateAxisData(
             direction: new Vector3(1, 0, 0),
             color: Color.Red);
 
-        YAxisMesh = CreateAxisMesh(
-            name: "AxisY",
+        YAxisData = CreateAxisData(
             direction: new Vector3(0, 1, 0),
             color: Color.Green);
 
-        ZAxisMesh = CreateAxisMesh(
-            name: "AxisZ",
+        ZAxisData = CreateAxisData(
             direction: new Vector3(0, 0, 1),
             color: Color.Blue);
 
-        AddChild(XAxisMesh, AttachToParentRule.KeepLocal);
-        AddChild(YAxisMesh, AttachToParentRule.KeepLocal);
-        AddChild(ZAxisMesh, AttachToParentRule.KeepLocal);
+        _debugDrawDataList = [XAxisData, YAxisData, ZAxisData];
     }
 
-    private Mesh CreateAxisMesh(string name, Vector3 direction, Color color)
+    private DebugDrawData CreateAxisData(Vector3 direction, Color color)
     {
         var positions = new List<float>();
         float len = AxisLength;
@@ -110,39 +107,19 @@ public class AxisGizmo : Node
         AddLineVertex(positions, tip);
         AddLineVertex(positions, basePt - perp2 * arrowWidth);
 
-        var geometry = new Geometry
-        {
-            PrimitiveType = PrimitiveType.Lines
-        };
-        geometry.SetVertexAttribute(BuildInVertexAttribute.Position, 3, positions);
+        return new DebugDrawData(this, positions.ToArray(), color, noDepthTest: true);
+    }
 
-        var material = new Material
-        {
-            BlendMode = BlendMode.Opaque,
-            DoubleSided = true
-        };
-        material.SetShaderSource("DebugDrawPass", ShaderType.Vertex, ShaderResource.DebugVert);
-        material.SetShaderSource("DebugDrawPass", ShaderType.Fragment, ShaderResource.DebugFrag);
-        material.SetParameterValue("uDebugColor", color.ToVector4());
-        // 方向轴始终渲染在最上层，不被场景物体遮挡
-        material.SetParameterValue("noDepthTest", true);
+    /// <inheritdoc />
+    public override List<IGpuResource> GetGpuResources()
+    {
+        return [XAxisData, YAxisData, ZAxisData];
+    }
 
-        material.SetShaderPassParametersCallback("DebugDrawPass", pass =>
-        {
-            if (material.TryGetParameterValue<Vector4>("uDebugColor", out var c))
-            {
-                pass.UniformVector3("uColor", new Vector3(c.X, c.Y, c.Z));
-            }
-        });
-
-        var mesh = new Mesh
-        {
-            Name = name,
-            Geometry = geometry,
-            Material = material
-        };
-
-        return mesh;
+    /// <inheritdoc />
+    public override IEnumerable<DebugDrawData> GetDebugDrawData()
+    {
+        return _debugDrawDataList;
     }
 
     private static void AddLineVertex(List<float> positions, Vector3 point)

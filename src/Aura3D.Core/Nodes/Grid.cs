@@ -1,4 +1,3 @@
-using Aura3D.Core.Math;
 using Aura3D.Core.Resources;
 using System.Drawing;
 using System.Numerics;
@@ -8,6 +7,7 @@ namespace Aura3D.Core.Nodes;
 /// <summary>
 /// 网格可视化节点，在 XZ 平面上显示参考网格线。
 /// Y 轴为上方（引擎使用 Y-up 坐标系）。
+/// 调试绘制数据由 DebugDrawPass 直接渲染，不经过 Mesh 管线。
 /// </summary>
 public class Grid : Node
 {
@@ -32,14 +32,16 @@ public class Grid : Node
     public Color CenterLineColor { get; set; } = Color.FromArgb(255, 60, 60, 60);
 
     /// <summary>
-    /// 包含网格线的网格节点。
+    /// 网格线的调试绘制数据。
     /// </summary>
-    public Mesh GridMesh { get; private set; }
+    public DebugDrawData GridLinesData { get; private set; }
 
     /// <summary>
-    /// 包含中心轴线的网格节点。
+    /// 中心轴线的调试绘制数据。
     /// </summary>
-    public Mesh CenterLineMesh { get; private set; }
+    public DebugDrawData CenterLinesData { get; private set; }
+
+    private readonly List<DebugDrawData> _debugDrawDataList;
 
     /// <summary>
     /// 初始化 <see cref="Grid"/> 类的新实例。
@@ -52,14 +54,13 @@ public class Grid : Node
         Size = size;
         Divisions = System.Math.Max(1, divisions);
 
-        GridMesh = CreateGridLinesMesh("GridLines", LineColor);
-        CenterLineMesh = CreateCenterLinesMesh("GridCenterLines", CenterLineColor);
+        GridLinesData = CreateGridLinesData(LineColor);
+        CenterLinesData = CreateCenterLinesData(CenterLineColor);
 
-        AddChild(GridMesh, AttachToParentRule.KeepLocal);
-        AddChild(CenterLineMesh, AttachToParentRule.KeepLocal);
+        _debugDrawDataList = [GridLinesData, CenterLinesData];
     }
 
-    private Mesh CreateGridLinesMesh(string name, Color color)
+    private DebugDrawData CreateGridLinesData(Color color)
     {
         var positions = new List<float>();
         float halfSize = Size * 0.5f;
@@ -70,7 +71,7 @@ public class Grid : Node
         {
             float z = -halfSize + i * step;
 
-            // 跳过中心线（由 CenterLineMesh 处理）
+            // 跳过中心线（由 CenterLinesData 处理）
             if (MathF.Abs(z) < step * 0.01f)
                 continue;
 
@@ -83,7 +84,7 @@ public class Grid : Node
         {
             float x = -halfSize + i * step;
 
-            // 跳过中心线（由 CenterLineMesh 处理）
+            // 跳过中心线（由 CenterLinesData 处理）
             if (MathF.Abs(x) < step * 0.01f)
                 continue;
 
@@ -91,10 +92,10 @@ public class Grid : Node
             AddLineVertex(positions, new Vector3(x, 0, halfSize));
         }
 
-        return CreateLineMesh(name, positions, color);
+        return new DebugDrawData(this, positions.ToArray(), color);
     }
 
-    private Mesh CreateCenterLinesMesh(string name, Color color)
+    private DebugDrawData CreateCenterLinesData(Color color)
     {
         var positions = new List<float>();
         float halfSize = Size * 0.5f;
@@ -107,39 +108,19 @@ public class Grid : Node
         AddLineVertex(positions, new Vector3(0, 0, -halfSize));
         AddLineVertex(positions, new Vector3(0, 0, halfSize));
 
-        return CreateLineMesh(name, positions, color);
+        return new DebugDrawData(this, positions.ToArray(), color);
     }
 
-    private static Mesh CreateLineMesh(string name, List<float> positions, Color color)
+    /// <inheritdoc />
+    public override List<IGpuResource> GetGpuResources()
     {
-        var geometry = new Geometry
-        {
-            PrimitiveType = PrimitiveType.Lines
-        };
-        geometry.SetVertexAttribute(BuildInVertexAttribute.Position, 3, positions);
+        return [GridLinesData, CenterLinesData];
+    }
 
-        var material = new Material
-        {
-            BlendMode = BlendMode.Opaque,
-            DoubleSided = true
-        };
-        material.SetShaderSource("DebugDrawPass", ShaderType.Vertex, ShaderResource.DebugVert);
-        material.SetShaderSource("DebugDrawPass", ShaderType.Fragment, ShaderResource.DebugFrag);
-        material.SetParameterValue("uDebugColor", color.ToVector4());
-        material.SetShaderPassParametersCallback("DebugDrawPass", pass =>
-        {
-            if (material.TryGetParameterValue<Vector4>("uDebugColor", out var c))
-            {
-                pass.UniformVector3("uColor", new Vector3(c.X, c.Y, c.Z));
-            }
-        });
-
-        return new Mesh
-        {
-            Name = name,
-            Geometry = geometry,
-            Material = material
-        };
+    /// <inheritdoc />
+    public override IEnumerable<DebugDrawData> GetDebugDrawData()
+    {
+        return _debugDrawDataList;
     }
 
     private static void AddLineVertex(List<float> positions, Vector3 point)

@@ -401,7 +401,7 @@ public class Scene
 
     /// <summary>
     /// 判断网格是否可被拾取。
-    /// 排除无几何体、无包围盒、以及调试可视化网格（方向轴、网格线等）。
+    /// 排除无几何体或无包围盒的网格。
     /// </summary>
     private static bool IsPickable(Mesh mesh)
     {
@@ -409,14 +409,6 @@ public class Scene
             return false;
         if (mesh.BoundingBox == null)
             return false;
-
-        // 排除使用调试着色器的可视化辅助网格（方向轴、网格线等）
-        if (mesh.Material != null && mesh.Material.HasShader)
-        {
-            var (debugVert, _) = mesh.Material.GetShaderSource("DebugDrawPass");
-            if (debugVert != null)
-                return false;
-        }
 
         return true;
     }
