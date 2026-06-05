@@ -14,7 +14,7 @@ public class PipelineSettings
     /// 渲染目标的默认深度纹理格式。
     /// 大场景或深度精度不足时可设置为 <see cref="TextureFormat.DepthComponent32f"/>。
     /// </summary>
-    public TextureFormat DepthFormat { get; set; } = TextureFormat.DepthComponent16;
+    public TextureFormat DepthFormat { get; set; } = TextureFormat.DepthComponent32f;
 
     /// <summary>
     /// 方向光源最大数量（影响 Shader UBO 分配）。
