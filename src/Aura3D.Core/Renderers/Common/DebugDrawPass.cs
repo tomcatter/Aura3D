@@ -211,24 +211,6 @@ public class DebugDrawPass : RenderPass
             WireBox(bb.Min, bb.Max);
         }
         End();
-
-        UniformVector3("uColor", new Vector3(1.0f, 0.6f, 0.2f));
-        Begin();
-        foreach (var mesh in Meshes)
-        {
-            if (!mesh.Enable || !mesh.IsSkinnedMesh)
-                continue;
-            var boneBounds = mesh.GetBoneWorldBounds();
-            if (boneBounds == null)
-                continue;
-            foreach (var boneBB in boneBounds)
-            {
-                if (boneBB == null)
-                    continue;
-                WireBox(boneBB.Min, boneBB.Max);
-            }
-        }
-        End();
     }
 
     /// <inheritdoc />

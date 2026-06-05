@@ -46,6 +46,10 @@
                       IsChecked="{Binding ShowBoundingBox}">
               Show Bounding Box
             </CheckBox>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock VerticalAlignment="Center" Text="BB Padding:" Width="68" />
+              <TextBox Text="{Binding BoundingBoxPadding}" Width="60" />
+            </StackPanel>
             <TextBlock FontSize="11" FontStyle="Italic"
                        Foreground="{DynamicResource SemiGrey10}"
                        Text="💡 Toggle to compare FPS with/without culling" />

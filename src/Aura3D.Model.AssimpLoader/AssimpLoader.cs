@@ -30,7 +30,6 @@ public static class AssimpLoader
         foreach (var mesh in model.Meshes)
         {
             mesh.Model = model;
-            mesh.ComputeBoneLocalBounds();
         }
 
         return model;
@@ -98,7 +97,6 @@ public static class AssimpLoader
         foreach (var mesh in model.Meshes)
         {
             mesh.Model = model;
-            mesh.ComputeBoneLocalBounds();
         }
 
         return model;
@@ -123,7 +121,6 @@ public static class AssimpLoader
         foreach (var mesh in model.Meshes)
         {
             mesh.Model = model;
-            mesh.ComputeBoneLocalBounds();
         }
         List<Core.Resources.Animation> animations = [];
 
@@ -157,7 +154,6 @@ public static class AssimpLoader
         foreach (var mesh in model.Meshes)
         {
             mesh.Model = model;
-            mesh.ComputeBoneLocalBounds();
         }
 
         List<Core.Resources.Animation> animations = [];

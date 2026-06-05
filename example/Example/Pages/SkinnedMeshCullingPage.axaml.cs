@@ -36,7 +36,6 @@ public partial class SkinnedMeshCullingPage : UserControl
         _cameraController = new CameraController(aura3DView) { MoveSpeed = 10f };
 
         buildButton.Click += (s, e) => BuildSoldiers();
-        cullingCheck.IsCheckedChanged += (s, e) => ApplyCulling();
     }
 
     // ─── Scene Init ──────────────────────────────────────────
@@ -49,8 +48,18 @@ public partial class SkinnedMeshCullingPage : UserControl
         {
             vm.PropertyChanged += (s, args) =>
             {
-                if (args.PropertyName == nameof(SkinnedMeshCullingViewModel.ShowBoundingBox))
-                    ApplyBoundingBox();
+                switch (args.PropertyName)
+                {
+                    case nameof(SkinnedMeshCullingViewModel.EnableFrustumCulling):
+                        ApplyCulling();
+                        break;
+                    case nameof(SkinnedMeshCullingViewModel.ShowBoundingBox):
+                        ApplyBoundingBox();
+                        break;
+                    case nameof(SkinnedMeshCullingViewModel.BoundingBoxPadding):
+                        ApplyBoundingBoxPadding();
+                        break;
+                }
             };
         }
 
@@ -230,6 +239,9 @@ public partial class SkinnedMeshCullingPage : UserControl
             clone.Position = new Vector3(x, 0, z);
             clone.RotationDegrees = new Vector3(0, 180 + (i % 4) * 90, 0);
 
+            // Apply bounding box padding
+            clone.BoundingBoxPadding = vm.BoundingBoxPadding;
+
             aura3DView.AddNode(clone);
             _soldiers.Add(clone);
         }
@@ -262,6 +274,18 @@ public partial class SkinnedMeshCullingPage : UserControl
         if (DataContext is SkinnedMeshCullingViewModel vm)
         {
             aura3DView.Scene.RenderPipeline.Settings.ShowBoundingBox = vm.ShowBoundingBox;
+        }
+    }
+
+    private void ApplyBoundingBoxPadding()
+    {
+        if (DataContext is not SkinnedMeshCullingViewModel vm) return;
+        foreach (var soldier in _soldiers)
+        {
+            soldier.BoundingBoxPadding = vm.BoundingBoxPadding;
+            // 强制刷新包围盒以应用新 padding
+            foreach (var mesh in soldier.Meshes)
+                mesh.UpdateWorldBoundingBox();
         }
     }
 }

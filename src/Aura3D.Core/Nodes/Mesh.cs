@@ -52,8 +52,7 @@ public class Mesh : Node, IOctreeObject
 
     /// <summary>
     /// 世界空间中的边界框。
-    /// 静态网格：Geometry 顶点 AABB 经 WorldTransform 变换。
-    /// 骨骼网格：每骨骼 AABB 经蒙皮矩阵合并后，再经 WorldTransform 变换。
+    /// Geometry 顶点 AABB 经 WorldTransform 变换，可经 Model.CustomBoundingBox 覆盖。
     /// </summary>
     public BoundingBox? BoundingBox => boundingBox;
 
@@ -73,10 +72,6 @@ public class Mesh : Node, IOctreeObject
                 CurrentScene.RenderPipeline.AddGpuResource(value);
             }
             geometry = value;
-
-            // 几何体变更时，清除骨骼 AABB 缓存（下一帧重新计算）
-            _boneBoundsReady = false;
-            _boneLocalBounds = null;
 
             UpdateWorldBoundingBox();
 
@@ -135,144 +130,31 @@ public class Mesh : Node, IOctreeObject
     /// </summary>
     public event Action<IOctreeObject>? OnBoundingBoxChanged = delegate { };
 
-    // ====================================================
-    // 骨骼网格专用：每骨骼局部 AABB
-    // ====================================================
-
     /// <summary>
-    /// 每骨骼在模型局部空间中的顶点 AABB（按骨骼索引）。
-    /// 索引对应 Skeleton.Bones 的索引，null 表示该骨骼不影响此 Mesh。
-    /// 每个 Mesh 独立持有，不与其它共享同一 Skeleton 的 Mesh 冲突。
-    /// </summary>
-    private BoundingBox?[]? _boneLocalBounds;
-
-    /// <summary>
-    /// 骨骼局部 AABB 是否已从几何体计算完毕。
-    /// </summary>
-    private bool _boneBoundsReady;
-
-    /// <summary>
-    /// 从几何体顶点数据计算每骨骼的局部 AABB。
-    /// 模型加载后调用一次（可以是静态或骨骼网格，只在 IsSkinnedMesh 时生效）。
-    /// </summary>
-    public void ComputeBoneLocalBounds()
-    {
-        if (!IsSkinnedMesh) return;
-
-        var skeleton = Model!.Skeleton!;
-        if (skeleton.Bones.Count == 0) return;
-
-        var posData     = Geometry!.GetAttributeData(BuildInVertexAttribute.Position);
-        var jointsData  = Geometry!.GetAttributeData(BuildInVertexAttribute.Joints_0);
-        var weightsData = Geometry!.GetAttributeData(BuildInVertexAttribute.Weights_0);
-
-        if (posData == null || jointsData == null || weightsData == null) return;
-
-        int boneCount = skeleton.Bones.Count;
-        var boneMin = new Vector3?[boneCount];
-        var boneMax = new Vector3?[boneCount];
-
-        int vertexCount = posData.Count / 3;
-        for (int v = 0; v < vertexCount; v++)
-        {
-            var pos = new Vector3(posData[v * 3], posData[v * 3 + 1], posData[v * 3 + 2]);
-
-            for (int j = 0; j < 4; j++)
-            {
-                int wIdx = v * 4 + j;
-                if (wIdx >= weightsData.Count) break;
-
-                float weight = weightsData[wIdx];
-                if (weight <= 0) continue;
-
-                int jIdx = v * 4 + j;
-                if (jIdx >= jointsData.Count) break;
-
-                int boneIdx = (int)jointsData[jIdx];
-                if (boneIdx < 0 || boneIdx >= boneCount) continue;
-
-                if (boneMin[boneIdx] == null)
-                {
-                    boneMin[boneIdx] = pos;
-                    boneMax[boneIdx] = pos;
-                }
-                else
-                {
-                    boneMin[boneIdx] = Vector3.Min(boneMin[boneIdx]!.Value, pos);
-                    boneMax[boneIdx] = Vector3.Max(boneMax[boneIdx]!.Value, pos);
-                }
-            }
-        }
-
-        _boneLocalBounds = new BoundingBox?[boneCount];
-        for (int i = 0; i < boneCount; i++)
-        {
-            if (boneMin[i].HasValue)
-                _boneLocalBounds[i] = new BoundingBox(boneMin[i]!.Value, boneMax[i]!.Value);
-        }
-
-        _boneBoundsReady = true;
-    }
-
-    /// <summary>
-    /// 计算局部空间中的 AABB——静态和骨骼网格的统一分发点。
-    /// 静态：返回 Geometry.BoundingBox。
-    /// 骨骼：合并每骨骼 AABB 经蒙皮矩阵变换后的结果。
-    /// 若骨骼数据就绪但 AnimationSampler 尚未设置（如 Clone 过程中），
-    /// 回退到 Geometry.BoundingBox。
+    /// 计算局部空间中的 AABB。
+    /// CustomBoundingBox 优先，否则回退到 Geometry.BoundingBox（含 padding）。
     /// </summary>
     private BoundingBox? ComputeLocalBoundingBox()
     {
-        if (IsSkinnedMesh && _boneBoundsReady && _boneLocalBounds != null
-            && Model!.AnimationSampler != null)
+        // 开发者手动指定 → 直接使用
+        if (Model?.CustomBoundingBox != null)
         {
-            return ComputeAnimatedLocalBoundingBox();
-        }
-        return Geometry?.BoundingBox;
-    }
-
-    /// <summary>
-    /// 骨骼路径：对每个骨骼的局部 AABB 应用蒙皮矩阵变换，合并得到动画后的局部 AABB。
-    /// 蒙皮矩阵与 GPU 顶点着色器中的 BoneMatrices 一致：
-    /// <c>skinMatrix = Bone.InverseWorldMatrix * BonesTransform[i]</c>
-    /// </summary>
-    private BoundingBox? ComputeAnimatedLocalBoundingBox()
-    {
-        var skeleton = Model!.Skeleton!;
-        var bonesTransform = Model!.AnimationSampler!.BonesTransform;
-
-        Vector3 min = new(float.MaxValue);
-        Vector3 max = new(float.MinValue);
-        bool valid = false;
-
-        for (int i = 0; i < _boneLocalBounds!.Length; i++)
-        {
-            if (_boneLocalBounds[i] == null) continue;
-
-            var skinMat = skeleton.Bones[i].InverseWorldMatrix * bonesTransform[i];
-            var boneBB = _boneLocalBounds[i]!.Transform(skinMat);
-
-            if (!valid)
-            {
-                min = boneBB.Min;
-                max = boneBB.Max;
-                valid = true;
-            }
-            else
-            {
-                min = Vector3.Min(min, boneBB.Min);
-                max = Vector3.Max(max, boneBB.Max);
-            }
+            var bb = Model.CustomBoundingBox;
+            if (Model.BoundingBoxPadding > 0)
+                bb = bb.Expand(Model.BoundingBoxPadding);
+            return bb;
         }
 
-        return valid ? new BoundingBox(min, max) : null;
+        // 回退到几何体的包围盒（含 padding）
+        var fallback = Geometry?.BoundingBox;
+        if (fallback != null && Model != null && Model.BoundingBoxPadding > 0)
+            fallback = fallback.Expand(Model.BoundingBoxPadding);
+        return fallback;
     }
-
-    // ====================================================
 
     /// <summary>
     /// 更新世界空间中的边界框。
-    /// 静态网格和骨骼网格统一入口：先获取局部 AABB，再经 WorldTransform 变换。
+    /// 先获取局部 AABB，再经 WorldTransform 变换。
     /// </summary>
     public virtual void UpdateWorldBoundingBox()
     {
@@ -295,36 +177,6 @@ public class Mesh : Node, IOctreeObject
     /// 获取动画采样器。
     /// </summary>
     public IAnimationSampler? AnimationSampler => Model?.AnimationSampler;
-
-    /// <summary>
-    /// 获取每根骨骼在当前动画姿态下的世界空间包围盒列表。
-    /// 仅对骨骼网格有效，返回 null 表示非骨骼网格或数据未就绪。
-    /// 列表索引与 Skeleton.Bones 索引对应，null 元素表示该骨骼无顶点权重。
-    /// </summary>
-    public List<BoundingBox?>? GetBoneWorldBounds()
-    {
-        if (!IsSkinnedMesh || !_boneBoundsReady || _boneLocalBounds == null)
-            return null;
-
-        var bones = Skeleton.Bones;
-        var sampler = AnimationSampler;
-        var result = new BoundingBox?[_boneLocalBounds.Length];
-
-        for (int i = 0; i < _boneLocalBounds.Length; i++)
-        {
-            if (_boneLocalBounds[i] == null)
-                continue;
-
-            var skinMat = sampler != null
-                ? bones[i].InverseWorldMatrix * sampler.BonesTransform[i]
-                : bones[i].InverseWorldMatrix * bones[i].WorldMatrix;
-
-            var boneBB = _boneLocalBounds[i]!.Transform(skinMat);
-            result[i] = boneBB.Transform(WorldTransform);
-        }
-
-        return result.ToList();
-    }
 
     protected override void OnWorldTransformChanged()
     {

@@ -40,16 +40,10 @@ public class Scene
     public DirectionalLight? MainDirectionalLight { get; set; }
 
     /// <summary>
-    /// 获取或设置场景的静态网格八叉树空间索引。
-    /// 仅包含静态网格（IsSkinnedMesh == false），骨骼网格使用直接遍历剔除。
+    /// 获取或设置场景的网格八叉树空间索引。
+    /// 包含所有网格（静态与骨骼），包围盒仅在 WorldTransform 变更时更新。
     /// </summary>
-    public Octree<Mesh> StaticMeshOctree { get; set; }
-
-    /// <summary>
-    /// 获取场景中的骨骼网格列表。骨骼网格不放入八叉树，
-    /// 因为其包围盒每帧随动画变化，直接遍历更高效。
-    /// </summary>
-    public List<Mesh> SkinnedMeshes { get; } = [];
+    public Octree<Mesh> MeshOctree { get; set; }
 
     /// <summary>
     /// 获取或设置场景的渲染管线。
@@ -106,7 +100,7 @@ public class Scene
         PipelineSettings = pipelineSettings ?? new PipelineSettings();
         RenderPipeline = createRenderPipeline(this);
 
-        StaticMeshOctree = new Octree<Mesh>(new System.Numerics.Vector3(100, 100, 100), 5);
+        MeshOctree = new Octree<Mesh>(new System.Numerics.Vector3(100, 100, 100), 5);
 
         MainCamera = new Camera();
 
@@ -178,14 +172,7 @@ public class Scene
 
         if (node is Mesh mesh)
         {
-            if (mesh.IsSkinnedMesh)
-            {
-                SkinnedMeshes.Add(mesh);
-            }
-            else
-            {
-                StaticMeshOctree.Add(mesh);
-            }
+            MeshOctree.Add(mesh);
         }
 
         foreach (var child in node.Children)
@@ -232,14 +219,7 @@ public class Scene
 
         if (node is Mesh mesh)
         {
-            if (mesh.IsSkinnedMesh)
-            {
-                SkinnedMeshes.Remove(mesh);
-            }
-            else
-            {
-                StaticMeshOctree.Remove(mesh);
-            }
+            MeshOctree.Remove(mesh);
         }
 
         foreach (var child in node.Children)
@@ -295,9 +275,9 @@ public class Scene
         {
             if (_nodes.Contains(node) == false)
                 continue;
-            if (node is Mesh mesh && mesh.IsStaticMesh)
+            if (node is Mesh mesh)
             {
-                StaticMeshOctree.Update(mesh);
+                MeshOctree.Update(mesh);
             }
         }
         _dirtyNodes.Clear();

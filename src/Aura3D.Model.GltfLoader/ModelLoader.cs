@@ -242,7 +242,6 @@ public static class ModelLoader
         foreach (var mesh in model.Meshes)
         {
             mesh.Model = model;
-            mesh.ComputeBoneLocalBounds();
         }
 
         return model;

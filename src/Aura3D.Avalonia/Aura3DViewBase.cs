@@ -115,9 +115,11 @@ public abstract class Aura3DViewBase : global::Avalonia.OpenGL.Controls.OpenGlCo
             controlRenderTarget.FrameBufferId = (uint)fb;
         }
 
-        Scene.RenderPipeline.Render();
-
+        // Update first: process animation + dirty octree nodes,
+        // so Render() culls with up-to-date bounding boxes.
         Scene.Update(deltaTime);
+
+        Scene.RenderPipeline.Render();
 
         Camera.ControlRenderTarget = controlRenderTarget;
         OnSceneUpdated(deltaTime);
