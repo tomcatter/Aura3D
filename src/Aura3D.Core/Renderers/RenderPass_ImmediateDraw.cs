@@ -161,6 +161,76 @@ public partial class RenderPass
         _immVerts.Clear();
     }
 
+    /// <summary>
+    /// 添加一个线框球体（由三个正交的大圆组成）。
+    /// </summary>
+    protected void WireSphere(Vector3 center, float radius, int segments = 24)
+    {
+        Circle(center, Vector3.UnitX, radius, segments);
+        Circle(center, Vector3.UnitY, radius, segments);
+        Circle(center, Vector3.UnitZ, radius, segments);
+    }
+
+    /// <summary>
+    /// 添加一个线框圆锥体（底部圆 + 从顶点到底部圆的连线）。
+    /// </summary>
+    /// <param name="origin">圆锥顶点（世界空间）。</param>
+    /// <param name="direction">圆锥开口方向（单位向量）。</param>
+    /// <param name="angleRadians">半角（弧度）。</param>
+    /// <param name="length">圆锥长度。</param>
+    /// <param name="segments">底部分段数。</param>
+    protected void WireCone(Vector3 origin, Vector3 direction, float angleRadians, float length, int segments = 16)
+    {
+        var dir = Vector3.Normalize(direction);
+        var baseCenter = origin + dir * length;
+        float baseRadius = MathF.Tan(angleRadians) * length;
+
+        var (u, v) = GetPlaneBasis(dir);
+
+        // 底部圆
+        for (int i = 0; i < segments; i++)
+        {
+            float a0 = 2.0f * MathF.PI * i / segments;
+            float a1 = 2.0f * MathF.PI * (i + 1) / segments;
+
+            var p0 = baseCenter + baseRadius * (MathF.Cos(a0) * u + MathF.Sin(a0) * v);
+            var p1 = baseCenter + baseRadius * (MathF.Cos(a1) * u + MathF.Sin(a1) * v);
+
+            Line(p0, p1);
+        }
+
+        // 从顶点到底部圆的连线（每 90 度一条）
+        for (int i = 0; i < 4; i++)
+        {
+            float a = 2.0f * MathF.PI * i / 4;
+            var p = baseCenter + baseRadius * (MathF.Cos(a) * u + MathF.Sin(a) * v);
+            Line(origin, p);
+        }
+    }
+
+    /// <summary>
+    /// 添加一个带箭头的线段。箭头位于终点。
+    /// </summary>
+    /// <param name="from">起点。</param>
+    /// <param name="to">终点（箭头位置）。</param>
+    /// <param name="headSize">箭头大小。</param>
+    protected void WireArrow(Vector3 from, Vector3 to, float headSize = 0.15f)
+    {
+        var dir = Vector3.Normalize(to - from);
+        float totalLength = Vector3.Distance(from, to);
+
+        Line(from, to);
+
+        var (perp1, perp2) = GetPlaneBasis(dir);
+        var basePt = to - dir * headSize;
+        float w = headSize * 0.35f;
+
+        Line(to, basePt + perp1 * w);
+        Line(to, basePt - perp1 * w);
+        Line(to, basePt + perp2 * w);
+        Line(to, basePt - perp2 * w);
+    }
+
     protected static (Vector3 u, Vector3 v) GetPlaneBasis(Vector3 normal)
     {
         var n = Vector3.Normalize(normal);

@@ -273,7 +273,7 @@ public partial class SkinnedMeshCullingPage : UserControl
         if (aura3DView.Scene?.RenderPipeline == null) return;
         if (DataContext is SkinnedMeshCullingViewModel vm)
         {
-            aura3DView.Scene.RenderPipeline.Settings.ShowBoundingBox = vm.ShowBoundingBox;
+            aura3DView.Scene.RenderPipeline.Settings.Debug.ShowBoundingBox = vm.ShowBoundingBox;
         }
     }
 

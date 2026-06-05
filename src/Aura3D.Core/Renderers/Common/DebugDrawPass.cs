@@ -99,6 +99,9 @@ public class DebugDrawPass : RenderPass
         UniformMatrix4("viewMatrix", camera.View);
         UniformMatrix4("projectionMatrix", camera.Projection);
 
+        if (!renderPipeline.Settings.Debug.Enable)
+            return;
+
         var axisGizmo = Scene.AxisGizmo;
         if (axisGizmo != null && axisGizmo.Enable)
         {
@@ -111,9 +114,34 @@ public class DebugDrawPass : RenderPass
             DrawGrid(grid);
         }
 
-        if (renderPipeline.Settings.ShowBoundingBox)
+        if (renderPipeline.Settings.Debug.ShowBoundingBox)
         {
             DrawBoundingBoxes();
+        }
+
+        if (renderPipeline.Settings.Debug.ShowDirectionalLight)
+        {
+            DrawDirectionalLights();
+        }
+
+        if (renderPipeline.Settings.Debug.ShowPointLight)
+        {
+            DrawPointLights();
+        }
+
+        if (renderPipeline.Settings.Debug.ShowSpotLight)
+        {
+            DrawSpotLights();
+        }
+
+        if (renderPipeline.Settings.Debug.ShowCamera)
+        {
+            DrawCameras(camera);
+        }
+
+        if (renderPipeline.Settings.Debug.ShowBone)
+        {
+            DrawBones();
         }
     }
 
@@ -211,6 +239,232 @@ public class DebugDrawPass : RenderPass
             WireBox(bb.Min, bb.Max);
         }
         End();
+    }
+
+    private void DrawDirectionalLights()
+    {
+        UniformMatrix4("modelMatrix", Matrix4x4.Identity);
+
+        foreach (var light in renderPipeline.DirectionalLights)
+        {
+            if (!light.Enable)
+                continue;
+
+            var dir = light.Forward;
+            var color = light.LightColor;
+            UniformVector3("uColor", new Vector3(color.R / 255f, color.G / 255f, color.B / 255f));
+
+            // 在世界原点绘制方向指示器（圆圈 + 箭头）
+            var center = Vector3.Zero;
+            float iconRadius = 0.4f;
+
+            Begin();
+            // 垂直于光照方向的圆盘
+            Circle(center, dir, iconRadius, 24);
+            // 箭头指示方向
+            WireArrow(center - dir * iconRadius, center + dir * 1.2f, 0.2f);
+            End();
+        }
+    }
+
+    private void DrawPointLights()
+    {
+        UniformMatrix4("modelMatrix", Matrix4x4.Identity);
+
+        foreach (var light in renderPipeline.PointLights)
+        {
+            if (!light.Enable)
+                continue;
+
+            var pos = light.WorldTransform.Translation;
+            var color = light.LightColor;
+            UniformVector3("uColor", new Vector3(color.R / 255f, color.G / 255f, color.B / 255f));
+
+            // 衰减球范围
+            float displayRadius = MathF.Min(light.AttenuationRadius, 50f);
+
+            Begin();
+            WireSphere(pos, displayRadius, 24);
+            // 在光源位置绘制小十字
+            float crossSize = displayRadius * 0.15f;
+            Line(pos + new Vector3(-crossSize, 0, 0), pos + new Vector3(crossSize, 0, 0));
+            Line(pos + new Vector3(0, -crossSize, 0), pos + new Vector3(0, crossSize, 0));
+            Line(pos + new Vector3(0, 0, -crossSize), pos + new Vector3(0, 0, crossSize));
+            End();
+        }
+    }
+
+    private void DrawSpotLights()
+    {
+        UniformMatrix4("modelMatrix", Matrix4x4.Identity);
+
+        foreach (var light in renderPipeline.SpotLights)
+        {
+            if (!light.Enable)
+                continue;
+
+            var pos = light.WorldTransform.Translation;
+            var dir = light.Forward;
+            var color = light.LightColor;
+            UniformVector3("uColor", new Vector3(color.R / 255f, color.G / 255f, color.B / 255f));
+
+            float outerAngleRad = light.OuterAngleDegree * MathF.PI / 180f;
+            float coneLength = MathF.Min(light.AttenuationRadius, 50f);
+
+            Begin();
+            // 锥体
+            WireCone(pos, dir, outerAngleRad, coneLength, 20);
+            // 在光源位置绘制小十字
+            float crossSize = coneLength * 0.05f;
+            Line(pos + new Vector3(-crossSize, 0, 0), pos + new Vector3(crossSize, 0, 0));
+            Line(pos + new Vector3(0, -crossSize, 0), pos + new Vector3(0, crossSize, 0));
+            Line(pos + new Vector3(0, 0, -crossSize), pos + new Vector3(0, 0, crossSize));
+            // 添加内部锥体（内锥角）
+            float innerAngleRad = light.InnerConeAngleDegree * MathF.PI / 180f;
+            if (innerAngleRad < outerAngleRad - 0.001f)
+            {
+                var innerColor = new Vector3(color.R / 255f * 0.6f, color.G / 255f * 0.6f, color.B / 255f * 0.6f);
+                End();
+                UniformVector3("uColor", innerColor);
+                Begin();
+                WireCone(pos, dir, innerAngleRad, coneLength * 0.5f, 16);
+            }
+            End();
+        }
+    }
+
+    private void DrawCameras(Camera currentCamera)
+    {
+        UniformMatrix4("modelMatrix", Matrix4x4.Identity);
+
+        // 使用淡蓝色绘制所有相机
+        UniformVector3("uColor", new Vector3(0.2f, 0.5f, 1.0f));
+
+        foreach (var cam in renderPipeline.Cameras)
+        {
+            if (!cam.Enable)
+                continue;
+            // 不绘制当前正在渲染的相机（避免视觉混乱）
+            if (cam == currentCamera)
+                continue;
+
+            var camPos = cam.WorldTransform.Translation;
+            var forward = cam.Forward;
+            var up = cam.Up;
+            var right = cam.Right;
+
+            // 使用近平面和远平面的世界空间位置来绘制视锥体
+            float nearDist = cam.NearPlane;
+            float farDist = cam.FarPlane;
+
+            // 计算近平面和远平面的半高/半宽
+            float nearHalfHeight, farHalfHeight;
+            float nearHalfWidth, farHalfWidth;
+
+            if (cam.ProjectionType == ProjectionType.Perspective)
+            {
+                float fovRad = cam.FieldOfView * MathF.PI / 180f;
+                float aspect = cam.RenderTarget.Width / (float)cam.RenderTarget.Height;
+                nearHalfHeight = MathF.Tan(fovRad * 0.5f) * nearDist;
+                farHalfHeight = MathF.Tan(fovRad * 0.5f) * farDist;
+                nearHalfWidth = nearHalfHeight * aspect;
+                farHalfWidth = farHalfHeight * aspect;
+            }
+            else
+            {
+                float aspect = cam.RenderTarget.Width / (float)cam.RenderTarget.Height;
+                nearHalfHeight = cam.OrthographicSize * 0.5f;
+                farHalfHeight = cam.OrthographicSize * 0.5f;
+                nearHalfWidth = nearHalfHeight * aspect;
+                farHalfWidth = farHalfHeight * aspect;
+            }
+
+            var nearCenter = camPos + forward * nearDist;
+            var farCenter = camPos + forward * farDist;
+
+            // 计算近平面四个角
+            var ntl = nearCenter + up * nearHalfHeight - right * nearHalfWidth;
+            var ntr = nearCenter + up * nearHalfHeight + right * nearHalfWidth;
+            var nbl = nearCenter - up * nearHalfHeight - right * nearHalfWidth;
+            var nbr = nearCenter - up * nearHalfHeight + right * nearHalfWidth;
+
+            // 计算远平面四个角
+            var ftl = farCenter + up * farHalfHeight - right * farHalfWidth;
+            var ftr = farCenter + up * farHalfHeight + right * farHalfWidth;
+            var fbl = farCenter - up * farHalfHeight - right * farHalfWidth;
+            var fbr = farCenter - up * farHalfHeight + right * farHalfWidth;
+
+            Begin();
+            // 近平面矩形
+            Line(ntl, ntr); Line(ntr, nbr); Line(nbr, nbl); Line(nbl, ntl);
+            // 远平面矩形
+            Line(ftl, ftr); Line(ftr, fbr); Line(fbr, fbl); Line(fbl, ftl);
+            // 连接边
+            Line(ntl, ftl); Line(ntr, ftr); Line(nbl, fbl); Line(nbr, fbr);
+            // 相机位置到近平面四个角的连线（小金字塔）
+            if (cam.ProjectionType == ProjectionType.Perspective)
+            {
+                Line(camPos, ntl); Line(camPos, ntr);
+                Line(camPos, nbl); Line(camPos, nbr);
+            }
+            End();
+        }
+    }
+
+    private void DrawBones()
+    {
+        UniformMatrix4("modelMatrix", Matrix4x4.Identity);
+
+        var drawnModels = new HashSet<Model>();
+
+        foreach (var mesh in Meshes)
+        {
+            if (!mesh.Enable)
+                continue;
+            var model = mesh.Model;
+            if (model == null || model.Skeleton == null)
+                continue;
+            if (!drawnModels.Add(model))
+                continue;
+
+            var skeleton = model.Skeleton;
+            var sampler = model.AnimationSampler;
+            var modelWorld = model.WorldTransform;
+
+            // 使用青色绘制骨骼
+            UniformVector3("uColor", new Vector3(0f, 1f, 0.8f));
+
+            Begin();
+            foreach (var bone in skeleton.Bones)
+            {
+                if (bone.Parent == null || bone.Parent.Index < 0)
+                    continue;
+
+                Vector3 childPos_modelSpace;
+                Vector3 parentPos_modelSpace;
+
+                if (sampler != null && sampler.BonesTransform.Count > bone.Index && sampler.BonesTransform.Count > bone.Parent.Index)
+                {
+                    // 使用动画数据计算骨骼位置
+                    var childMatrix = sampler.BonesTransform[bone.Index] * bone.WorldMatrix;
+                    var parentMatrix = sampler.BonesTransform[bone.Parent.Index] * bone.Parent.WorldMatrix;
+                    childPos_modelSpace = childMatrix.Translation;
+                    parentPos_modelSpace = parentMatrix.Translation;
+                }
+                else
+                {
+                    // 使用绑定姿态
+                    childPos_modelSpace = bone.WorldMatrix.Translation;
+                    parentPos_modelSpace = bone.Parent.WorldMatrix.Translation;
+                }
+
+                var childWorld = Vector3.Transform(childPos_modelSpace, modelWorld);
+                var parentWorld = Vector3.Transform(parentPos_modelSpace, modelWorld);
+
+                Line(parentWorld, childWorld);
+            }
+            End();
+        }
     }
 
     /// <inheritdoc />
