@@ -51,37 +51,28 @@ public class Mesh : Node, IOctreeObject
     public bool IsStaticMesh => !IsSkinnedMesh;
 
     /// <summary>
-    /// 网格的边界框
+    /// 世界空间中的边界框（纯读取，构建由 Geometry/Transform 变更时触发）。
     /// </summary>
-    public BoundingBox? BoundingBox
-    {
-        get
-        {
-            if (boundingBox == null)
-            {
-                UpdateWorldBoundingBox();
-            }
-            return boundingBox;
-        }
-    }
+    public BoundingBox? BoundingBox => boundingBox;
 
     /// <summary>
     /// 获取或设置网格的几何体数据。
     /// </summary>
-    public Geometry? Geometry 
-    { 
+    public Geometry? Geometry
+    {
         get => geometry;
         set
         {
+            if (value == geometry)
+                return;
+
             if (value != null && CurrentScene != null)
             {
                 CurrentScene.RenderPipeline.AddGpuResource(value);
             }
             geometry = value;
 
-            localBoundingBox = null;
-
-            boundingBox = null;
+            UpdateWorldBoundingBox();
 
             OnBoundingBoxChanged?.Invoke(this);
         }
@@ -129,43 +120,15 @@ public class Mesh : Node, IOctreeObject
     private List<object> belongingNodes = [];
 
     /// <summary>
-    /// 局部空间中的边界框
+    /// 获取局部空间中的边界框，委托给 Geometry 计算并缓存。
     /// </summary>
-    private BoundingBox? localBoundingBox;
-
-    /// <summary>
-    /// 获取局部空间中的边界框。
-    /// </summary>
-    public BoundingBox? LocalBoundingBox
-    {
-        get
-        {
-            if (localBoundingBox == null)
-                initLocalBoundingBox();
-            return localBoundingBox;
-        }
-    }
+    public BoundingBox? LocalBoundingBox => Geometry?.BoundingBox;
 
     /// <summary>
     /// 当边界框发生变化时触发的事件。
     /// </summary>
     public event Action<IOctreeObject>? OnBoundingBoxChanged = delegate { };
 
-    /// <summary>
-    /// 更新边界框
-    /// </summary>
-    private void initLocalBoundingBox()
-    {
-        if (Geometry == null)
-        {
-            localBoundingBox = null;
-            boundingBox = null;
-            return;
-        }
-
-        CalcStaticMeshBoundingBox();
-    }
-    
     /// <summary>
     /// 更新世界空间中的边界框
     /// </summary>
@@ -194,37 +157,6 @@ public class Mesh : Node, IOctreeObject
         base.OnWorldTransformChanged();
         UpdateWorldBoundingBox();
         OnBoundingBoxChanged?.Invoke(this);
-    }
-
-    private void CalcStaticMeshBoundingBox()
-    {
-        if (Geometry == null)
-            return;
-
-        // 获取顶点位置数据
-        var positionData = Geometry.GetAttributeData(BuildInVertexAttribute.Position);
-        if (positionData == null || positionData.Count < 3)
-        {
-            localBoundingBox = null;
-            boundingBox = null;
-            return;
-        }
-
-        // 将float列表转换为Vector3列表
-        var positions = new List<Vector3>();
-        for (int i = 0; i < positionData.Count; i += 3)
-        {
-            if (i + 2 < positionData.Count)
-            {
-                positions.Add(new Vector3(
-                    positionData[i],
-                    positionData[i + 1],
-                    positionData[i + 2]
-                ));
-            }
-        }
-
-        localBoundingBox = BoundingBox.CreateFromPoints(positions);
     }
 
 

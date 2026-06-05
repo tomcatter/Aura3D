@@ -1,3 +1,4 @@
+using Aura3D.Core.Math;
 using Silk.NET.OpenGLES;
 using System.Linq;
 using System.Numerics;
@@ -17,6 +18,21 @@ public class Geometry : IGpuResource, IClone<Geometry>
     public bool NeedsUpload { get; set; } = true;
 
     protected Dictionary<string, VertexAttribute> VertexAttributes = new();
+
+    private BoundingBox? boundingBox;
+
+    /// <summary>
+    /// 轴对齐包围盒，由顶点位置数据计算得出。
+    /// </summary>
+    public BoundingBox? BoundingBox
+    {
+        get
+        {
+            if (boundingBox == null)
+                CalcBoundingBox();
+            return boundingBox;
+        }
+    }
 
     /// <summary>
     /// 索引列表
@@ -80,6 +96,12 @@ public class Geometry : IGpuResource, IClone<Geometry>
             Enabled = (location <= 7)
         });
         VertexAttributeLocations.Add(location);
+
+        NeedsUpload = true;
+
+        // Position 属性变更时清空局部包围盒缓存，下次访问时重建
+        if (name == BuildInVertexAttribute.Position.ToString())
+            boundingBox = null;
     }
 
     public void SetVertexAttribute(BuildInVertexAttribute attribute, uint size, List<float> data)
@@ -102,6 +124,31 @@ public class Geometry : IGpuResource, IClone<Geometry>
     public List<float>? GetAttributeData(BuildInVertexAttribute attribute)
     {
         return GetAttributeData(attribute.ToString());
+    }
+
+    /// <summary>
+    /// 从顶点位置数据计算局部空间包围盒，零堆分配。
+    /// </summary>
+    private void CalcBoundingBox()
+    {
+        var positionData = GetAttributeData(BuildInVertexAttribute.Position);
+        if (positionData == null || positionData.Count < 3)
+        {
+            boundingBox = null;
+            return;
+        }
+
+        Vector3 min = new(float.MaxValue);
+        Vector3 max = new(float.MinValue);
+
+        for (int i = 0; i + 2 < positionData.Count; i += 3)
+        {
+            var v = new Vector3(positionData[i], positionData[i + 1], positionData[i + 2]);
+            min = Vector3.Min(min, v);
+            max = Vector3.Max(max, v);
+        }
+
+        boundingBox = new BoundingBox(min, max);
     }
 
     /// <summary>
