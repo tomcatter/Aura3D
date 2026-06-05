@@ -114,13 +114,9 @@ public class Scene
 
         AddNode(MainCamera);
 
-        // 添加内置的方向轴和参考网格（默认隐藏）
-        AxisGizmo = new AxisGizmo(1.0f);
-        Grid = new Grid(10.0f, 10);
-        AddNode(AxisGizmo);
-        AddNode(Grid);
-        ShowAxisGizmo = false;
-        ShowGrid = false;
+        // 内置的调试可视化配置（默认隐藏）
+        AxisGizmo = new AxisGizmo();
+        Grid = new Grid();
     }
 
     /// <summary>

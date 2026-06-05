@@ -165,11 +165,6 @@ public abstract partial class RenderPipeline
     /// </summary>
     public List<InstancedMesh> VisibleInstancedMeshesInCamera = [];
 
-    /// <summary>
-    /// 获取场景中的调试绘制数据列表。
-    /// 这些数据由 DebugDrawPass 直接渲染，不经过 Mesh 管线。
-    /// </summary>
-    public List<DebugDrawData> DebugDrawables { get; } = [];
 
     protected void RegisterRenderPass(RenderPass renderPass, RenderPassGroup renderPassGroup)
     {
@@ -295,11 +290,6 @@ public abstract partial class RenderPipeline
         {
             AddGpuResource(gpuResource);
         }
-
-        foreach (var debugDrawData in node.GetDebugDrawData())
-        {
-            DebugDrawables.Add(debugDrawData);
-        }
     }
 
     /// <summary>
@@ -332,11 +322,6 @@ public abstract partial class RenderPipeline
         foreach(var gpuResource in node.GetGpuResources())
         {
             RemoveGpuResource(gpuResource);
-        }
-
-        foreach (var debugDrawData in node.GetDebugDrawData())
-        {
-            DebugDrawables.Remove(debugDrawData);
         }
 
         node.ClearPipelineGpuResources();
@@ -620,8 +605,6 @@ public abstract partial class RenderPipeline
         }
 
         Meshes.Clear();
-
-        DebugDrawables.Clear();
 
         Cameras.Clear();
 

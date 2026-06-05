@@ -432,6 +432,17 @@ public partial class RenderPass
             gl.DeleteProgram(shader.Value.ProgramId);
         }
         Shaders.Clear();
+
+        if (_immVbo != 0)
+        {
+            gl.DeleteBuffer(_immVbo);
+            _immVbo = 0;
+        }
+        if (_immVao != 0)
+        {
+            gl.DeleteVertexArray(_immVao);
+            _immVao = 0;
+        }
     }
 }
 

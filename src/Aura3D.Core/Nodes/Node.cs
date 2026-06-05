@@ -584,17 +584,6 @@ public partial class Node
     }
 
     /// <summary>
-    /// 获取当前节点的调试绘制数据列表。
-    /// 子类（如 Grid、AxisGizmo）重写此方法以提供调试可视化数据，
-    /// 这些数据由 DebugDrawPass 直接渲染，不经过 Mesh/Material 管线。
-    /// </summary>
-    /// <returns>调试绘制数据列表。</returns>
-    public virtual IEnumerable<DebugDrawData> GetDebugDrawData()
-    {
-        return [];
-    }
-
-    /// <summary>
     /// 更新节点状态。
     /// </summary>
     /// <param name="delta">时间增量（秒）。</param>
