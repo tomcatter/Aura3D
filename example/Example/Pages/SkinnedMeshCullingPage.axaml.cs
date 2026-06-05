@@ -158,23 +158,22 @@ public partial class SkinnedMeshCullingPage : UserControl
 
             vm.TotalSoldiers = _soldiers.Count;
 
-            int meshCountPerSoldier = _soldiers.Count > 0
-                ? _soldiers[0].Meshes.Count : 0;
             vm.DetailText = _soldierAnimation != null
-                ? $"{_soldiers.Count} animated soldiers | {_soldiers.Count * meshCountPerSoldier} meshes | Culling: {(vm.EnableFrustumCulling ? "ON" : "OFF")}"
-                : $"{_soldiers.Count} soldiers (no animation) | {_soldiers.Count * meshCountPerSoldier} meshes | Culling: {(vm.EnableFrustumCulling ? "ON" : "OFF")}";
+                ? $"{_soldiers.Count} animated soldiers | Culling: {(vm.EnableFrustumCulling ? "ON" : "OFF")}"
+                : $"{_soldiers.Count} soldiers (no animation) | Culling: {(vm.EnableFrustumCulling ? "ON" : "OFF")}";
         }
 
-        // Count visible skinned meshes
+        // Count visible skinned models (not individual meshes)
         var visible = aura3DView.Scene?.RenderPipeline.VisibleMeshesInCamera;
         if (visible != null && DataContext is SkinnedMeshCullingViewModel vm2)
         {
-            int visibleSkinned = 0;
+            var visibleModels = new HashSet<Model>();
             foreach (var m in visible)
             {
-                if (m.IsSkinnedMesh) visibleSkinned++;
+                if (m.IsSkinnedMesh && m.Model != null)
+                    visibleModels.Add(m.Model);
             }
-            vm2.VisibleSoldiers = visibleSkinned;
+            vm2.VisibleSoldiers = visibleModels.Count;
         }
 
         aura3DView.RequestNextFrameRendering();
