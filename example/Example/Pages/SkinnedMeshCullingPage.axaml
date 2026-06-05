@@ -1,0 +1,119 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:a="https://github.com/CeSun/Aura3D"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Example.ViewModels"
+             x:DataType="vm:SkinnedMeshCullingViewModel"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="650"
+             x:Class="Example.Pages.SkinnedMeshCullingPage">
+
+  <Design.DataContext>
+    <vm:SkinnedMeshCullingViewModel />
+  </Design.DataContext>
+
+  <DockPanel>
+    <!-- Right control panel -->
+    <ScrollViewer DockPanel.Dock="Right" Width="300">
+      <StackPanel Spacing="8" Margin="8">
+
+        <!-- Config -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="8">
+            <TextBlock FontSize="15" FontWeight="Bold"
+                       Foreground="{DynamicResource SemiGrey10}" Text="🔫 Skinned Mesh Culling" />
+
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock VerticalAlignment="Center" Text="Soldiers:" Width="52" />
+              <TextBox x:Name="countBox" Text="{Binding SoldierCount}" Width="60" />
+            </StackPanel>
+
+            <Button x:Name="buildButton" HorizontalAlignment="Stretch"
+                    FontWeight="Bold">🔨 Build</Button>
+          </StackPanel>
+        </Border>
+
+        <!-- Culling Toggle -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="6">
+            <TextBlock FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SemiGrey10}" Text="Frustum Culling" />
+            <CheckBox x:Name="cullingCheck"
+                      IsChecked="{Binding EnableFrustumCulling}">
+              Enable Frustum Culling
+            </CheckBox>
+            <TextBlock FontSize="11" FontStyle="Italic"
+                       Foreground="{DynamicResource SemiGrey10}"
+                       Text="💡 Toggle to compare FPS with/without culling" />
+          </StackPanel>
+        </Border>
+
+        <!-- FPS Display -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10"
+                Background="#1E1E2E">
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+              <TextBlock Text="{Binding CurrentFps}" FontSize="36" FontWeight="Bold"
+                         Foreground="White" />
+              <TextBlock Text="FPS" FontSize="14" Foreground="#888"
+                         VerticalAlignment="Bottom" Margin="0,0,0,6" />
+            </StackPanel>
+
+            <Border Background="#333" CornerRadius="3" Height="8" HorizontalAlignment="Stretch">
+              <Border Background="{Binding FpsBarColor}" CornerRadius="3"
+                      Width="{Binding FpsBarWidth}" Height="8"
+                      HorizontalAlignment="Left" />
+            </Border>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+              <StackPanel Spacing="0">
+                <TextBlock Text="MIN" FontSize="10" Foreground="#888"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding MinFps}" FontSize="16" FontWeight="Bold"
+                           Foreground="#FF6B6B" HorizontalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Spacing="0">
+                <TextBlock Text="AVG" FontSize="10" Foreground="#888"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding AvgFps}" FontSize="16" FontWeight="Bold"
+                           Foreground="#FFD93D" HorizontalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Spacing="0">
+                <TextBlock Text="MAX" FontSize="10" Foreground="#888"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding MaxFps}" FontSize="16" FontWeight="Bold"
+                           Foreground="#6BCB77" HorizontalAlignment="Center" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Visibility Stats -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SemiGrey10}" Text="Visibility" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Visible:" Width="52" />
+              <TextBlock Text="{Binding VisibleSoldiers}" FontWeight="Bold"
+                         Foreground="#6BCB77" />
+              <TextBlock Text=" / " />
+              <TextBlock Text="{Binding TotalSoldiers}" FontWeight="Bold" />
+            </StackPanel>
+            <TextBlock Text="{Binding DetailText}" FontSize="11"
+                       Foreground="#AAA" TextWrapping="Wrap" />
+            <TextBlock Text="🎮 Drag mouse to look around. WASD to move."
+                       FontSize="10" FontStyle="Italic"
+                       Foreground="{DynamicResource SemiGrey10}" />
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- 3D Viewport -->
+    <a:Aura3DView x:Name="aura3DView"
+                  SceneInitialized="Aura3DView_SceneInitialized"
+                  SceneUpdated="Aura3DView_SceneUpdated" />
+  </DockPanel>
+</UserControl>

@@ -58,6 +58,10 @@ namespace Example.ViewModels
                 new MenuViewModel {
                     Title = "Cascaded Shadow Maps",
                     ViewModel = new CascadedShadowMapsViewModel()
+                },
+                new MenuViewModel {
+                    Title = "Skinned Mesh Culling",
+                    ViewModel = new SkinnedMeshCullingViewModel()
                 }
             ];
             OnNavigation(this, _menus.First());

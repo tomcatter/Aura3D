@@ -41,8 +41,15 @@ public class Scene
 
     /// <summary>
     /// 获取或设置场景的静态网格八叉树空间索引。
+    /// 仅包含静态网格（IsSkinnedMesh == false），骨骼网格使用直接遍历剔除。
     /// </summary>
     public Octree<Mesh> StaticMeshOctree { get; set; }
+
+    /// <summary>
+    /// 获取场景中的骨骼网格列表。骨骼网格不放入八叉树，
+    /// 因为其包围盒每帧随动画变化，直接遍历更高效。
+    /// </summary>
+    public List<Mesh> SkinnedMeshes { get; } = [];
 
     /// <summary>
     /// 获取或设置场景的渲染管线。
@@ -175,7 +182,14 @@ public class Scene
 
         if (node is Mesh mesh)
         {
-            StaticMeshOctree.Add(mesh);
+            if (mesh.IsSkinnedMesh)
+            {
+                SkinnedMeshes.Add(mesh);
+            }
+            else
+            {
+                StaticMeshOctree.Add(mesh);
+            }
         }
 
         foreach (var child in node.Children)
@@ -222,7 +236,14 @@ public class Scene
 
         if (node is Mesh mesh)
         {
-            StaticMeshOctree.Remove(mesh);
+            if (mesh.IsSkinnedMesh)
+            {
+                SkinnedMeshes.Remove(mesh);
+            }
+            else
+            {
+                StaticMeshOctree.Remove(mesh);
+            }
         }
 
         foreach (var child in node.Children)
@@ -278,7 +299,7 @@ public class Scene
         {
             if (_nodes.Contains(node) == false)
                 continue;
-            if (node is Mesh mesh)
+            if (node is Mesh mesh && mesh.IsStaticMesh)
             {
                 StaticMeshOctree.Update(mesh);
             }

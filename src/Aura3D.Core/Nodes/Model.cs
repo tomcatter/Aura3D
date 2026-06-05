@@ -32,7 +32,7 @@ public class Model : Node
     public bool IsSkinnedModel => Skeleton != null;
 
     /// <summary>
-    /// 更新模型状态，主要用于驱动骨骼动画。
+    /// 更新模型状态，主要用于驱动骨骼动画，并在动画后刷新网格包围盒。
     /// </summary>
     /// <param name="delta">时间增量（秒）。</param>
     public override void Update(double delta)
@@ -45,6 +45,12 @@ public class Model : Node
             {
                 AnimationSampler.Update(delta);
             }
+        }
+
+        // 动画更新后刷新所有子 Mesh 的世界包围盒
+        foreach (var mesh in Meshes)
+        {
+            mesh.UpdateWorldBoundingBox();
         }
     }
 
@@ -59,6 +65,11 @@ public class Model : Node
 
         foreach(var mesh in model.Meshes)
         {
+            // clone() 内部将 Mesh.Model 指向了原始 Model，
+            // 此处修正为克隆后的 Model，使 Mesh 能正确访问
+            // 克隆体的 Skeleton / AnimationSampler。
+            mesh.Model = model;
+
             if (copyType == CopyType.SharedResourceData)
             {
                 mesh.Geometry = mesh.Geometry?.Clone();
@@ -90,6 +101,7 @@ public class Model : Node
             ((Mesh)cloneNode).Geometry = mesh.Geometry;
             ((Mesh)cloneNode).Material = mesh.Material;
             ((Mesh)cloneNode).Model = mesh.Model;
+            ((Mesh)cloneNode).ComputeBoneLocalBounds();
         }
         else
         {

@@ -21,6 +21,7 @@ public class ViewLocator : IDataTemplate
             AnimationFeaturesViewModel animationFeaturesViewModel => new AnimationFeaturesPage(),
             PickingTestViewModel pickingTestViewModel => new PickingTestPage(),
             CascadedShadowMapsViewModel cascadedShadowMapsViewModel => new CascadedShadowMapsPage(),
+            SkinnedMeshCullingViewModel skinnedMeshCullingViewModel => new SkinnedMeshCullingPage(),
             _ => new TextBlock() { Text = "NotFound" }
         };
     }

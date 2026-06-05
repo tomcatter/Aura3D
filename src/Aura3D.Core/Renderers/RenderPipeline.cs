@@ -393,7 +393,6 @@ public abstract partial class RenderPipeline
     /// <param name="meshes">用于输出可见网格的列表。</param>
     public void UpdateVisibleMeshesInCamera(Matrix4x4 view, Matrix4x4 projection, List<Mesh> meshes)
     {
-        
         var viewProjection = view * projection;
 
         Matrix4x4.Invert(viewProjection, out Matrix4x4 invViewProj);
@@ -424,6 +423,7 @@ public abstract partial class RenderPipeline
 
         MatrixHelper.ExtractPlanes(viewProjection, planes);
 
+        // 第一步：八叉树查询 → 静态网格
         this.Scene.StaticMeshOctree.Query(boundingBox =>
         {
             if (cameraBoundingBox.Intersects(boundingBox))
@@ -436,6 +436,20 @@ public abstract partial class RenderPipeline
             return false;
 
         }, meshes);
+
+        // 第二步：直接遍历 → 骨骼网格（每帧包围盒变化，不用八叉树）
+        foreach (var skinnedMesh in this.Scene.SkinnedMeshes)
+        {
+            if (!skinnedMesh.Enable) continue;
+
+            var bb = skinnedMesh.BoundingBox;
+            if (bb != null &&
+                cameraBoundingBox.Intersects(bb) &&
+                bb.IsBoxInsideFrustum(planes))
+            {
+                meshes.Add(skinnedMesh);
+            }
+        }
     }
 
     /// <summary>
