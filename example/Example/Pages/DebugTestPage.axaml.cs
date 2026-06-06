@@ -152,7 +152,8 @@ public partial class DebugTestPage : UserControl
         _dirLight = new DirectionalLight
         {
             RotationDegrees = new Vector3(_vm.DirLightRotX, _vm.DirLightRotY, 0),
-            LightColor = Color.FromArgb(80, 80, 80),
+            LightColor = Color.FromArgb(_vm.DirLightColorR, _vm.DirLightColorG, _vm.DirLightColorB),
+            Irradiance = _vm.DirLightIrradiance,
             Position = new Vector3(0f, 10.0f, 0.0f),
             CastShadow = true
         };
@@ -166,8 +167,8 @@ public partial class DebugTestPage : UserControl
         _pointLight = new PointLight
         {
             Position = new Vector3(_vm.PointLightX, _vm.PointLightY, _vm.PointLightZ),
-            LightColor = Color.FromArgb(255, 255, 80, 80),
-            LuminousIntensity = 5000,
+            LightColor = Color.FromArgb(255, _vm.PointLightColorR, _vm.PointLightColorG, _vm.PointLightColorB),
+            LuminousIntensity = _vm.PointLightIntensity,
             AttenuationRadius = _vm.PointLightRadius
         };
         view.AddNode(_pointLight);
@@ -177,8 +178,8 @@ public partial class DebugTestPage : UserControl
         {
             Position = new Vector3(_vm.SpotLightX, _vm.SpotLightY, _vm.SpotLightZ),
             RotationDegrees = new Vector3(_vm.SpotLightRotX, _vm.SpotLightRotY, _vm.SpotLightRotZ),
-            LightColor = Color.FromArgb(255, 80, 255, 80),
-            LuminousIntensity = 10000,
+            LightColor = Color.FromArgb(255, _vm.SpotLightColorR, _vm.SpotLightColorG, _vm.SpotLightColorB),
+            LuminousIntensity = _vm.SpotLightIntensity,
             InnerConeAngleDegree = _vm.SpotLightInnerAngle,
             OuterAngleDegree = _vm.SpotLightOuterAngle,
             AttenuationRadius = _vm.SpotLightRadius
@@ -229,7 +230,15 @@ public partial class DebugTestPage : UserControl
                     0,
                     row * staticSpacing - staticHalf - 5f);
                 clone.RotationDegrees = new Vector3(0, (i * 37f) % 360f, 0);
-                clone.Scale = new Vector3(0.6f);
+                // 凳子(index 2)放大5倍，灯泡(index 3)放大10倍
+                int modelIndex = i % _staticSourceModels.Count;
+                float scale = modelIndex switch
+                {
+                    2 => 3.0f,
+                    3 => 6.0f,
+                    _ => 0.6f
+                };
+                clone.Scale = new Vector3(scale);
 
                 view.AddNode(clone);
                 _sceneNodes.Add(clone);
@@ -295,7 +304,7 @@ public partial class DebugTestPage : UserControl
         _fpsMax = 0;
 
         _vm.TotalCount = _sceneNodes.Count(n => n is Model);
-        _vm.DetailText = $"静态: {staticCount} | 骨骼: {skinnedCount} | 光源: 3";
+        _vm.DetailText = $"Static: {staticCount} | Skinned: {skinnedCount} | Lights: 3";
 
         view.RequestNextFrameRendering();
     }
@@ -334,11 +343,15 @@ public partial class DebugTestPage : UserControl
         {
             _dirLight.Enable = _vm.DirLightEnabled;
             _dirLight.RotationDegrees = new Vector3(_vm.DirLightRotX, _vm.DirLightRotY, 0);
+            _dirLight.Irradiance = _vm.DirLightIrradiance;
+            _dirLight.LightColor = Color.FromArgb(_vm.DirLightColorR, _vm.DirLightColorG, _vm.DirLightColorB);
         }
         if (_pointLight != null)
         {
             _pointLight.Enable = _vm.PointLightEnabled;
             _pointLight.Position = new Vector3(_vm.PointLightX, _vm.PointLightY, _vm.PointLightZ);
+            _pointLight.LuminousIntensity = _vm.PointLightIntensity;
+            _pointLight.LightColor = Color.FromArgb(255, _vm.PointLightColorR, _vm.PointLightColorG, _vm.PointLightColorB);
             _pointLight.AttenuationRadius = _vm.PointLightRadius;
         }
         if (_spotLight != null)
@@ -346,6 +359,8 @@ public partial class DebugTestPage : UserControl
             _spotLight.Enable = _vm.SpotLightEnabled;
             _spotLight.Position = new Vector3(_vm.SpotLightX, _vm.SpotLightY, _vm.SpotLightZ);
             _spotLight.RotationDegrees = new Vector3(_vm.SpotLightRotX, _vm.SpotLightRotY, _vm.SpotLightRotZ);
+            _spotLight.LuminousIntensity = _vm.SpotLightIntensity;
+            _spotLight.LightColor = Color.FromArgb(255, _vm.SpotLightColorR, _vm.SpotLightColorG, _vm.SpotLightColorB);
             _spotLight.InnerConeAngleDegree = _vm.SpotLightInnerAngle;
             _spotLight.OuterAngleDegree = _vm.SpotLightOuterAngle;
             _spotLight.AttenuationRadius = _vm.SpotLightRadius;
@@ -418,6 +433,16 @@ public partial class DebugTestPage : UserControl
                 if (_dirLight != null) _dirLight.RotationDegrees = new Vector3(_vm.DirLightRotX, _vm.DirLightRotY, 0);
                 aura3DView.RequestNextFrameRendering();
                 break;
+            case nameof(DebugTestViewModel.DirLightIrradiance):
+                if (_dirLight != null) _dirLight.Irradiance = _vm.DirLightIrradiance;
+                aura3DView.RequestNextFrameRendering();
+                break;
+            case nameof(DebugTestViewModel.DirLightColorR):
+            case nameof(DebugTestViewModel.DirLightColorG):
+            case nameof(DebugTestViewModel.DirLightColorB):
+                if (_dirLight != null) _dirLight.LightColor = Color.FromArgb(_vm.DirLightColorR, _vm.DirLightColorG, _vm.DirLightColorB);
+                aura3DView.RequestNextFrameRendering();
+                break;
             case nameof(DebugTestViewModel.PointLightEnabled):
                 if (_pointLight != null) _pointLight.Enable = _vm.PointLightEnabled;
                 aura3DView.RequestNextFrameRendering();
@@ -426,6 +451,16 @@ public partial class DebugTestPage : UserControl
             case nameof(DebugTestViewModel.PointLightY):
             case nameof(DebugTestViewModel.PointLightZ):
                 if (_pointLight != null) _pointLight.Position = new Vector3(_vm.PointLightX, _vm.PointLightY, _vm.PointLightZ);
+                aura3DView.RequestNextFrameRendering();
+                break;
+            case nameof(DebugTestViewModel.PointLightIntensity):
+                if (_pointLight != null) _pointLight.LuminousIntensity = _vm.PointLightIntensity;
+                aura3DView.RequestNextFrameRendering();
+                break;
+            case nameof(DebugTestViewModel.PointLightColorR):
+            case nameof(DebugTestViewModel.PointLightColorG):
+            case nameof(DebugTestViewModel.PointLightColorB):
+                if (_pointLight != null) _pointLight.LightColor = Color.FromArgb(255, _vm.PointLightColorR, _vm.PointLightColorG, _vm.PointLightColorB);
                 aura3DView.RequestNextFrameRendering();
                 break;
             case nameof(DebugTestViewModel.PointLightRadius):
@@ -446,6 +481,16 @@ public partial class DebugTestPage : UserControl
             case nameof(DebugTestViewModel.SpotLightRotY):
             case nameof(DebugTestViewModel.SpotLightRotZ):
                 if (_spotLight != null) _spotLight.RotationDegrees = new Vector3(_vm.SpotLightRotX, _vm.SpotLightRotY, _vm.SpotLightRotZ);
+                aura3DView.RequestNextFrameRendering();
+                break;
+            case nameof(DebugTestViewModel.SpotLightIntensity):
+                if (_spotLight != null) _spotLight.LuminousIntensity = _vm.SpotLightIntensity;
+                aura3DView.RequestNextFrameRendering();
+                break;
+            case nameof(DebugTestViewModel.SpotLightColorR):
+            case nameof(DebugTestViewModel.SpotLightColorG):
+            case nameof(DebugTestViewModel.SpotLightColorB):
+                if (_spotLight != null) _spotLight.LightColor = Color.FromArgb(255, _vm.SpotLightColorR, _vm.SpotLightColorG, _vm.SpotLightColorB);
                 aura3DView.RequestNextFrameRendering();
                 break;
             case nameof(DebugTestViewModel.SpotLightInnerAngle):
@@ -503,16 +548,16 @@ public partial class DebugTestPage : UserControl
         };
 
         string instanceInfo = result.InstanceIndex.HasValue
-            ? $" [实例#{result.InstanceIndex.Value}]"
+            ? $" [Instance#{result.InstanceIndex.Value}]"
             : "";
 
         bool isSkinned = (result.Node is Model m && m.IsSkinnedModel) ||
                          (result.Node is Mesh mesh && mesh.IsSkinnedMesh);
 
-        string skinnedTag = isSkinned ? " [骨骼动画]" : "";
+        string skinnedTag = isSkinned ? " [Skinned]" : "";
 
-        _vm.PickInfo = $"✓ [{typeName}]{skinnedTag} {result.Node.Name}{instanceInfo} | "
-            + $"距离: {result.Distance:F2} | ({result.WorldPosition.X:F2}, {result.WorldPosition.Y:F2}, {result.WorldPosition.Z:F2})";
+        _vm.PickInfo = $"[{typeName}]{skinnedTag} {result.Node.Name}{instanceInfo} | "
+            + $"Dist: {result.Distance:F2} | ({result.WorldPosition.X:F2}, {result.WorldPosition.Y:F2}, {result.WorldPosition.Z:F2})";
     }
 
     // ─── Per-Frame Update ────────────────────────────────────

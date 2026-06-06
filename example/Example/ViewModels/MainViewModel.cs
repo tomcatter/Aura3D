@@ -52,7 +52,7 @@ namespace Example.ViewModels
                     ViewModel = new PrimitiveTypeViewModel()
                 },
                 new MenuViewModel {
-                    Title = "🔬 Debug Test",
+                    Title = "Debug Test",
                     ViewModel = new DebugTestViewModel()
                 },
                 new MenuViewModel {

@@ -45,7 +45,7 @@ public partial class DebugTestViewModel : ViewModelBase
     private bool _enablePicking = true;
 
     [ObservableProperty]
-    private string _pickInfo = "点击 3D 视图中的模型进行拾取";
+    private string _pickInfo = "Click a model in the 3D view to pick";
 
     // ═══════════════════════════════════════════════
     //  Lights
@@ -61,6 +61,18 @@ public partial class DebugTestViewModel : ViewModelBase
     private float _dirLightRotY = -30f;
 
     [ObservableProperty]
+    private float _dirLightIrradiance = 80000f;
+
+    [ObservableProperty]
+    private int _dirLightColorR = 80;
+
+    [ObservableProperty]
+    private int _dirLightColorG = 80;
+
+    [ObservableProperty]
+    private int _dirLightColorB = 80;
+
+    [ObservableProperty]
     private bool _pointLightEnabled = true;
 
     [ObservableProperty]
@@ -71,6 +83,18 @@ public partial class DebugTestViewModel : ViewModelBase
 
     [ObservableProperty]
     private float _pointLightZ = 3f;
+
+    [ObservableProperty]
+    private float _pointLightIntensity = 5000f;
+
+    [ObservableProperty]
+    private int _pointLightColorR = 255;
+
+    [ObservableProperty]
+    private int _pointLightColorG = 80;
+
+    [ObservableProperty]
+    private int _pointLightColorB = 80;
 
     [ObservableProperty]
     private float _pointLightRadius = 10f;
@@ -95,6 +119,18 @@ public partial class DebugTestViewModel : ViewModelBase
 
     [ObservableProperty]
     private float _spotLightRotZ;
+
+    [ObservableProperty]
+    private float _spotLightIntensity = 10000f;
+
+    [ObservableProperty]
+    private int _spotLightColorR = 80;
+
+    [ObservableProperty]
+    private int _spotLightColorG = 255;
+
+    [ObservableProperty]
+    private int _spotLightColorB = 80;
 
     [ObservableProperty]
     private float _spotLightInnerAngle = 10f;
@@ -128,7 +164,7 @@ public partial class DebugTestViewModel : ViewModelBase
     private int _totalCount;
 
     [ObservableProperty]
-    private string _detailText = "点击 Build 构建场景";
+    private string _detailText = "Click Build to construct the scene";
 
     // ═══════════════════════════════════════════════
     //  FPS
