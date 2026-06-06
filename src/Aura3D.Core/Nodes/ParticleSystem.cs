@@ -19,6 +19,7 @@ public class ParticleSystem : Node
     public List<ParticleEmitter> Emitters { get; } = new();
     public BlendMode BlendMode { get; set; } = BlendMode.Translucent;
     public ITexture? ParticleTexture { get; set; }
+    public Vector2 FlipbookTiles { get; set; } = Vector2.One;
     public bool IsPlaying => _isPlaying;
     public int ActiveCount => _activeCount;
     public int GroupCount => _renderGroups.Count;
@@ -73,6 +74,7 @@ public class ParticleSystem : Node
     private readonly List<Matrix4x4> _transformsBuf = new();
     private readonly List<Vector4> _colorsBuf = new();
     private readonly List<float> _sizesBuf = new();
+    private readonly List<float> _ageRatiosBuf = new();
     private int _lastRebuildActiveCount;
 
     private void RebuildRenderGroups()
@@ -89,7 +91,7 @@ public class ParticleSystem : Node
             int start = g * MaxInstancesPerGroup;
             int count = System.Math.Min(MaxInstancesPerGroup, _activeCount - start);
 
-            _transformsBuf.Clear(); _colorsBuf.Clear(); _sizesBuf.Clear();
+            _transformsBuf.Clear(); _colorsBuf.Clear(); _sizesBuf.Clear(); _ageRatiosBuf.Clear();
             for (int i = 0; i < count; i++)
             {
                 ref var p = ref _particles[start + i];
@@ -97,13 +99,14 @@ public class ParticleSystem : Node
                                   * Matrix4x4.CreateTranslation(p.Position));
                 _colorsBuf.Add(p.CurrentColor);
                 _sizesBuf.Add(p.CurrentSize);
+                _ageRatiosBuf.Add(p.AgeRatio);
             }
 
             var im = ParticleRenderData.CreateBillboardInstancedMesh(
                 sharedGeo.DeepClone(), material?.DeepClone(), $"{Name}_G{g}");
 
             for (int i = 0; i < count; i++) im.AddInstance(_transformsBuf[i]);
-            ParticleRenderData.SetParticleInstanceAttributes(im, _colorsBuf, _sizesBuf);
+            ParticleRenderData.SetParticleInstanceAttributes(im, _colorsBuf, _sizesBuf, _ageRatiosBuf);
 
             AddChild(im, AttachToParentRule.KeepWorld);
             _renderGroups.Add(im);
@@ -128,14 +131,15 @@ public class ParticleSystem : Node
                                         * Matrix4x4.CreateTranslation(p.Position));
             }
 
-            _colorsBuf.Clear(); _sizesBuf.Clear();
+            _colorsBuf.Clear(); _sizesBuf.Clear(); _ageRatiosBuf.Clear();
             for (int i = 0; i < count; i++)
             {
                 ref var p = ref _particles[start + i];
                 _colorsBuf.Add(p.CurrentColor);
                 _sizesBuf.Add(p.CurrentSize);
+                _ageRatiosBuf.Add(p.AgeRatio);
             }
-            ParticleRenderData.SetParticleInstanceAttributes(group, _colorsBuf, _sizesBuf);
+            ParticleRenderData.SetParticleInstanceAttributes(group, _colorsBuf, _sizesBuf, _ageRatiosBuf);
         }
     }
 
@@ -154,6 +158,8 @@ public class ParticleSystem : Node
         {
             mat.SetParameterValue("uParticleTexture", ParticleTexture);
             mat.SetTexture("uParticleTexture", ParticleTexture);
+            if (FlipbookTiles.X > 1f || FlipbookTiles.Y > 1f)
+                mat.SetParameterValue("uFlipbookTiles", FlipbookTiles);
         }
         return mat;
     }

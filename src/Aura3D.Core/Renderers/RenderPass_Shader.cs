@@ -50,6 +50,15 @@ public partial class RenderPass
         this.defines.AddRange(defines);
     }
 
+    /// <summary>
+    /// 从当前宏定义列表移除指定的宏定义。
+    /// </summary>
+    public void RemoveDefines(params string[] defines)
+    {
+        foreach (var d in defines)
+            this.defines.Remove(d);
+    }
+
 
     protected void UseShader_Internal()
     {

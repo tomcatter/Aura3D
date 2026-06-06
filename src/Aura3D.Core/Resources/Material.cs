@@ -93,7 +93,7 @@ public class Material : IClone<Material>, IGpuResource
 
     public Material Clone()
     {
-        return new Material
+        var m = new Material
         {
             BlendMode = this.BlendMode,
             DoubleSided = this.DoubleSided,
@@ -103,8 +103,10 @@ public class Material : IClone<Material>, IGpuResource
             _vertexShaders = _vertexShaders,
             _fragmentShaders = _fragmentShaders,
             ShaderPassParametersCallbacks = ShaderPassParametersCallbacks
-
         };
+        foreach (var kv in parameters)
+            m.parameters[kv.Key] = kv.Value;
+        return m;
     }
 
     public Material DeepClone()
@@ -280,6 +282,7 @@ public enum BlendMode
     Opaque,
     Masked,
     Translucent,
+    Additive,
 }
 
 public enum ShaderType

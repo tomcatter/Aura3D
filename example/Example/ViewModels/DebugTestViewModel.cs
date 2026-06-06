@@ -189,6 +189,19 @@ public partial class DebugTestViewModel : ViewModelBase
     private string _fpsBarColor = "#6BCB77";
 
     // ═══════════════════════════════════════════════
+    //  Fire
+    // ═══════════════════════════════════════════════
+
+    [ObservableProperty]
+    private float _firePosX = 5f;
+
+    [ObservableProperty]
+    private float _firePosY = 1.5f;
+
+    [ObservableProperty]
+    private float _firePosZ = 5f;
+
+    // ═══════════════════════════════════════════════
     //  Build Command
     // ═══════════════════════════════════════════════
 

@@ -248,6 +248,28 @@
           </StackPanel>
         </Border>
 
+        <!-- Fire Position -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="Fire Position" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="X:" Width="20" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-20" Maximum="20" Value="{Binding FirePosX}" Width="130"/>
+              <TextBlock Text="{Binding FirePosX, StringFormat={}{0:F1}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Y:" Width="20" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="0" Maximum="10" Value="{Binding FirePosY}" Width="130"/>
+              <TextBlock Text="{Binding FirePosY, StringFormat={}{0:F1}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Z:" Width="20" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-20" Maximum="20" Value="{Binding FirePosZ}" Width="130"/>
+              <TextBlock Text="{Binding FirePosZ, StringFormat={}{0:F1}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
         <!-- FPS -->
         <Border Theme="{StaticResource CardBorder}" Padding="10"
                 Background="#1E1E2E">
@@ -298,7 +320,7 @@
     <!-- ═══════════════════════════════════════════════ 3D Viewport ═══ -->
     <a:Aura3DView x:Name="aura3DView"
                   SceneInitialized="Aura3DView_SceneInitialized"
-                  SceneUpdated="Aura3DView_SceneUpdated" x:TypeArguments="acr:PBRDeferredPipeline" >
+                  SceneUpdated="Aura3DView_SceneUpdated"  >
       <a:Aura3DView.PipelineSettings>
         <core:PipelineSettings CsmCascadeCount="4"
                                CsmShadowMapResolution="2048"

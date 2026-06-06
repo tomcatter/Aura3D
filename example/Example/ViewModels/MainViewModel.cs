@@ -44,6 +44,10 @@ namespace Example.ViewModels
                     ViewModel = new RenderingPerformanceViewModel()
                 },
                 new MenuViewModel {
+                    Title = "Particle Editor",
+                    ViewModel = new ParticleEditorViewModel()
+                },
+                new MenuViewModel {
                     Title = "Point Cloud",
                     ViewModel = new PointCloudViewModel()
                 },

@@ -1,7 +1,9 @@
 using Aura3D.Avalonia;
+using Aura3D.Core;
 using Aura3D.Core.Geometries;
 using Aura3D.Core.Math;
 using Aura3D.Core.Nodes;
+using Aura3D.Core.Particles;
 using Aura3D.Core.Resources;
 using Aura3D.Model;
 using Avalonia.Controls;
@@ -12,7 +14,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
-using Aura3D.Core.Particles;
 
 namespace Example.Pages;
 
@@ -28,6 +29,10 @@ public partial class DebugTestPage : UserControl
     private SpotLight? _spotLight;
     private Mesh? _ground;
     private ParticleSystem? _particles;
+    private ParticleSystem? _smokeParticles;
+    private Texture? _fireTexture;
+    private Texture? _smokeTexture;
+    private Node? _fireGroup;
 
     // 模型源
     private readonly List<Model> _staticSourceModels = [];
@@ -149,6 +154,9 @@ public partial class DebugTestPage : UserControl
         _pointLight = null;
         _spotLight = null;
         _ground = null;
+        _particles = null;
+        _smokeParticles = null;
+        _fireGroup = null;
 
         // ── 光照 ──
         _dirLight = new DirectionalLight
@@ -212,46 +220,107 @@ public partial class DebugTestPage : UserControl
         view.AddNode(_ground);
         _sceneNodes.Add(_ground);
 
-        // ── Particle System ──
+        // ── Fire Group ──
+        var firePos = new Vector3(_vm.FirePosX, _vm.FirePosY, _vm.FirePosZ);
+        _fireGroup = new Node { Name = "FireGroup", Position = firePos };
+        view.AddNode(_fireGroup);
+        _sceneNodes.Add(_fireGroup);
+
+        // Fire light (local coords)
+        var fireLight = new PointLight
+        {
+            LightColor = Color.FromArgb(255, 255, 100, 10),
+            LuminousIntensity = 800,
+            AttenuationRadius = 5f,
+            CastShadow = false,
+        };
+        _fireGroup.AddChild(fireLight, AttachToParentRule.KeepLocal);
+
+        // Fire particles (6x6 flipbook, local coords)
+        if (_fireTexture == null)
+        {
+            using var stream = AssetLoader.Open(new Uri("avares://Example/Assets/Textures/fire.png"));
+            _fireTexture = TextureLoader.LoadTexture(stream);
+        }
+
         _particles = new ParticleSystem
         {
-            Name = "Fire",
+            Name = "Flame",
             MaxParticles = 10000,
             MaxInstancesPerGroup = 2048,
-            BlendMode = BlendMode.Translucent,
-            Position = new Vector3(0, 1, 5),
+            BlendMode = BlendMode.Additive,
+            ParticleTexture = _fireTexture,
+            FlipbookTiles = new Vector2(6, 6),
         };
+
         _particles.Emitters.Add(new ParticleEmitter
         {
             Shape = EmissionShape.Circle,
             ShapeSize = new Vector3(1.5f, 0, 1.5f),
-            EmissionRate = 300,
-            Lifetime = new RangeFloat(0.5f, 1.5f),
+            EmissionRate = 200,
+            Lifetime = new RangeFloat(0.6f, 1.5f),
             Velocity = new RangeVector3(new(-0.3f, 2, -0.3f), new(0.3f, 5, 0.3f)),
-            StartSize = new RangeFloat(0.3f, 0.6f),
-            EndSize = new RangeFloat(0.05f, 0.1f),
-            StartColor = Color.Orange,
-            EndColor = Color.FromArgb(0, 255, 30, 0),
-            Gravity = new Vector3(0, 1, 0),
+            StartSize = new RangeFloat(0.6f, 1.2f),
+            EndSize = new RangeFloat(0.3f, 0.6f),
+            StartColor = Color.FromArgb(200, 255, 180, 60),
+            EndColor = Color.FromArgb(0, 255, 80, 0),
+            Gravity = new Vector3(0, 1.5f, 0),
             Damping = 0.4f,
         });
+
         _particles.Emitters.Add(new ParticleEmitter
         {
-            Shape = EmissionShape.Sphere,
-            ShapeSize = new Vector3(0.3f, 0.3f, 0.3f),
-            EmissionRate = 100,
-            Lifetime = new RangeFloat(0.2f, 0.6f),
-            Velocity = new RangeVector3(new(-2, 4, -2), new(2, 8, 2)),
-            StartSize = new RangeFloat(0.03f, 0.06f),
-            EndSize = new RangeFloat(0.01f, 0.02f),
-            StartColor = Color.Yellow,
-            EndColor = Color.FromArgb(0, 255, 200, 0),
-            Gravity = new Vector3(0, -9.8f, 0),
-            Damping = 0.1f,
+            Shape = EmissionShape.Cone,
+            ShapeSize = new Vector3(0.5f, 1.5f, 0.5f),
+            ConeAngle = 15,
+            EmissionRate = 50,
+            Lifetime = new RangeFloat(0.3f, 0.8f),
+            Velocity = new RangeVector3(new(-0.5f, 6, -0.5f), new(0.5f, 10, 0.5f)),
+            StartSize = new RangeFloat(0.15f, 0.3f),
+            EndSize = new RangeFloat(0.03f, 0.06f),
+            StartColor = Color.FromArgb(180, 255, 200, 50),
+            EndColor = Color.FromArgb(0, 255, 80, 0),
+            Gravity = new Vector3(0, 2f, 0),
+            Damping = 0.2f,
         });
-        view.AddNode(_particles);
-        _sceneNodes.Add(_particles);
+
+        _fireGroup.AddChild(_particles, AttachToParentRule.KeepLocal);
         _particles.Play();
+
+        // Smoke (5x5 flipbook, local coords)
+        if (_smokeTexture == null)
+        {
+            using var stream = AssetLoader.Open(new Uri("avares://Example/Assets/Textures/smoke.png"));
+            _smokeTexture = TextureLoader.LoadTexture(stream);
+        }
+
+        _smokeParticles = new ParticleSystem
+        {
+            Name = "Smoke",
+            MaxParticles = 3000,
+            MaxInstancesPerGroup = 2048,
+            BlendMode = BlendMode.Translucent,
+            ParticleTexture = _smokeTexture,
+            FlipbookTiles = new Vector2(5, 5),
+        };
+
+        _smokeParticles.Emitters.Add(new ParticleEmitter
+        {
+            Shape = EmissionShape.Circle,
+            ShapeSize = new Vector3(0.8f, 0, 0.8f),
+            EmissionRate = 20,
+            Lifetime = new RangeFloat(1.5f, 3.0f),
+            Velocity = new RangeVector3(new(-0.3f, 1.5f, -0.3f), new(0.3f, 3.5f, 0.3f)),
+            StartSize = new RangeFloat(0.5f, 0.8f),
+            EndSize = new RangeFloat(1.2f, 2.0f),
+            StartColor = Color.FromArgb(255, 80, 70, 60),
+            EndColor = Color.FromArgb(0, 50, 45, 40),
+            Gravity = new Vector3(0, 0.3f, 0),
+            Damping = 0.6f,
+        });
+
+        _fireGroup.AddChild(_smokeParticles, AttachToParentRule.KeepLocal);
+        _smokeParticles.Play();
 
         // ── 静态模型网格 ──
         int staticCount = _vm.StaticMeshCount;
@@ -546,6 +615,15 @@ public partial class DebugTestPage : UserControl
                 break;
             case nameof(DebugTestViewModel.SpotLightRadius):
                 if (_spotLight != null) _spotLight.AttenuationRadius = _vm.SpotLightRadius;
+                aura3DView.RequestNextFrameRendering();
+                break;
+
+            // Fire position
+            case nameof(DebugTestViewModel.FirePosX):
+            case nameof(DebugTestViewModel.FirePosY):
+            case nameof(DebugTestViewModel.FirePosZ):
+                if (_fireGroup != null)
+                    _fireGroup.Position = new Vector3(_vm.FirePosX, _vm.FirePosY, _vm.FirePosZ);
                 aura3DView.RequestNextFrameRendering();
                 break;
 

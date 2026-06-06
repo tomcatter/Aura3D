@@ -11,6 +11,7 @@ public static class ParticleRenderData
 {
     public const uint InstanceColorLocation = 2;
     public const uint InstanceSizeLocation = 3;
+    public const uint InstanceAgeRatioLocation = 4;  // Tangent, per-instance
 
     public static InstancedMesh CreateBillboardInstancedMesh(Geometry billboardGeo, Material? material, string name)
     {
@@ -22,10 +23,11 @@ public static class ParticleRenderData
         return im;
     }
 
-    public static void SetParticleInstanceAttributes(InstancedMesh im, IReadOnlyList<Vector4> colors, IReadOnlyList<float> sizes)
+    public static void SetParticleInstanceAttributes(InstancedMesh im, IReadOnlyList<Vector4> colors, IReadOnlyList<float> sizes, IReadOnlyList<float> ageRatios)
     {
         im.SetInstanceAttribute((BuildInVertexAttribute)InstanceColorLocation, 4, colors);
         im.SetInstanceAttribute((BuildInVertexAttribute)InstanceSizeLocation, 1, sizes);
+        im.SetInstanceAttribute((BuildInVertexAttribute)InstanceAgeRatioLocation, 1, ageRatios);
     }
 
     private static Geometry? _sharedGeo;

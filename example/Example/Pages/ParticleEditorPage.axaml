@@ -1,0 +1,219 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:a="https://github.com/CeSun/Aura3D"
+             xmlns:vm="clr-namespace:Example.ViewModels"
+             x:DataType="vm:ParticleEditorViewModel"
+             x:Class="Example.Pages.ParticleEditorPage">
+
+  <Design.DataContext>
+    <vm:ParticleEditorViewModel />
+  </Design.DataContext>
+
+  <DockPanel>
+    <!-- Right Panel -->
+    <ScrollViewer DockPanel.Dock="Right" Width="320">
+      <StackPanel Spacing="6" Margin="8">
+
+        <!-- Emission -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="Emission" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Rate:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="10" Maximum="5000" Value="{Binding EmissionRate}" Width="140"/>
+              <TextBlock Text="{Binding EmissionRate, StringFormat={}{0:F0}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Shape:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <ComboBox SelectedIndex="{Binding ShapeIndex}" Width="90" FontSize="11">
+                <ComboBoxItem>Point</ComboBoxItem>
+                <ComboBoxItem>Sphere</ComboBoxItem>
+                <ComboBoxItem>SphereSurface</ComboBoxItem>
+                <ComboBoxItem>Box</ComboBoxItem>
+                <ComboBoxItem>Cone</ComboBoxItem>
+                <ComboBoxItem>Circle</ComboBoxItem>
+                <ComboBoxItem>Hemisphere</ComboBoxItem>
+              </ComboBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Size:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <TextBox Text="{Binding ShapeSizeX}" Width="40" FontSize="11"/>
+              <TextBox Text="{Binding ShapeSizeY}" Width="40" FontSize="11"/>
+              <TextBox Text="{Binding ShapeSizeZ}" Width="40" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Cone:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="1" Maximum="90" Value="{Binding ConeAngle}" Width="140"/>
+              <TextBlock Text="{Binding ConeAngle, StringFormat={}{0:F0}°}" Width="35" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Max:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <TextBox Text="{Binding MaxParticles}" Width="70" FontSize="11"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Lifetime & Size -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="Lifetime &amp; Size" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Life:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <TextBox Text="{Binding LifetimeMin}" Width="40" FontSize="11"/>
+              <TextBlock Text="-" FontSize="11" VerticalAlignment="Center"/>
+              <TextBox Text="{Binding LifetimeMax}" Width="40" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Start:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <TextBox Text="{Binding StartSizeMin}" Width="40" FontSize="11"/>
+              <TextBlock Text="-" FontSize="11" VerticalAlignment="Center"/>
+              <TextBox Text="{Binding StartSizeMax}" Width="40" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="End:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <TextBox Text="{Binding EndSizeMin}" Width="40" FontSize="11"/>
+              <TextBlock Text="-" FontSize="11" VerticalAlignment="Center"/>
+              <TextBox Text="{Binding EndSizeMax}" Width="40" FontSize="11"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Velocity -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="Velocity" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="X:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <TextBox Text="{Binding VelocityXMin}" Width="40" FontSize="11"/>
+              <TextBlock Text="-" FontSize="11" VerticalAlignment="Center"/>
+              <TextBox Text="{Binding VelocityXMax}" Width="40" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Y:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <TextBox Text="{Binding VelocityYMin}" Width="40" FontSize="11"/>
+              <TextBlock Text="-" FontSize="11" VerticalAlignment="Center"/>
+              <TextBox Text="{Binding VelocityYMax}" Width="40" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Z:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <TextBox Text="{Binding VelocityZMin}" Width="40" FontSize="11"/>
+              <TextBlock Text="-" FontSize="11" VerticalAlignment="Center"/>
+              <TextBox Text="{Binding VelocityZMax}" Width="40" FontSize="11"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Color -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="Color" />
+            <TextBlock Text="Start (RGBA):" FontSize="11"/>
+            <StackPanel Orientation="Horizontal" Spacing="2">
+              <TextBox Text="{Binding StartColorR}" Width="36" FontSize="11"/>
+              <TextBox Text="{Binding StartColorG}" Width="36" FontSize="11"/>
+              <TextBox Text="{Binding StartColorB}" Width="36" FontSize="11"/>
+              <TextBox Text="{Binding StartColorA}" Width="36" FontSize="11"/>
+            </StackPanel>
+            <TextBlock Text="End (RGBA):" FontSize="11"/>
+            <StackPanel Orientation="Horizontal" Spacing="2">
+              <TextBox Text="{Binding EndColorR}" Width="36" FontSize="11"/>
+              <TextBox Text="{Binding EndColorG}" Width="36" FontSize="11"/>
+              <TextBox Text="{Binding EndColorB}" Width="36" FontSize="11"/>
+              <TextBox Text="{Binding EndColorA}" Width="36" FontSize="11"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Physics -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="Physics" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Gravity:" Width="44" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-20" Maximum="20" Value="{Binding GravityY}" Width="130"/>
+              <TextBlock Text="{Binding GravityY, StringFormat={}{0:F1}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Damping:" Width="44" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="0" Maximum="2" Value="{Binding Damping}" Width="130"/>
+              <TextBlock Text="{Binding Damping, StringFormat={}{0:F2}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Rotation -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="Rotation (rad)" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Init:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <TextBox Text="{Binding RotationMin}" Width="40" FontSize="11"/>
+              <TextBlock Text="-" FontSize="11" VerticalAlignment="Center"/>
+              <TextBox Text="{Binding RotationMax}" Width="40" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Vel:" Width="36" VerticalAlignment="Center" FontSize="11"/>
+              <TextBox Text="{Binding AngularVelocityMin}" Width="40" FontSize="11"/>
+              <TextBlock Text="-" FontSize="11" VerticalAlignment="Center"/>
+              <TextBox Text="{Binding AngularVelocityMax}" Width="40" FontSize="11"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Position -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="Position" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="X:" Width="20" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-20" Maximum="20" Value="{Binding PosX}" Width="130"/>
+              <TextBlock Text="{Binding PosX, StringFormat={}{0:F1}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Y:" Width="20" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-5" Maximum="20" Value="{Binding PosY}" Width="130"/>
+              <TextBlock Text="{Binding PosY, StringFormat={}{0:F1}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Z:" Width="20" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-20" Maximum="20" Value="{Binding PosZ}" Width="130"/>
+              <TextBlock Text="{Binding PosZ, StringFormat={}{0:F1}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Reset -->
+        <Button Command="{Binding ResetCommand}" HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center" FontWeight="Bold">Reset</Button>
+
+        <!-- Stats -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10" Background="#1E1E2E">
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+              <TextBlock Text="{Binding CurrentFps}" FontSize="36" FontWeight="Bold" Foreground="White"/>
+              <TextBlock Text="FPS" FontSize="14" Foreground="#888" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+            </StackPanel>
+            <Border Background="#333" CornerRadius="3" Height="8" HorizontalAlignment="Stretch">
+              <Border Background="{Binding FpsBarColor}" CornerRadius="3"
+                      Width="{Binding FpsBarWidth}" Height="8" HorizontalAlignment="Left"/>
+            </Border>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+              <StackPanel Spacing="0"><TextBlock Text="MIN" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding MinFps}" FontSize="16" FontWeight="Bold" Foreground="#FF6B6B" HorizontalAlignment="Center"/></StackPanel>
+              <StackPanel Spacing="0"><TextBlock Text="AVG" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding AvgFps}" FontSize="16" FontWeight="Bold" Foreground="#FFD93D" HorizontalAlignment="Center"/></StackPanel>
+              <StackPanel Spacing="0"><TextBlock Text="MAX" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding MaxFps}" FontSize="16" FontWeight="Bold" Foreground="#6BCB77" HorizontalAlignment="Center"/></StackPanel>
+            </StackPanel>
+            <TextBlock Text="{Binding DetailText}" FontSize="11" Foreground="#AAA" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- 3D Viewport -->
+    <a:Aura3DView x:Name="aura3DView"
+                  SceneInitialized="SceneInitialized"
+                  SceneUpdated="SceneUpdated"/>
+  </DockPanel>
+</UserControl>

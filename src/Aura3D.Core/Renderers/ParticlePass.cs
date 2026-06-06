@@ -31,6 +31,7 @@ public class ParticlePass : RenderPass
             layout(location = 8) in mat4 instanceTransform;
             layout(location = 2) in vec4 instanceColor;
             layout(location = 3) in float instanceSize;
+            layout(location = 4) in float instanceAgeRatio;
 
             uniform mat4 viewMatrix;
             uniform mat4 projectionMatrix;
@@ -40,6 +41,7 @@ public class ParticlePass : RenderPass
 
             out vec2 vTexCoord;
             out vec4 vColor;
+            out float vAgeRatio;
 
             void main()
             {
@@ -59,6 +61,7 @@ public class ParticlePass : RenderPass
                 vTexCoord = texCoord;
                 vColor = instanceColor;
                 vColor.a *= uGlobalAlpha;
+                vAgeRatio = instanceAgeRatio;
             }
             """;
 
@@ -70,21 +73,40 @@ public class ParticlePass : RenderPass
 
             in vec2 vTexCoord;
             in vec4 vColor;
+            in float vAgeRatio;
             out vec4 outColor;
 
             #ifdef PARTICLE_TEXTURE
             uniform sampler2D uParticleTexture;
+            #ifdef PARTICLE_FLIPBOOK
+            uniform vec2 uFlipbookTiles;
+            #endif
             #endif
 
             void main()
             {
                 #ifdef PARTICLE_TEXTURE
-                vec4 texColor = texture(uParticleTexture, vTexCoord);
+                #ifdef PARTICLE_FLIPBOOK
+                float totalFrames = uFlipbookTiles.x * uFlipbookTiles.y;
+                float frame = floor(vAgeRatio * totalFrames);
+                frame = clamp(frame, 0.0, totalFrames - 1.0);
+                float col = mod(frame, uFlipbookTiles.x);
+                float row = floor(frame / uFlipbookTiles.x);
+                vec2 uv = (vTexCoord + vec2(col, row)) / uFlipbookTiles;
+                #else
+                vec2 uv = vTexCoord;
+                #endif
+                vec4 texColor = texture(uParticleTexture, uv);
                 outColor = texColor * vColor;
                 #else
                 float dist = length(vTexCoord - 0.5) * 2.0;
+                #ifdef PARTICLE_ADDITIVE
+                float alpha = vColor.a * exp(-dist * dist * 3.0);
+                outColor = vec4(vColor.rgb * alpha, alpha);
+                #else
                 float alpha = 1.0 - smoothstep(0.5, 1.0, dist);
                 outColor = vec4(vColor.rgb, vColor.a * alpha);
+                #endif
                 #endif
             }
             """;
@@ -107,24 +129,28 @@ public class ParticlePass : RenderPass
         var camUp = new Vector3(invView.M21, invView.M22, invView.M23);
 
         // Opaque
-        UseShader("PARTICLE_OPAQUE");
         RenderParticleGroups(im => IsMaterialBlendMode(im.Material, BlendMode.Opaque),
-            camera.View, camera.Projection, camRight, camUp);
+            camera.View, camera.Projection, camRight, camUp, "PARTICLE_OPAQUE");
 
         // Masked
-        UseShader("PARTICLE_MASKED");
         RenderParticleGroups(im => IsMaterialBlendMode(im.Material, BlendMode.Masked),
-            camera.View, camera.Projection, camRight, camUp);
+            camera.View, camera.Projection, camRight, camUp, "PARTICLE_MASKED");
 
         // Translucent
         gl.Enable(EnableCap.Blend);
         gl.BlendFunc(GLEnum.SrcAlpha, GLEnum.OneMinusSrcAlpha);
         gl.DepthMask(false);
 
-        UseShader("PARTICLE_TRANSLUCENT");
         RenderParticleGroups(im => IsParticleMesh(im) && IsMaterialBlendMode(im.Material, BlendMode.Translucent),
-            camera.View, camera.Projection, camRight, camUp);
+            camera.View, camera.Projection, camRight, camUp, "PARTICLE_TRANSLUCENT");
 
+        // Additive
+        gl.BlendFunc(GLEnum.SrcAlpha, GLEnum.One);
+
+        RenderParticleGroups(im => IsParticleMesh(im) && IsMaterialBlendMode(im.Material, BlendMode.Additive),
+            camera.View, camera.Projection, camRight, camUp, "PARTICLE_ADDITIVE");
+
+        gl.Enable(EnableCap.DepthTest);
         gl.DepthMask(true);
         gl.Disable(EnableCap.Blend);
     }
@@ -133,7 +159,7 @@ public class ParticlePass : RenderPass
 
     private void RenderParticleGroups(
         Func<InstancedMesh, bool> filter, Matrix4x4 view, Matrix4x4 proj,
-        Vector3 camRight, Vector3 camUp)
+        Vector3 camRight, Vector3 camUp, string baseDefine)
     {
         foreach (var im in renderPipeline.InstancedMeshes)
         {
@@ -141,7 +167,20 @@ public class ParticlePass : RenderPass
             if (!IsParticleMesh(im)) continue;
             if (!filter(im)) continue;
 
-            UseShader_Internal(im.Material);
+            var mat = im.Material;
+            bool hasTex = mat != null
+                && mat.TryGetParameterValue<ITexture>("uParticleTexture", out _);
+            bool hasFlipbook = mat != null
+                && mat.TryGetParameterValue<Vector2>("uFlipbookTiles", out _);
+
+            if (hasTex && hasFlipbook)
+                UseShader(baseDefine, "PARTICLE_TEXTURE", "PARTICLE_FLIPBOOK");
+            else if (hasTex)
+                UseShader(baseDefine, "PARTICLE_TEXTURE");
+            else
+                UseShader(baseDefine);
+
+            UseShader_Internal(mat);
             RenderParticleGroup(im, view, proj, camRight, camUp);
         }
     }
@@ -165,6 +204,9 @@ public class ParticlePass : RenderPass
 
         if (im.Material != null && im.Material.TryGetParameterValue<ITexture>("uParticleTexture", out var tex))
             UniformTexture("uParticleTexture", tex);
+
+        if (im.Material != null && im.Material.TryGetParameterValue<Vector2>("uFlipbookTiles", out var tiles))
+            UniformVector2("uFlipbookTiles", tiles);
 
         if (im.Material != null && im.Material.HasShader)
         {
