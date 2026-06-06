@@ -252,7 +252,7 @@ public class LightPass : RenderPass
 
         for (int i = 0; i < directionalLightLimit; i++)
         {
-            if (i >= renderPipeline.DirectionalLights.Count)
+            if (i >= renderPipeline.DirectionalLights.Count || !renderPipeline.DirectionalLights[i].Enable)
             {
                 SetupInactiveDirectionalLight(i);
             }
@@ -271,6 +271,8 @@ public class LightPass : RenderPass
     {
         foreach (var light in renderPipeline.DirectionalLights)
         {
+            if (!light.Enable)
+                continue;
             if (!light.CastShadow)
                 continue;
             var csmData = light.GetPipelineGpuResource<CsmShadowData>(nameof(CsmShadowData));
@@ -344,7 +346,7 @@ public class LightPass : RenderPass
 
         for (int i = 0; i < pointLightLimit; i++)
         {
-            if (i >= renderPipeline.PointLights.Count)
+            if (i >= renderPipeline.PointLights.Count || !renderPipeline.PointLights[i].Enable)
             {
                 SetupInactivePointLight(i);
             }
@@ -412,7 +414,7 @@ public class LightPass : RenderPass
     {
         for (int i = 0; i < spotLightLimit; i++)
         {
-            if (i >= renderPipeline.SpotLights.Count)
+            if (i >= renderPipeline.SpotLights.Count || !renderPipeline.SpotLights[i].Enable)
             {
                 SetupInactiveSpotLight(i);
             }
