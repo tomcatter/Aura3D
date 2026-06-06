@@ -8,8 +8,8 @@ public class ControlRenderTarget : IRenderTarget
 {
     public uint FrameBufferId { get; set; }
     public uint Height { get; set; }
-
     public uint Width { get; set; }
+    public float Scale { get; set; } = 1.0f;
 
     public bool NeedsUpload { get; set; }
 

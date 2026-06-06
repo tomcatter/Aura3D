@@ -82,15 +82,18 @@ public abstract class Aura3DViewBase : global::Avalonia.OpenGL.Controls.OpenGlCo
 
             uint width = (uint)Bounds.Width;
             uint height = (uint)Bounds.Height;
+            float scale = 1.0f;
 
             if (source != null)
             {
-                width = (uint)(Bounds.Width * source.RenderScaling);
-                height = (uint)(Bounds.Height * source.RenderScaling);
+                scale = (float)source.RenderScaling;
+                width = (uint)(Bounds.Width * scale);
+                height = (uint)(Bounds.Height * scale);
             }
 
             controlRenderTarget.Width = width;
             controlRenderTarget.Height = height;
+            controlRenderTarget.Scale = scale;
 
             isSizeChanged = false;
         }

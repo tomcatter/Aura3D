@@ -107,8 +107,8 @@ public class Camera : Node
         float ndcX = clip.X / clip.W;
         float ndcY = clip.Y / clip.W;
 
-        float screenX = (ndcX + 1f) * 0.5f * RenderTarget.Width;
-        float screenY = (1f - ndcY) * 0.5f * RenderTarget.Height;
+        float screenX = (ndcX + 1f) * 0.5f * RenderTarget.Width / RenderTarget.Scale;
+        float screenY = (1f - ndcY) * 0.5f * RenderTarget.Height / RenderTarget.Scale;
 
         return new Vector2(screenX, screenY);
     }

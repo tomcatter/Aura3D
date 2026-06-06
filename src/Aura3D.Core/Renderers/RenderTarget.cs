@@ -60,6 +60,9 @@ public class RenderTarget : IRenderTarget
     /// </summary>
     public uint Width { get; set; }
 
+    /// <inheritedoc />
+    public float Scale { get; set; } = 1.0f;
+
     /// <summary>
     /// 设置渲染目标的尺寸。
     /// </summary>

@@ -6,7 +6,6 @@ public interface IRenderTarget : IGpuResource
 {
     uint FrameBufferId { get; }
     uint Height { get;}
-
     uint Width { get;}
-
+    float Scale { get;}
 }

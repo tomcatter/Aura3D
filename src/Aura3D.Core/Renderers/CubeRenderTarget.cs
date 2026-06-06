@@ -28,6 +28,8 @@ public class CubeRenderTarget : IRenderTarget
 
     public uint Width { get; set; }
 
+    public float Scale { get; set; } = 1.0f;
+
     public bool EnableMipMap 
     { 
         get; 
