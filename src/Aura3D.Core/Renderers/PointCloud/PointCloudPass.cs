@@ -23,7 +23,14 @@ public class PointCloudPass : RenderPass
             layout(location = 0) in vec3 position;
             layout(location = 2) in vec4 color;
 
+            #ifdef INSTANCED_MESH
+            layout(location = 8) in mat4 modelMatrix;
+            #endif
+
+            #ifndef INSTANCED_MESH
             uniform mat4 modelMatrix;
+            #endif
+
             uniform mat4 viewMatrix;
             uniform mat4 projectionMatrix;
             uniform float uPointSize;
@@ -71,15 +78,24 @@ public class PointCloudPass : RenderPass
 
     public override void Render(Camera camera)
     {
+        // Opaque point cloud meshes (regular)
         UseShader();
         RenderVisibleMeshesInCamera(
             mesh => IsPointCloudMesh(mesh) && IsMaterialBlendMode(mesh, BlendMode.Opaque),
+            camera.View, camera.Projection);
+
+        // Opaque point cloud meshes (instanced)
+        UseShader("INSTANCED_MESH");
+        RenderVisibleInstancedMeshesInCamera(
+            instancedMesh => IsPointCloudInstancedMesh(instancedMesh)
+                && IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque),
             camera.View, camera.Projection);
 
         gl.Enable(EnableCap.Blend);
         gl.BlendFunc(GLEnum.SrcAlpha, GLEnum.OneMinusSrcAlpha);
         gl.DepthMask(false);
 
+        // Translucent point cloud meshes (regular)
         UseShader("BLENDMODE_TRANSLUCENT");
         RenderVisibleMeshesInCamera(
             mesh => IsPointCloudMesh(mesh) && IsMaterialBlendMode(mesh, BlendMode.Translucent),
@@ -111,9 +127,32 @@ public class PointCloudPass : RenderPass
         base.RenderMesh(mesh, view, projection);
     }
 
+    public override void RenderInstancedMesh(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
+    {
+        ClearTextureUnit();
+
+        UniformMatrix4("viewMatrix", view);
+        UniformMatrix4("projectionMatrix", projection);
+
+        float pointSize = DefaultPointSize;
+        if (instancedMesh.Material != null &&
+            instancedMesh.Material.TryGetParameterValue<float>("uPointSize", out var materialPointSize))
+        {
+            pointSize = materialPointSize;
+        }
+        UniformFloat("uPointSize", pointSize);
+
+        base.RenderInstancedMesh(instancedMesh, view, projection);
+    }
+
     private static bool IsPointCloudMesh(Mesh mesh)
     {
         return mesh.Geometry != null
             && mesh.Geometry.PrimitiveType == Resources.PrimitiveType.Points;
+    }
+
+    private static bool IsPointCloudInstancedMesh(InstancedMesh instancedMesh)
+    {
+        return instancedMesh.PrimitiveType == Resources.PrimitiveType.Points;
     }
 }
