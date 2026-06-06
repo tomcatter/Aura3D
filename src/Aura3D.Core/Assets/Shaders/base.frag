@@ -1,8 +1,11 @@
 ﻿#version 300 es
 precision mediump float;
+//{{defines}}
+#ifdef ENABLE_CSM
+precision mediump sampler2DArray;
+#endif
 out vec4 outColor;
 
-//{{defines}}
 
 #define MAX_DIRECTIONAL_LIGHTS 4
 #define MAX_POINT_LIGHTS 4
@@ -14,6 +17,18 @@ out vec4 outColor;
 	else \
 	shadows[index] = 1.0;
 
+// CSM variant for the main directional light (index 0): uses CSM when MainLightUseCSM > 0.5, falls back to regular shadow
+#ifdef ENABLE_CSM
+#define DL_CSM_SHADOW_ASSIGN(index) if (DirectionalLights[index].castShadow == 1.0) \
+	shadows[index] = MainLightUseCSM > 0.5 ? \
+		CalculateCSMShadow(vFragPosition, MainLightCSMMatrices, MainLightCSMShadowMap, MainLightCSMSplitDepths, MainLightCSMCascadeCount) : \
+		CalculateShadow(DirectionalLights[index].shadowMapMatrix, DirectionalLightShadowMaps[index]); \
+	else \
+	shadows[index] = 1.0;
+#else
+#define DL_CSM_SHADOW_ASSIGN(index) DL_SHADOW_ASSIGN(index)
+#endif
+
 #define PL_SHADOW_ASSIGN(index) if (PointLights[index].castShadow == 1.0) \
 	shadows[index] = CalculatePointLightShadow(PointLights[index].position, PointLights[index].shadowMapMatrices, PointLightShadowMaps[index]); \
 		else \
@@ -24,7 +39,7 @@ out vec4 outColor;
 	else \
 	shadows[index] = 1.0;
 
-#define REPEAT_DL_SHADOW_ASSIGN_1 DL_SHADOW_ASSIGN(0)
+#define REPEAT_DL_SHADOW_ASSIGN_1 DL_CSM_SHADOW_ASSIGN(0)
 #define REPEAT_DL_SHADOW_ASSIGN_2 REPEAT_DL_SHADOW_ASSIGN_1; DL_SHADOW_ASSIGN(1)
 #define REPEAT_DL_SHADOW_ASSIGN_3 REPEAT_DL_SHADOW_ASSIGN_2; DL_SHADOW_ASSIGN(2)
 #define REPEAT_DL_SHADOW_ASSIGN_4 REPEAT_DL_SHADOW_ASSIGN_3; DL_SHADOW_ASSIGN(3)
@@ -104,6 +119,7 @@ uniform sampler2D NormalTexture;
 uniform float ambientIntensity;
 
 uniform vec3 cameraPosition;
+uniform mat4 viewMatrix;
 
 #if defined(BLENDMODE_MASKED) || defined(BLENDMODE_TRANSLUCENT)
 
@@ -120,11 +136,24 @@ uniform sampler2D DirectionalLightShadowMaps[MAX_DIRECTIONAL_LIGHTS];
 uniform samplerCube PointLightShadowMaps[MAX_POINT_LIGHTS];
 uniform sampler2D SpotLightShadowMaps[MAX_SPOT_LIGHTS];
 
+#ifdef ENABLE_CSM
+// CSM (Cascaded Shadow Maps) uniforms for the main directional light
+#define MAX_CSM_CASCADES 4
+uniform sampler2DArray MainLightCSMShadowMap;
+uniform mat4 MainLightCSMMatrices[MAX_CSM_CASCADES];
+uniform float MainLightCSMSplitDepths[MAX_CSM_CASCADES + 1];
+uniform int MainLightCSMCascadeCount;
+uniform float MainLightUseCSM;
+#endif
+
 vec3 CalculateDirectionalLight(vec3 lightDirection, vec3 lightColor, vec3 baseColor, vec3 normal);
 vec3 CalculatePointLight(vec3 lightPosition, vec3 lightColor, float radius,float softRatio, vec3 baseColor, vec3 normal);
 vec3 CalculateSpotLight(vec3 lightPosition, vec3 lightColor, vec3 lightDirection, float radius, float softRatio,float inner_cone_cos, float outer_cone_cos, vec3 baseColor, vec3 normal);
 float CalculateShadow(mat4 shadowMatrix, sampler2D shadowMap);
 float CalculatePointLightShadow(vec3 position, mat4 shadowMapMatrices[6], samplerCube shadowMapTexture);
+#ifdef ENABLE_CSM
+float CalculateCSMShadow(vec3 fragPosWorld, mat4 csmMatrices[4], sampler2DArray csmMap, float splits[5], int cascadeCount);
+#endif
 
 
 float CalcPointLightAttenuation(float d, float r, float softRatio) {
@@ -272,13 +301,13 @@ vec3 CalculateSpotLight(vec3 lightPosition, vec3 lightColor, vec3 lightDirection
 float CalculateShadow(mat4 shadowMatrix, sampler2D shadowMap)
 {
 	vec4 shadowCoord = shadowMatrix * vec4(vFragPosition, 1.0);
-	
+
 
 	if (shadowCoord.x < -shadowCoord.w || shadowCoord.x > shadowCoord.w ||
         shadowCoord.y < -shadowCoord.w || shadowCoord.y > shadowCoord.w ||
         shadowCoord.z < -shadowCoord.w || shadowCoord.z > shadowCoord.w)
         return 1.0;
-		
+
     shadowCoord /= shadowCoord.w;
 
 	shadowCoord.xyz = shadowCoord.xyz * 0.5 + 0.5;
@@ -291,6 +320,36 @@ float CalculateShadow(mat4 shadowMatrix, sampler2D shadowMap)
 	else
 		return 1.0;
 }
+
+#ifdef ENABLE_CSM
+float CalculateCSMShadow(vec3 fragPosWorld, mat4 csmMatrices[4], sampler2DArray csmMap, float splits[5], int cascadeCount)
+{
+	vec4 viewPos4 = viewMatrix * vec4(fragPosWorld, 1.0);
+	float viewZ = -viewPos4.z;
+
+	int cascade = 0;
+	for (int i = 0; i < cascadeCount - 1; i++) {
+		if (viewZ > splits[i + 1])
+			cascade = i + 1;
+	}
+
+	vec4 shadowCoord = csmMatrices[cascade] * vec4(fragPosWorld, 1.0);
+
+	if (shadowCoord.x < -shadowCoord.w || shadowCoord.x > shadowCoord.w ||
+		shadowCoord.y < -shadowCoord.w || shadowCoord.y > shadowCoord.w ||
+		shadowCoord.z < -shadowCoord.w || shadowCoord.z > shadowCoord.w)
+		return 1.0;
+
+	shadowCoord /= shadowCoord.w;
+	shadowCoord.xyz = shadowCoord.xyz * 0.5 + 0.5;
+
+	float shadowValue = texture(csmMap, vec3(shadowCoord.xy, float(cascade))).x;
+	float bias = 0.001;
+	if (shadowValue < shadowCoord.z - bias)
+		return 0.0;
+	return 1.0;
+}
+#endif
 
 
 

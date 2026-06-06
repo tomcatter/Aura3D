@@ -2,15 +2,16 @@
 using Aura3D.Core;
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Scenes;
-using Aura3D.Pipeline.PBR;
+using Aura3D.Core.Renderers;
 using RenderDebug;
 using Silk.NET.Input;
 using Silk.NET.Windowing;
+using Aura3D.Pipeline.PBR;
 
 var window = Window.Create(WindowOptions.Default);
 ControlRenderTarget controlRenderTarget = new ControlRenderTarget();
 Camera.ControlRenderTarget = controlRenderTarget;
-Scene scene = new Scene(scene => new PBRDeferredPipeline(scene));
+Scene scene = new Scene(scene => new BlinnPhongPipeline(scene), new PipelineSettings());
 
 
 TestView? testView = null;

@@ -41,6 +41,14 @@ public abstract partial class RenderPipeline
     public PipelineSettings Settings { get; }
 
     /// <summary>
+    /// 获取当前渲染管线是否支持 CSM（级联阴影贴图）。
+    /// 默认返回 <c>false</c>；支持多级联阴影采样的管线应重写此属性返回 <c>true</c>。
+    /// <see cref="ShadowMapPass"/> 在渲染时会检查此属性，
+    /// 不支持 CSM 的管线即使 <see cref="PipelineSettings.CsmCascadeCount"/> 大于 1 也会退化为普通单张阴影贴图。
+    /// </summary>
+    public virtual bool SupportsCSM => false;
+
+    /// <summary>
     /// 获取或设置是否启用视锥体剔除。
     /// </summary>
     public bool EnableFrustumCulling
@@ -156,6 +164,7 @@ public abstract partial class RenderPipeline
     /// 当前相机视锥体中可见的实例化网格列表。
     /// </summary>
     public List<InstancedMesh> VisibleInstancedMeshesInCamera = [];
+
 
     protected void RegisterRenderPass(RenderPass renderPass, RenderPassGroup renderPassGroup)
     {
@@ -314,6 +323,7 @@ public abstract partial class RenderPipeline
         {
             RemoveGpuResource(gpuResource);
         }
+
         node.ClearPipelineGpuResources();
     }
 
@@ -385,7 +395,6 @@ public abstract partial class RenderPipeline
     /// <param name="meshes">用于输出可见网格的列表。</param>
     public void UpdateVisibleMeshesInCamera(Matrix4x4 view, Matrix4x4 projection, List<Mesh> meshes)
     {
-        
         var viewProjection = view * projection;
 
         Matrix4x4.Invert(viewProjection, out Matrix4x4 invViewProj);
@@ -416,7 +425,8 @@ public abstract partial class RenderPipeline
 
         MatrixHelper.ExtractPlanes(viewProjection, planes);
 
-        this.Scene.StaticMeshOctree.Query(boundingBox =>
+        // 八叉树查询（所有网格统一走八叉树）
+        this.Scene.MeshOctree.Query(boundingBox =>
         {
             if (cameraBoundingBox.Intersects(boundingBox))
             {

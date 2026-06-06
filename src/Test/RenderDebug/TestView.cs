@@ -36,6 +36,7 @@ public class TestView
 
     public void OnInit()
     {
+        /*
         using var hdriFileStream = loadFileFun("Textures/buikslotermeerplein_1k.hdr");
 
         var hdriTexture = TextureLoader.LoadHdrTexture(hdriFileStream);
@@ -43,7 +44,7 @@ public class TestView
         var cubemap = HDRIToCubeTextureConverter.ConvertFromTexture(hdriTexture, 1024);
 
         scene.Background = cubemap;
-
+        */
         var m = inputContext.Mice.First();
 
         m.MouseMove += (m, p) =>
@@ -73,152 +74,85 @@ public class TestView
 
 
         var camera = scene.MainCamera;
-
-        camera.NearPlane = 10;
-
-        camera.FarPlane = 100;
-
-        var list = new List<Stream>();
-        List<string> name =
-        [
-            "px.png",
-            "nx.png",
-            "py.png",
-            "ny.png",
-            "pz.png",
-            "nz.png",
-        ];
-
-
-        foreach (var filename in name)
+        // 大面积地面 — 用来接收阴影
+        var ground = new Mesh
         {
-            var stream = loadFileFun($"Textures/skybox/{filename}");
-            list.Add(stream);
-        }
-
-        var cubeTexture = TextureLoader.LoadCubeTexture(list);
-
-        foreach (var stream in list)
-        {
-            stream.Dispose();
-        }
-
-
-        // scene.Background = cubeTexture;
-
-        var (model, animations) = ModelLoader.LoadGlbModelAndAnimations(loadFileFun("Models/lion_head_1k.glb"));
-
-
-       //  camera.FitToBoundingBox(model.BoundingBox, 1);
-
-
-        model.Position = model.Position;
-
-        scene.AddNode(model);
-
-
-
-        var mesh = new Mesh();
-
-        mesh.Geometry = new PlaneGeometry();
-
-        mesh.Material = new Material();
-
-        mesh.Material.BaseColor = Texture.CreateFromColor(Color.Blue);
-
-        mesh.Material.Normal = Texture.CreateFromColor(Color.FromArgb(128, 128, 255));
-
-        mesh.RotationDegrees = new Vector3(90, 0, 0);
-
-
-        // AddNode(mesh);
-
-        DirectionalLight dl = new DirectionalLight();
-
-        dl.CastShadow = true;
-
-        dl.RotationDegrees = new Vector3(-45, 45, 0);
-
-        dl.ShadowConfig.Width = 2;
-        dl.ShadowConfig.Height = 2;
-        dl.ShadowConfig.NearPlane = 0.001f;
-        dl.ShadowConfig.FarPlane = 1;
-        scene.AddNode(dl);
-
-        //SpotLight sp = new SpotLight();
-
-        //sp.Position = model.Position + model.Up * 2 ;
-
-        //sp.RotationDegrees = new Vector3(-90, 0, 0);
-
-        //sp.LightColor = Color.White;
-
-        //sp.CastShadow = true;
-
-        //sp.InnerConeAngleDegree = 50;
-
-        //sp.OuterAngleDegree = 55;
-
-        //sp.AttenuationRadius = 40;
-
-        //AddNode(sp);
-
-
-
-
-        //var pl = new PointLight();
-
-        //pl.Position = camera.Position;
-
-        //pl.AttenuationRadius = 10;
-
-        //pl.CastShadow = true;
-
-        //pl.Position = model.Position + model.Up * 2;
-
-        //AddNode(pl);
-
-        // --- Instanced Mesh Test ---
-        var sourceMesh = new Mesh();
-        sourceMesh.Geometry = new BoxGeometry();
-        sourceMesh.Material = new Material
-        {
-            BlendMode = BlendMode.Translucent,
-            Channels = new List<Channel>
+            Geometry = new PlaneGeometry(),
+            Material = new Material
             {
-                new Channel()
-                {
-                    Name = "BaseColor",
-                    Texture = Texture.CreateFromColor(Color.White),
-                }
+                BaseColor = Texture.CreateFromColor(Color.FromArgb(220, 220, 220))
             }
         };
+        ground.Scale = new Vector3(80, 1, 80);
+        ground.Position = new Vector3(0, -2, 0);
+        scene.AddNode(ground);
 
-        instancedMesh = InstancedMesh.FromMesh(sourceMesh);
-
-        var rand = new Random(42);
-        int gridSize = 30;
-        float spacing = 2f;
-        float offset = (gridSize - 1) * spacing / 2f;
-
-        for (int x = 0; x < gridSize; x++)
+        // 在远近不同距离放置柱子，展示 CSM 级联效果
+        var sphereGeo = new SphereGeometry();
+        float[] distances = { 3, 8, 18, 35, 60, 100 };
+        for (int d = 0; d < distances.Length; d++)
         {
-            for (int y = 0; y < gridSize; y++)
-            {
-                for (int z = 0; z < gridSize; z++)
-                {
-                    Vector3 pos = new Vector3(x * spacing - offset, y * spacing - offset, z * spacing - offset);
-                    Matrix4x4 transform = Matrix4x4.CreateTranslation(pos);
-                    instancedMesh.AddInstance(transform);
+            float z = distances[d];
 
-                    instancePositions.Add(pos);
-                    instanceRotationAngles.Add((float)(rand.NextDouble() * Math.PI * 2));
-                    instanceRotationSpeeds.Add((float)(rand.NextDouble() * 2 - 1));
-                }
+            // 每个距离放一排骨
+            for (int x = -3; x <= 3; x++)
+            {
+                var mesh = new Mesh
+                {
+                    Geometry = sphereGeo,
+                    Material = new Material
+                    {
+                        BaseColor = Texture.CreateFromColor(
+                            d switch
+                            {
+                                0 => Color.FromArgb(255, 60, 60),    // 近 — 红
+                                1 => Color.FromArgb(255, 160, 60),   // 橙
+                                2 => Color.FromArgb(255, 220, 60),   // 黄
+                                3 => Color.FromArgb(60, 200, 60),    // 绿
+                                4 => Color.FromArgb(60, 120, 220),   // 蓝
+                                _ => Color.FromArgb(180, 100, 220),  // 紫
+                            })
+                    }
+                };
+                mesh.Position = new Vector3(x * 4, 2, z);
+                mesh.Scale = new Vector3(1.5f);
+                scene.AddNode(mesh);
             }
+
+            // 每个距离放一个高柱子用于投影
+            var tallPillar = new Mesh
+            {
+                Geometry = new CylinderGeometry(),
+                Material = new Material
+                {
+                    BaseColor = Texture.CreateFromColor(Color.White)
+                }
+            };
+            tallPillar.Position = new Vector3(10, 5, z);
+            tallPillar.Scale = new Vector3(1, 8, 1);
+            scene.AddNode(tallPillar);
         }
 
-        scene.AddNode(instancedMesh);
+        // 方向光（投射阴影）
+        var _dl = new DirectionalLight
+        {
+            RotationDegrees = new Vector3(-35, 22, 0),
+            LightColor = Color.White,
+            CastShadow = true,
+            ShadowConfig = new DirectionalLightShadowMapConfig
+            {
+                Width = 80,
+                Height = 80,
+                NearPlane = 0.5f,
+                FarPlane = 200
+            }
+        };
+        scene.AddNode(_dl);
+        scene.MainDirectionalLight = _dl;
+
+        // 摄像机位置
+        scene.MainCamera.Position = new Vector3(8, 12, -8);
+        scene.MainCamera.RotationDegrees = new Vector3(-30, -25, 0);
     }
 
     public void OnUpdate(double deltaTime)

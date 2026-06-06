@@ -44,6 +44,14 @@ public class LightPass : RenderPass
     private readonly string[] _spotLightShadowMapMatrixUniforms;
 
     private const int MaxLightLimit = 10;
+    private const int MaxCsmCascades = 4;
+
+    // CSM uniform names for the main directional light
+    private const string MainLightUseCSMUniform = "MainLightUseCSM";
+    private const string MainLightCSMShadowMapUniform = "MainLightCSMShadowMap";
+    private const string MainLightCSMCascadeCountUniform = "MainLightCSMCascadeCount";
+    private readonly string[] _mainLightCSMMatricesUniforms;
+    private readonly string[] _mainLightCSMSplitDepthsUniforms;
 
     public void UpdateLightNumLimit(int directionalLightLimit, int pointLightLimit, int spotLightLimit)
     {
@@ -136,6 +144,19 @@ public class LightPass : RenderPass
             _spotLightShadowMapUniforms[i] = $"SpotLightShadowMaps[{i}]";
             _spotLightShadowMapMatrixUniforms[i] = $"SpotLights[{i}].shadowMapMatrix";
         }
+
+        // 初始化 CSM Uniform 名称缓存
+        _mainLightCSMMatricesUniforms = new string[MaxCsmCascades];
+        _mainLightCSMSplitDepthsUniforms = new string[MaxCsmCascades + 1];
+
+        for (int i = 0; i < MaxCsmCascades; i++)
+        {
+            _mainLightCSMMatricesUniforms[i] = $"MainLightCSMMatrices[{i}]";
+        }
+        for (int i = 0; i < MaxCsmCascades + 1; i++)
+        {
+            _mainLightCSMSplitDepthsUniforms[i] = $"MainLightCSMSplitDepths[{i}]";
+        }
     }
     public override void Setup()
     {
@@ -156,33 +177,33 @@ public class LightPass : RenderPass
         gl.DepthMask(true);
         gl.DepthFunc(DepthFunction.Less);
         gl.CullFace(TriangleFace.Back);
-
-
     }
 
     public override void Render(Camera camera)
     {
         BindOutPutRenderTarget(camera);
 
-        UseShader();
+        var csm = CheckCsmEnabled() ? new[] { "ENABLE_CSM" } : [];
+
+        UseShader(csm);
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && mesh.IsStaticMesh, camera.View, camera.Projection);
 
-        UseShader("BLENDMODE_MASKED");
+        UseShader([..csm, "BLENDMODE_MASKED"]);
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && mesh.IsStaticMesh, camera.View, camera.Projection);
-        
 
-        UseShader("SKINNED_MESH");
+
+        UseShader([..csm, "SKINNED_MESH"]);
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Opaque) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
 
 
-        UseShader("SKINNED_MESH", "BLENDMODE_MASKED");
+        UseShader([..csm, "SKINNED_MESH", "BLENDMODE_MASKED"]);
         RenderVisibleMeshesInCamera(mesh => IsMaterialBlendMode(mesh, BlendMode.Masked) && mesh.IsSkinnedMesh, camera.View, camera.Projection);
 
 
-        UseShader("INSTANCED_MESH");
+        UseShader([..csm, "INSTANCED_MESH"]);
         RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Opaque), camera.View, camera.Projection);
 
-        UseShader("INSTANCED_MESH", "BLENDMODE_MASKED");
+        UseShader([..csm, "INSTANCED_MESH", "BLENDMODE_MASKED"]);
         RenderVisibleInstancedMeshesInCamera(instancedMesh => IsMaterialBlendMode(instancedMesh.Material, BlendMode.Masked), camera.View, camera.Projection);
     }
 
@@ -226,6 +247,9 @@ public class LightPass : RenderPass
 
     private void SetupDirectionalLights()
     {
+        // 重置 CSM 标志，仅在主方向光有 CSM 数据时由 SetupActiveDirectionalLight 设为 1.0
+        UniformFloat(MainLightUseCSMUniform, 0.0f);
+
         for (int i = 0; i < directionalLightLimit; i++)
         {
             if (i >= renderPipeline.DirectionalLights.Count)
@@ -237,6 +261,23 @@ public class LightPass : RenderPass
                 SetupActiveDirectionalLight(i, renderPipeline.DirectionalLights[i]);
             }
         }
+    }
+
+    /// <summary>
+    /// 检查当前帧是否有方向光启用了 CSM（级联阴影贴图）。
+    /// 用于决定是否在着色器编译时启用 ENABLE_CSM 宏。
+    /// </summary>
+    private bool CheckCsmEnabled()
+    {
+        foreach (var light in renderPipeline.DirectionalLights)
+        {
+            if (!light.CastShadow)
+                continue;
+            var csmData = light.GetPipelineGpuResource<CsmShadowData>(nameof(CsmShadowData));
+            if (csmData != null)
+                return true;
+        }
+        return false;
     }
 
     private void SetupInactiveDirectionalLight(int index)
@@ -253,20 +294,47 @@ public class LightPass : RenderPass
         UniformVector3(_directionalLightColorUniforms[index], new Vector3(light.LightColor.R / 255f, light.LightColor.G / 255f, light.LightColor.B / 255f));
         UniformFloat(_directionalLightCastShadowUniforms[index], light.CastShadow ? 1.0f : 0.0f);
 
-        var rt = light.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
+        var csmData = light.GetPipelineGpuResource<CsmShadowData>(nameof(CsmShadowData));
+        bool useCsm = light.CastShadow && csmData != null;
 
-        if (light.CastShadow && rt != null)
+        if (useCsm)
         {
-            var shadowView = Matrix4x4.CreateLookAt(light.WorldTransform.Translation, light.WorldTransform.Translation + light.WorldTransform.ForwardVector(), light.WorldTransform.UpVector());
-            var shadowProjection = Matrix4x4.CreateOrthographic(light.ShadowConfig.Width, light.ShadowConfig.Height, light.ShadowConfig.NearPlane, light.ShadowConfig.FarPlane);
+            // CSM: 绑定级联阴影贴图数组和所有级联矩阵、分割深度
+            UniformFloat(MainLightUseCSMUniform, 1.0f);
+            UniformTextureArray(MainLightCSMShadowMapUniform, csmData.TextureArrayId);
+            UniformInt(MainLightCSMCascadeCountUniform, csmData.CascadeCount);
 
-            UniformTexture(_directionalLightShadowMapUniforms[index], rt.DepthStencilTexture);
-            UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], shadowView * shadowProjection);
+            for (int c = 0; c < csmData.CascadeCount && c < _mainLightCSMMatricesUniforms.Length; c++)
+            {
+                UniformMatrix4(_mainLightCSMMatricesUniforms[c], csmData.CascadeMatrices[c]);
+            }
+
+            for (int c = 0; c < csmData.CascadeCount + 1 && c < _mainLightCSMSplitDepthsUniforms.Length; c++)
+            {
+                UniformFloat(_mainLightCSMSplitDepthsUniforms[c], csmData.CascadeSplitDepths[c]);
+            }
+
+            // 绑定一个空纹理到常规阴影贴图槽位（CSM 路径不使用此槽位）
+            UniformTexture(_directionalLightShadowMapUniforms[index], 0);
+            UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], Matrix4x4.Identity);
         }
         else
         {
-            UniformTexture(_directionalLightShadowMapUniforms[index], 0);
-            UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], Matrix4x4.Identity);
+            var rt = light.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
+
+            if (light.CastShadow && rt != null)
+            {
+                var shadowView = Matrix4x4.CreateLookAt(light.WorldTransform.Translation, light.WorldTransform.Translation + light.WorldTransform.ForwardVector(), light.WorldTransform.UpVector());
+                var shadowProjection = Matrix4x4.CreateOrthographic(light.ShadowConfig.Width, light.ShadowConfig.Height, light.ShadowConfig.NearPlane, light.ShadowConfig.FarPlane);
+
+                UniformTexture(_directionalLightShadowMapUniforms[index], rt.DepthStencilTexture);
+                UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], shadowView * shadowProjection);
+            }
+            else
+            {
+                UniformTexture(_directionalLightShadowMapUniforms[index], 0);
+                UniformMatrix4(_directionalLightShadowMapMatrixUniforms[index], Matrix4x4.Identity);
+            }
         }
     }
 

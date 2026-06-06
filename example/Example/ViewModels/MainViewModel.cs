@@ -52,8 +52,12 @@ namespace Example.ViewModels
                     ViewModel = new PrimitiveTypeViewModel()
                 },
                 new MenuViewModel {
-                    Title = "Picking Test",
-                    ViewModel = new PickingTestViewModel()
+                    Title = "🔬 Debug Test",
+                    ViewModel = new DebugTestViewModel()
+                },
+                new MenuViewModel {
+                    Title = "Cascaded Shadow Maps",
+                    ViewModel = new CascadedShadowMapsViewModel()
                 }
             ];
             OnNavigation(this, _menus.First());

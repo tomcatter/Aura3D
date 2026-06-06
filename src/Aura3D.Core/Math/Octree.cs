@@ -1,6 +1,6 @@
-using Silk.NET.Core.Native;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 
 namespace Aura3D.Core.Math;
@@ -22,6 +22,7 @@ public class Octree<T> where T : IOctreeObject
     public Vector3 Size => _size;
 
     private Vector3 _size;
+    private readonly Vector3 _initialSize;
 
     /// <summary>
     /// 八叉树根节点
@@ -31,7 +32,22 @@ public class Octree<T> where T : IOctreeObject
     /// <summary>
     /// 所有加入八叉树的物体
     /// </summary>
-    private readonly HashSet<T> _allObjects = new HashSet<T>();
+    private readonly HashSet<T> _allObjects = new();
+
+    /// <summary>
+    /// Query 去重专用，避免每次 Query 分配 HashSet
+    /// </summary>
+    private readonly HashSet<T> _queryDedupSet = new();
+
+    /// <summary>
+    /// 八叉树中存储的物体数量
+    /// </summary>
+    public int Count => _allObjects.Count;
+
+    /// <summary>
+    /// 八叉树中所有物体的只读集合
+    /// </summary>
+    public IReadOnlyCollection<T> Objects => _allObjects;
 
     /// <summary>
     /// 初始化八叉树
@@ -42,7 +58,6 @@ public class Octree<T> where T : IOctreeObject
     /// <exception cref="ArgumentException">size 无效（零/负数/NaN/Infinity）时抛出</exception>
     public Octree(Vector3 size, int maxDepth)
     {
-        // 参数校验
         if (maxDepth < 0)
             throw new ArgumentOutOfRangeException(nameof(maxDepth), "最大深度不能为负数");
 
@@ -50,6 +65,7 @@ public class Octree<T> where T : IOctreeObject
             throw new ArgumentException("尺寸必须为正数且非 NaN/Infinity", nameof(size));
 
         _size = size;
+        _initialSize = size;
         _maxDepth = maxDepth;
         _rootNode = CreateRootNode();
     }
@@ -57,7 +73,6 @@ public class Octree<T> where T : IOctreeObject
     /// <summary>
     /// 创建八叉树根节点
     /// </summary>
-    /// <returns>根节点</returns>
     private OctreeNode<T> CreateRootNode()
     {
         return CreateOctreeNode(Vector3.Zero, _size, 0);
@@ -66,13 +81,49 @@ public class Octree<T> where T : IOctreeObject
     /// <summary>
     /// 创建八叉树节点
     /// </summary>
-    /// <param name="center">节点中心点</param>
-    /// <param name="size">节点尺寸</param>
-    /// <param name="depth">节点深度</param>
-    /// <returns>新的八叉树节点</returns>
     internal OctreeNode<T> CreateOctreeNode(Vector3 center, Vector3 size, int depth)
     {
         return new OctreeNode<T>(this, center, size, depth);
+    }
+
+    /// <summary>
+    /// 确保根节点包含指定包围盒，必要时扩张并重建
+    /// </summary>
+    private void EnsureRootContains(BoundingBox bb)
+    {
+        if (_rootNode.BoundingBox.Contains(bb))
+            return;
+
+        var newSize = _size;
+
+        while (!new BoundingBox(
+            new Vector3(newSize.X / -2, newSize.Y / -2, newSize.Z / -2),
+            new Vector3(newSize.X / 2, newSize.Y / 2, newSize.Z / 2)).Contains(bb))
+        {
+            if (bb.Max.X > newSize.X / 2 || bb.Min.X < newSize.X / -2)
+                newSize.X *= 2;
+            if (bb.Max.Y > newSize.Y / 2 || bb.Min.Y < newSize.Y / -2)
+                newSize.Y *= 2;
+            if (bb.Max.Z > newSize.Z / 2 || bb.Min.Z < newSize.Z / -2)
+                newSize.Z *= 2;
+        }
+
+        // 清理旧 BelongingNodes 引用，Rebuild 会创建全新根节点重新分配
+        foreach (var obj in _allObjects)
+            obj.BelongingNodes.Clear();
+
+        Rebuild(newSize);
+    }
+
+    private void Rebuild(Vector3 newSize)
+    {
+        _size = newSize;
+        _rootNode = CreateRootNode();
+
+        foreach (var obj in _allObjects)
+        {
+            _rootNode.Add(obj);
+        }
     }
 
     /// <summary>
@@ -81,79 +132,34 @@ public class Octree<T> where T : IOctreeObject
     /// <param name="obj">待添加的物体</param>
     /// <returns>添加成功返回 true，已存在返回 false</returns>
     /// <exception cref="ArgumentNullException">obj 为 null 时抛出</exception>
-    /// <exception cref="ArgumentException">obj 的包围盒无效时抛出</exception>
+    /// <exception cref="ArgumentException">obj 的包围盒为 null 或包含无效值时抛出</exception>
     public bool Add(T obj)
     {
         ArgumentNullException.ThrowIfNull(obj);
 
-        // 校验包围盒有效性
-        if (BoundingBox.IsInvalidVector(obj.BoundingBox.Min) ||
-            BoundingBox.IsInvalidVector(obj.BoundingBox.Max))
+        var bb = obj.BoundingBox;
+        if (bb == null)
+            throw new ArgumentException("物体的包围盒不能为 null", nameof(obj));
+
+        if (BoundingBox.IsInvalidVector(bb.Min) ||
+            BoundingBox.IsInvalidVector(bb.Max))
             throw new ArgumentException("物体的包围盒包含无效值", nameof(obj));
 
         if (_allObjects.Contains(obj))
             return false;
 
-        if (_rootNode.BoundingBox.Contains(obj.BoundingBox) == false)
-        {
-            foreach (var obj2 in _allObjects)
-            {
-                foreach (var objNode in obj2.BelongingNodes)
-                {
-                    if (objNode is OctreeNode<T> node)
-                    {
-                        node.Remove(obj2);
-                    }
-                }
-                obj2.BelongingNodes.Clear();
-            }
-
-            var newBoundingBox = _rootNode.BoundingBox;
-
-            var newSize = Size;
-
-            while (newBoundingBox.Contains(obj.BoundingBox) == false)
-            {
-
-                if (obj.BoundingBox.Max.X > newSize.X / 2 || obj.BoundingBox.Min.X < newSize.X / -2)
-                {
-                    newSize.X = newSize.X * 2;
-                }
-
-                if (obj.BoundingBox.Max.Y > newSize.Y / 2 || obj.BoundingBox.Min.Y < newSize.Y / -2)
-                {
-                    newSize.Y = newSize.Y * 2;
-                }
-
-                if (obj.BoundingBox.Max.Z > newSize.Z / 2 || obj.BoundingBox.Min.Z < newSize.Z / -2)
-                {
-                    newSize.Z = newSize.Z * 2;
-                }
-
-                newBoundingBox = new BoundingBox(new Vector3(newSize.X / -2, newSize.Y / -2, newSize.Z / -2), new Vector3(newSize.X / 2, newSize.Y / 2, newSize.Z / 2));
-            }
-
-            Rebuild(newSize);
-        }
+        EnsureRootContains(bb);
 
         _rootNode.Add(obj);
         _allObjects.Add(obj);
 
-        
         return true;
     }
 
-    private void Rebuild(Vector3 newSize)
-    {
-        _size = newSize;
-        _rootNode = CreateRootNode();
-
-        foreach(var obj in _allObjects)
-        {
-            _rootNode.Add(obj);
-        }
-
-    }
+    /// <summary>
+    /// 检查物体是否已加入八叉树
+    /// </summary>
+    public bool Contains(T obj) => _allObjects.Contains(obj);
 
     /// <summary>
     /// 从八叉树移除物体
@@ -168,7 +174,6 @@ public class Octree<T> where T : IOctreeObject
         if (!_allObjects.Contains(obj))
             return false;
 
-        // 从所有所属节点移除
         foreach (var objNode in obj.BelongingNodes.ToArray())
         {
             if (objNode is OctreeNode<T> node)
@@ -181,7 +186,8 @@ public class Octree<T> where T : IOctreeObject
     }
 
     /// <summary>
-    /// 更新物体在八叉树中的位置（移除后重新添加）
+    /// 更新物体在八叉树中的位置。
+    /// 如果物体仍在所有所属节点内则跳过（快速路径），否则移除后重新添加并检查扩张。
     /// </summary>
     /// <param name="obj">待更新的物体</param>
     /// <exception cref="ArgumentNullException">obj 为 null 时抛出</exception>
@@ -193,51 +199,127 @@ public class Octree<T> where T : IOctreeObject
         if (!_allObjects.Contains(obj))
             throw new KeyNotFoundException("物体未加入八叉树，无法更新");
 
-        // 从所有所属节点移除
+        var bb = obj.BoundingBox;
+        if (bb == null)
+            throw new InvalidOperationException("物体的包围盒在更新时为 null");
+
+        // 快速路径：如果仍在所有所属节点内，无需重插
+        if (StillContainedInCurrentNodes(obj, bb))
+            return;
+
+        // 慢路径：移除后重新添加
         foreach (var objNode in obj.BelongingNodes.ToArray())
         {
             if (objNode is OctreeNode<T> node)
-                node.Remove(obj);
+                node.RemoveFromNodeOnly(obj);
         }
         obj.BelongingNodes.Clear();
 
-        // 重新添加
+        EnsureRootContains(bb);
+
         _rootNode.Add(obj);
     }
 
     /// <summary>
-    /// 空间查询：获取指定包围盒内的所有物体
+    /// 检查物体是否仍被其所有所属节点完全包含。
     /// </summary>
-    /// <param name="queryBox">查询包围盒</param>
-    /// <returns>符合条件的物体集合</returns>
-    /// <exception cref="ArgumentNullException">queryBox 为 null 时抛出</exception>
+    private static bool StillContainedInCurrentNodes(T obj, BoundingBox bb)
+    {
+        var nodes = obj.BelongingNodes;
+        if (nodes.Count == 0)
+            return false; // 异常状态：应重新插入
 
+        foreach (var objNode in nodes)
+        {
+            if (objNode is OctreeNode<T> node)
+            {
+                if (!node.BoundingBox.Contains(bb))
+                    return false;
+            }
+            else
+            {
+                return false; // 非节点引用，异常状态
+            }
+        }
 
+        return true;
+    }
 
     /// <summary>
-    /// 空间查询：获取指定包围盒内的所有物体
+    /// 收缩八叉树尺寸到当前所有物体的紧致包围盒，或回退到初始尺寸。
+    /// 由调用者控制调用时机。
     /// </summary>
-    /// <param name="queryBox">查询包围盒</param>
-    /// <returns>符合条件的物体集合</returns>
-    /// <exception cref="ArgumentNullException">queryBox 为 null 时抛出</exception>
-    public void Query(BoundingBox queryBox, List<T> result)
+    public void Compact()
     {
-        ArgumentNullException.ThrowIfNull(queryBox);
+        if (_allObjects.Count == 0)
+        {
+            // 空树：回退到初始尺寸
+            _size = _initialSize;
+            _rootNode = CreateRootNode();
+            return;
+        }
 
-        _rootNode.Query(queryBox, result);
+        // 计算所有物体的紧致 AABB
+        Vector3 min = new(float.MaxValue);
+        Vector3 max = new(float.MinValue);
+        foreach (var obj in _allObjects)
+        {
+            var bb = obj.BoundingBox;
+            if (bb == null) continue;
+            min = Vector3.Min(min, bb.Min);
+            max = Vector3.Max(max, bb.Max);
+        }
+
+        // 保持以原点为中心的立方体形状
+        float halfSize = MathF.Max(
+            MathF.Max(MathF.Max(MathF.Abs(min.X), MathF.Abs(max.X)),
+                      MathF.Max(MathF.Abs(min.Y), MathF.Abs(max.Y))),
+            MathF.Max(MathF.Abs(min.Z), MathF.Abs(max.Z)));
+        halfSize = MathF.Max(halfSize, 1f);
+
+        var newSize = new Vector3(halfSize * 2);
+
+        // 不比当前小就不重建
+        if (newSize.X >= _size.X && newSize.Y >= _size.Y && newSize.Z >= _size.Z)
+            return;
+
+        // 清理旧 BelongingNodes，Rebuild 会创建全新根节点重新分配
+        foreach (var obj in _allObjects)
+            obj.BelongingNodes.Clear();
+
+        Rebuild(newSize);
     }
 
     /// <summary>
     /// 空间查询：获取指定包围盒内的所有物体
     /// </summary>
+    /// <param name="queryBox">查询包围盒</param>
+    /// <param name="result">查询结果（输出参数）</param>
+    /// <exception cref="ArgumentNullException">queryBox 或 result 为 null 时抛出</exception>
+    /// <remarks>不可重入：Query 的 filter 回调中禁止再次调用 Query。</remarks>
+    public void Query(BoundingBox queryBox, List<T> result)
+    {
+        ArgumentNullException.ThrowIfNull(queryBox);
+        ArgumentNullException.ThrowIfNull(result);
+
+        _queryDedupSet.Clear();
+        _rootNode.Query(queryBox, result, _queryDedupSet);
+    }
+
+    /// <summary>
+    /// 空间查询：通过过滤函数获取符合条件的物体
+    /// </summary>
     /// <param name="filter">判断函数</param>
-    /// <returns>符合条件的物体集合</returns>
-    /// <exception cref="ArgumentNullException">queryBox 为 null 时抛出</exception>
+    /// <param name="result">查询结果（输出参数）</param>
+    /// <exception cref="ArgumentNullException">filter 或 result 为 null 时抛出</exception>
+    /// <remarks>不可重入：filter 回调中禁止再次调用 Query。</remarks>
     public void Query(Func<BoundingBox, bool> filter, List<T> result)
     {
         ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(result);
 
-        _rootNode.Query(filter, result);
+        _queryDedupSet.Clear();
+        _rootNode.Query(filter, result, _queryDedupSet);
     }
 
     /// <summary>
@@ -257,8 +339,19 @@ public class Octree<T> where T : IOctreeObject
 /// <summary>
 /// 八叉树节点（内部实现）
 /// </summary>
-public class OctreeNode<T> where T : IOctreeObject
+internal class OctreeNode<T> where T : IOctreeObject
 {
+    /// <summary>
+    /// 子节点偏移量，8个方向
+    /// </summary>
+    private static readonly Vector3[] Offsets =
+    [
+        new(-1, -1, -1), new( 1, -1, -1),
+        new(-1,  1, -1), new(-1, -1,  1),
+        new( 1,  1, -1), new( 1, -1,  1),
+        new(-1,  1,  1), new( 1,  1,  1)
+    ];
+
     /// <summary>
     /// 所属八叉树
     /// </summary>
@@ -282,16 +375,12 @@ public class OctreeNode<T> where T : IOctreeObject
     /// <summary>
     /// 当前节点存储的物体
     /// </summary>
-    private readonly HashSet<T> _objects = new HashSet<T>();
+    private readonly HashSet<T> _objects = new();
 
     /// <summary>
     /// 初始化八叉树节点
     /// </summary>
-    /// <param name="octree">所属八叉树</param>
-    /// <param name="center">节点中心点</param>
-    /// <param name="size">节点尺寸</param>
-    /// <param name="depth">节点深度</param>
-    public OctreeNode(Octree<T> octree, Vector3 center, Vector3 size, int depth)
+    internal OctreeNode(Octree<T> octree, Vector3 center, Vector3 size, int depth)
     {
         _octree = octree;
         _depth = depth;
@@ -299,12 +388,16 @@ public class OctreeNode<T> where T : IOctreeObject
     }
 
     /// <summary>
-    /// 添加物体到节点（递归）
+    /// 添加物体到节点（递归）。
+    /// 调用者须确保此物体尚未添加到此树，且 BelongingNodes 已清理。
     /// </summary>
-    /// <param name="obj">待添加的物体</param>
-    public void Add(T obj)
+    internal void Add(T obj)
     {
-        // 1. 达到最大深度，直接添加到当前节点
+        Debug.Assert(obj.BoundingBox != null, "物体的包围盒在添加到节点前不能为 null，调用者应在 Octree<T>.Add/Update 中校验");
+
+        var bb = obj.BoundingBox!;
+
+        // 达到最大深度，直接添加到当前节点
         if (_depth >= _octree.MaxDepth)
         {
             _objects.Add(obj);
@@ -312,32 +405,32 @@ public class OctreeNode<T> where T : IOctreeObject
             return;
         }
 
-        // 2. 物体尺寸超过子节点尺寸，直接添加到当前节点
+        // 物体尺寸超过子节点尺寸，直接添加到当前节点
         var childSize = BoundingBox.Size / 2;
-        if (obj.BoundingBox.Size.X > childSize.X + BoundingBox.DefaultEpsilon ||
-            obj.BoundingBox.Size.Y > childSize.Y + BoundingBox.DefaultEpsilon ||
-            obj.BoundingBox.Size.Z > childSize.Z + BoundingBox.DefaultEpsilon)
+        if (bb.Size.X > childSize.X + BoundingBox.DefaultEpsilon ||
+            bb.Size.Y > childSize.Y + BoundingBox.DefaultEpsilon ||
+            bb.Size.Z > childSize.Z + BoundingBox.DefaultEpsilon)
         {
             _objects.Add(obj);
             obj.BelongingNodes.Add(this);
             return;
         }
 
-        // 3. 按需创建子节点
+        // 按需创建子节点
         EnsureChildrenCreated();
 
-        // 4. 将物体添加到所有相交的子节点
+        // 将物体添加到所有相交的子节点
         bool addedToChild = false;
         foreach (var child in _children!)
         {
-            if (child.BoundingBox.Intersects(obj.BoundingBox))
+            if (child.BoundingBox.Intersects(bb))
             {
                 child.Add(obj);
                 addedToChild = true;
             }
         }
 
-        // 5. 无相交子节点时，添加到当前节点
+        // 无相交子节点时，添加到当前节点
         if (!addedToChild)
         {
             _objects.Add(obj);
@@ -346,96 +439,109 @@ public class OctreeNode<T> where T : IOctreeObject
     }
 
     /// <summary>
-    /// 从节点移除物体（递归）
+    /// 从节点移除物体（递归，同时清理 BelongingNodes 中指向此节点的引用）。
+    /// 移除后自动剪枝：如果当前节点及所有子节点均为空，释放子节点。
     /// </summary>
-    /// <param name="obj">待移除的物体</param>
-    public void Remove(T obj)
+    internal void Remove(T obj)
     {
-        // 从当前节点移除
         _objects.Remove(obj);
+        obj.BelongingNodes.Remove(this);
 
-        // 递归移除子节点中的物体
         if (_children != null)
         {
             foreach (var child in _children)
-            {
                 child.Remove(obj);
-            }
+
+            TryPruneChildren();
         }
     }
 
     /// <summary>
-    /// 空间查询（递归）
+    /// 仅从节点的物体集合中移除，不触碰 BelongingNodes。
+    /// 用于 Rebuild / EnsureRootContains 等由调用者统一管理 BelongingNodes 的场景。
+    /// 移除后自动剪枝。
     /// </summary>
-    /// <param name="queryBox">查询包围盒</param>
-    /// <param name="result">查询结果（输出参数）</param>
-    public void Query(BoundingBox queryBox, List<T> result)
+    internal void RemoveFromNodeOnly(T obj)
     {
-        // 当前节点与查询盒无交集，直接返回
+        _objects.Remove(obj);
+
+        if (_children != null)
+        {
+            foreach (var child in _children)
+                child.RemoveFromNodeOnly(obj);
+
+            TryPruneChildren();
+        }
+    }
+
+    /// <summary>
+    /// 如果当前节点及其所有子节点均为空，则停用子节点列表以节省内存和加速遍历。
+    /// </summary>
+    private void TryPruneChildren()
+    {
+        if (_children == null || _objects.Count > 0)
+            return;
+
+        foreach (var child in _children)
+        {
+            if (child._objects.Count > 0 || child._children != null)
+                return;
+        }
+
+        _children = null;
+    }
+
+    /// <summary>
+    /// 空间查询：获取与查询盒相交的物体
+    /// </summary>
+    internal void Query(BoundingBox queryBox, List<T> result, HashSet<T> dedupSet)
+    {
         if (!BoundingBox.Intersects(queryBox))
             return;
 
-        // 添加当前节点中符合条件的物体
         foreach (var obj in _objects)
         {
-            if (obj.BoundingBox.Intersects(queryBox) && !result.Contains(obj))
+            var bb = obj.BoundingBox;
+            if (bb != null && bb.Intersects(queryBox) && dedupSet.Add(obj))
                 result.Add(obj);
         }
 
-        // 递归查询子节点
         if (_children != null)
         {
             foreach (var child in _children)
-            {
-                child.Query(queryBox, result);
-            }
+                child.Query(queryBox, result, dedupSet);
         }
     }
 
-
     /// <summary>
-    /// 空间查询（递归）
+    /// 空间查询：通过过滤函数获取符合条件的物体
     /// </summary>
-    /// <param name="filter">判断函数</param>
-    /// <param name="result">查询结果（输出参数）</param>
-    public void Query(Func<BoundingBox, bool> filter, List<T> result)
+    internal void Query(Func<BoundingBox, bool> filter, List<T> result, HashSet<T> dedupSet)
     {
-        if (filter.Invoke(this.BoundingBox) == false) 
+        if (!filter.Invoke(this.BoundingBox))
             return;
 
-        // 添加当前节点中符合条件的物体
         foreach (var obj in _objects)
         {
-            if (filter.Invoke(obj.BoundingBox) && !result.Contains(obj))
-            {
+            var bb = obj.BoundingBox;
+            if (bb != null && filter.Invoke(bb) && dedupSet.Add(obj))
                 result.Add(obj);
-            }
         }
 
-        // 递归查询子节点
         if (_children != null)
         {
             foreach (var child in _children)
-            {
-                child.Query(filter, result);
-            }
+                child.Query(filter, result, dedupSet);
         }
     }
 
     /// <summary>
-    /// 清空节点所有物体（递归）
+    /// 清空节点所有物体（递归），释放子节点以回收内存。
     /// </summary>
-    public void Clear()
+    internal void Clear()
     {
         _objects.Clear();
-
-        if (_children != null)
-        {
-            foreach (var child in _children)
-            {
-                child.Clear();
-            }
-        }
+        _children = null;
     }
 
     /// <summary>
@@ -451,17 +557,7 @@ public class OctreeNode<T> where T : IOctreeObject
         var childSize = BoundingBox.Size / 2;
         var quarterSize = BoundingBox.Size / 4;
 
-        // 8个子节点的偏移量（±X, ±Y, ±Z）
-        var offsets = new[]
-        {
-            new Vector3(-1, -1, -1), new Vector3(1, -1, -1),
-            new Vector3(-1, 1, -1),  new Vector3(-1, -1, 1),
-            new Vector3(1, 1, -1),   new Vector3(1, -1, 1),
-            new Vector3(-1, 1, 1),   new Vector3(1, 1, 1)
-        };
-
-        // 创建8个子节点
-        foreach (var offset in offsets)
+        foreach (var offset in Offsets)
         {
             var childCenter = center + offset * quarterSize;
             _children.Add(_octree.CreateOctreeNode(childCenter, childSize, _depth + 1));

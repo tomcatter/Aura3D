@@ -37,6 +37,7 @@ internal class BasePass : RenderPass <PBRDeferredPipeline>
         gl.Enable(EnableCap.DepthTest);
         gl.Disable(EnableCap.Blend);
         base.BeforeRender(camera);
+        gl.CullFace(TriangleFace.Back);
     }
 
     public override void Render(Camera camera)
@@ -101,6 +102,25 @@ internal class BasePass : RenderPass <PBRDeferredPipeline>
 
             var emissive = material?.GetTexture("Emissive") ?? defaultEmissive;
             UniformTexture("Texture_Emissive", emissive);
+        }
+
+        if (material != null)
+        {
+            if (material.DoubleSided == false)
+            {
+                gl.Enable(EnableCap.CullFace);
+            }
+            else
+            {
+                gl.Disable(EnableCap.CullFace);
+            }
+
+            UniformFloat("alphaCutoff", material.AlphaCutoff);
+        }
+        else
+        {
+            gl.Enable(EnableCap.CullFace);
+            UniformFloat("alphaCutoff", 0.0f);
         }
 
     }

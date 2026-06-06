@@ -8,6 +8,10 @@ namespace Aura3D.Core.Renderers;
 /// </summary>
 public class BlinnPhongPipeline : RenderPipeline, IRenderPipelineCreateInstance
 {
+    /// <summary>
+    /// Blinn-Phong 管线支持 CSM（级联阴影贴图），为主方向光生成多级联阴影。
+    /// </summary>
+    public override bool SupportsCSM => true;
 
     /// <summary>
     /// 初始化 Blinn-Phong 渲染管线
@@ -35,7 +39,7 @@ public class BlinnPhongPipeline : RenderPipeline, IRenderPipelineCreateInstance
         RegisterRenderPass(new FxaaPass(this, "GammaOutput", "Color"), RenderPassGroup.EveryCamera);
 
         // 调试绘制通道（方向轴、网格等），最后渲染以覆盖在所有内容之上
-        RegisterRenderPass(new DebugDrawPass(this), RenderPassGroup.EveryCamera);
+        RegisterRenderPass(new DebugDrawPass(this, "BaseRenderTarget"), RenderPassGroup.EveryCamera);
 
         RegisterRenderTarget("BaseRenderTarget")
             .AddTexture("Color", TextureFormat.Rgba16f)

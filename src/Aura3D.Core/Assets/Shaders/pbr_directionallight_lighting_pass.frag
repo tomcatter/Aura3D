@@ -1,5 +1,6 @@
 ﻿#version 300 es
 precision highp float;
+precision mediump sampler2DArray;
 //{{defines}}
 
 
@@ -37,9 +38,19 @@ uniform vec3 viewPos;
 uniform vec3 dirLightDirection;
 uniform vec3 dirLightColor;
 uniform float dirLightIntensity;
+#ifdef ENABLE_CSM
+#define MAX_CSM_CASCADES 4
+uniform mat4 dirLightCSMMatrices[MAX_CSM_CASCADES];
+uniform sampler2DArray dirLightCSMMap;
+uniform float dirLightCascadeSplitDepths[MAX_CSM_CASCADES + 1];
+uniform int dirLightCascadeCount;
+#else
 uniform mat4 dirLightshadowMapMatrix;
 uniform sampler2D dirLightshadowMap;
 #endif
+#endif
+
+uniform mat4 viewMatrix;
 
 #ifdef ENABLE_POINT_LIGHT
 uniform vec3 pointLightPosition;
@@ -144,6 +155,36 @@ float CalculateShadow(vec3 fragPos, mat4 shadowMatrix, sampler2D shadowMap)
 		return 1.0;
 }
 
+#ifdef ENABLE_CSM
+	float CalculateCSMShadow(vec3 fragPosWorld, mat4 csmMatrices[4], sampler2DArray csmMap, float splits[5], int cascadeCount)
+	{
+		vec4 viewPos4 = viewMatrix * vec4(fragPosWorld, 1.0);
+		float viewZ = -viewPos4.z;
+
+		int cascade = 0;
+		for (int i = 0; i < cascadeCount - 1; i++) {
+			if (viewZ > splits[i + 1])
+				cascade = i + 1;
+		}
+
+		vec4 shadowCoord = csmMatrices[cascade] * vec4(fragPosWorld, 1.0);
+
+		if (shadowCoord.x < -shadowCoord.w || shadowCoord.x > shadowCoord.w ||
+			shadowCoord.y < -shadowCoord.w || shadowCoord.y > shadowCoord.w ||
+			shadowCoord.z < -shadowCoord.w || shadowCoord.z > shadowCoord.w)
+			return 1.0;
+
+		shadowCoord /= shadowCoord.w;
+		shadowCoord.xyz = shadowCoord.xyz * 0.5 + 0.5;
+
+		float shadowValue = texture(csmMap, vec3(shadowCoord.xy, float(cascade))).x;
+		float bias = 0.001;
+		if (shadowValue < shadowCoord.z - bias)
+			return 0.0;
+		return 1.0;
+	}
+#endif
+
 float CalculatePointLightShadow(vec3 fragPos, vec3 lightPos, mat4 shadowMapMatrices[6], samplerCube shadowMapTexture)
 {
     vec3 fragToLight = fragPos - lightPos;
@@ -195,7 +236,9 @@ vec3 calcSingleDirLight(vec3 N, vec3 V, vec3 fragPos, vec3 albedo, float metalne
     vec3 diffuse = kD * albedo / PI;
     float shadow = 1.0;
 
-#ifdef ENABLE_SHADOWS
+#ifdef ENABLE_CSM
+    shadow = CalculateCSMShadow(fragPos, dirLightCSMMatrices, dirLightCSMMap, dirLightCascadeSplitDepths, dirLightCascadeCount);
+#elif defined(ENABLE_SHADOWS)
     shadow = CalculateShadow(fragPos, dirLightshadowMapMatrix, dirLightshadowMap);
 #endif
     float NdotL = max(dot(N, L), 0.0);

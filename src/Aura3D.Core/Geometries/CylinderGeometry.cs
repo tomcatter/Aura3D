@@ -118,13 +118,13 @@ public class CylinderGeometry : Geometry
                 positions.Add(py);
                 positions.Add(pz);
 
-                // compute normal (consider slope between top and bottom)
+                // compute normal (consider slope between top and bottom), outward facing
                 float slope = (RadiusBottom - RadiusTop) / Height; // rise over run
                 var normal = new Vector3(sin, slope, cos);
                 if (normal.LengthSquared() > 0f) normal = Vector3.Normalize(normal);
-                normals.Add(-1 * normal.X);
-                normals.Add(-1 * normal.Y);
-                normals.Add(-1 * normal.Z);
+                normals.Add(normal.X);
+                normals.Add(normal.Y);
+                normals.Add(normal.Z);
 
                 // uv
                 uvs.Add(u);
@@ -146,21 +146,21 @@ public class CylinderGeometry : Geometry
                 uint c = (uint)indexArray[y + 1][x + 1];
                 uint d = (uint)indexArray[y][x + 1];
 
-                // two triangles (a, b, d) and (b, c, d)
+                // two triangles (a, d, b) and (b, d, c) — CCW from outside
                 indices.Add(a);
-                indices.Add(b);
                 indices.Add(d);
+                indices.Add(b);
 
                 indices.Add(b);
-                indices.Add(c);
                 indices.Add(d);
+                indices.Add(c);
             }
         }
 
         // generate caps if not openEnded
         if (!OpenEnded)
         {
-            // top cap (y = 0) — normal +Y
+            // top cap — normal +Y (outward)
             if (RadiusTop > 0f)
             {
                 int startIndex = index;
@@ -177,7 +177,7 @@ public class CylinderGeometry : Geometry
                     float py = halfHeight;
 
                     positions.Add(px); positions.Add(py); positions.Add(pz);
-                    normals.Add(0f); normals.Add(-1f); normals.Add(0f);
+                    normals.Add(0f); normals.Add(1f); normals.Add(0f);
                     uvs.Add((sin * 0.5f) + 0.5f); uvs.Add((cos * 0.5f) + 0.5f);
                     index++;
                 }
@@ -185,17 +185,17 @@ public class CylinderGeometry : Geometry
                 // center
                 int centerIndex = index++;
                 positions.Add(0f); positions.Add(halfHeight); positions.Add(0f);
-                normals.Add(0f); normals.Add(-1f); normals.Add(0f);
+                normals.Add(0f); normals.Add(1f); normals.Add(0f);
                 uvs.Add(0.5f); uvs.Add(0.5f);
 
                 for (int x = 0; x < RadialSegments; x++)
                 {
                     uint i1 = (uint)(startIndex + x);
                     uint i2 = (uint)(startIndex + ((x + 1) % RadialSegments));
-                    // triangle (center, i2, i1) to have outward-facing winding (top view)
+                    // triangle (center, i1, i2) — CCW from above (outward normal +Y)
                     indices.Add((uint)centerIndex);
-                    indices.Add(i2);
                     indices.Add(i1);
+                    indices.Add(i2);
                 }
             }
 
@@ -216,7 +216,7 @@ public class CylinderGeometry : Geometry
                     float py = -halfHeight;
 
                     positions.Add(px); positions.Add(py); positions.Add(pz);
-                    normals.Add(0f); normals.Add(1f); normals.Add(0f);
+                    normals.Add(0f); normals.Add(-1f); normals.Add(0f);
                     uvs.Add((sin * 0.5f) + 0.5f); uvs.Add((cos * 0.5f) + 0.5f);
                     index++;
                 }
@@ -224,17 +224,17 @@ public class CylinderGeometry : Geometry
                 // center
                 int centerIndex = index++;
                 positions.Add(0f); positions.Add(-halfHeight); positions.Add(0f);
-                normals.Add(0f); normals.Add(1f); normals.Add(0f);
+                normals.Add(0f); normals.Add(-1f); normals.Add(0f);
                 uvs.Add(0.5f); uvs.Add(0.5f);
 
                 for (int x = 0; x < RadialSegments; x++)
                 {
                     uint i1 = (uint)(startIndex + x);
                     uint i2 = (uint)(startIndex + ((x + 1) % RadialSegments));
-                    // triangle (center, i1, i2) to have outward-facing winding (bottom view)
+                    // triangle (center, i2, i1) — CCW from below (outward normal -Y)
                     indices.Add((uint)centerIndex);
-                    indices.Add(i1);
                     indices.Add(i2);
+                    indices.Add(i1);
                 }
             }
         }

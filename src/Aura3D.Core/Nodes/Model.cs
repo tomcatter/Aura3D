@@ -32,7 +32,18 @@ public class Model : Node
     public bool IsSkinnedModel => Skeleton != null;
 
     /// <summary>
-    /// 更新模型状态，主要用于驱动骨骼动画。
+    /// 获取或设置包围盒的扩展量（模型局部空间），用于补偿动画导致的肢体超出。
+    /// </summary>
+    public float BoundingBoxPadding { get; set; }
+
+    /// <summary>
+    /// 获取或设置开发者手动指定的模型局部空间包围盒。
+    /// 非 null 时将覆盖所有自动计算的包围盒。
+    /// </summary>
+    public BoundingBox? CustomBoundingBox { get; set; }
+
+    /// <summary>
+    /// 更新模型状态，驱动骨骼动画。包围盒不再随动画更新，仅在 WorldTransform 变更时刷新。
     /// </summary>
     /// <param name="delta">时间增量（秒）。</param>
     public override void Update(double delta)
@@ -57,8 +68,17 @@ public class Model : Node
     {
         var model = (Model)clone(this, null);
 
+        // 复制包围盒相关属性
+        model.BoundingBoxPadding = BoundingBoxPadding;
+        model.CustomBoundingBox = CustomBoundingBox;
+
         foreach(var mesh in model.Meshes)
         {
+            // clone() 内部将 Mesh.Model 指向了原始 Model，
+            // 此处修正为克隆后的 Model，使 Mesh 能正确访问
+            // 克隆体的 Skeleton / AnimationSampler。
+            mesh.Model = model;
+
             if (copyType == CopyType.SharedResourceData)
             {
                 mesh.Geometry = mesh.Geometry?.Clone();

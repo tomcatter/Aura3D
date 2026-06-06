@@ -112,12 +112,12 @@ public class SphereGeometry : Geometry
                 positions.Add(py);
                 positions.Add(pz);
 
-                // normal = normalized position (for sphere centered at origin)
+                // normal = normalized position (for sphere centered at origin), outward facing
                 var n = new Vector3(px, py, pz);
                 if (n.LengthSquared() > 0f) n = Vector3.Normalize(n);
-                normals.Add(-1 * n.X);
-                normals.Add(-1 * n.Y);
-                normals.Add(-1 * n.Z);
+                normals.Add(n.X);
+                normals.Add(n.Y);
+                normals.Add(n.Z);
 
                 // uv
                 uvs.Add(u);
@@ -135,14 +135,14 @@ public class SphereGeometry : Geometry
                 uint c = (uint)(x + 1 + (xSegments + 1) * (y + 1));
                 uint d = (uint)(x + 1 + (xSegments + 1) * y);
 
-                // two triangles (a, b, d) and (b, c, d)
+                // two triangles (a, d, b) and (b, d, c) — CCW from outside
                 indices.Add(a);
-                indices.Add(b);
                 indices.Add(d);
+                indices.Add(b);
 
                 indices.Add(b);
-                indices.Add(c);
                 indices.Add(d);
+                indices.Add(c);
             }
         }
 

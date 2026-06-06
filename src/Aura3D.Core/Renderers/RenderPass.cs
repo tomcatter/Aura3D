@@ -165,6 +165,11 @@ public partial class RenderPass
         }
 
         var primitive = GetGLPrimitiveType(mesh.Geometry.PrimitiveType);
+
+        if (primitive == GLEnum.Points)
+        {
+            gl.Enable(EnableCap.ProgramPointSize);
+        }
         if (mesh.Geometry.IndicesCount > 0)
             gl.DrawElements(primitive, (uint)mesh.Geometry.IndicesCount, GLEnum.UnsignedInt, (void*)0);
         else
@@ -186,6 +191,12 @@ public partial class RenderPass
         }
 
         var primitive = GetGLPrimitiveType(instancedMesh.PrimitiveType);
+
+
+        if (primitive == GLEnum.Points)
+        {
+            gl.Enable(EnableCap.ProgramPointSize);
+        }
         if (instancedMesh.IndicesCount > 0)
             gl.DrawElementsInstanced(primitive, (uint)instancedMesh.IndicesCount, GLEnum.UnsignedInt, (void*)0, (uint)instancedMesh.InstanceCount);
         else
@@ -421,6 +432,17 @@ public partial class RenderPass
             gl.DeleteProgram(shader.Value.ProgramId);
         }
         Shaders.Clear();
+
+        if (_immVbo != 0)
+        {
+            gl.DeleteBuffer(_immVbo);
+            _immVbo = 0;
+        }
+        if (_immVao != 0)
+        {
+            gl.DeleteVertexArray(_immVao);
+            _immVao = 0;
+        }
     }
 }
 

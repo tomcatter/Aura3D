@@ -1,3 +1,4 @@
+using Aura3D.Core.Math;
 using Silk.NET.OpenGLES;
 using System.Linq;
 using System.Numerics;
@@ -17,6 +18,21 @@ public class Geometry : IGpuResource, IClone<Geometry>
     public bool NeedsUpload { get; set; } = true;
 
     protected Dictionary<string, VertexAttribute> VertexAttributes = new();
+
+    private BoundingBox? boundingBox;
+
+    /// <summary>
+    /// 轴对齐包围盒，由顶点位置数据计算得出。
+    /// </summary>
+    public BoundingBox? BoundingBox
+    {
+        get
+        {
+            if (boundingBox == null)
+                CalcBoundingBox();
+            return boundingBox;
+        }
+    }
 
     /// <summary>
     /// 索引列表
@@ -77,9 +93,15 @@ public class Geometry : IGpuResource, IClone<Geometry>
             Location = location,
             Size = size,
             Data = data,
-            Enabled = (location <= 6)
+            Enabled = (location <= 7)
         });
         VertexAttributeLocations.Add(location);
+
+        NeedsUpload = true;
+
+        // Position 属性变更时清空局部包围盒缓存，下次访问时重建
+        if (name == BuildInVertexAttribute.Position.ToString())
+            boundingBox = null;
     }
 
     public void SetVertexAttribute(BuildInVertexAttribute attribute, uint size, List<float> data)
@@ -102,6 +124,31 @@ public class Geometry : IGpuResource, IClone<Geometry>
     public List<float>? GetAttributeData(BuildInVertexAttribute attribute)
     {
         return GetAttributeData(attribute.ToString());
+    }
+
+    /// <summary>
+    /// 从顶点位置数据计算局部空间包围盒，零堆分配。
+    /// </summary>
+    private void CalcBoundingBox()
+    {
+        var positionData = GetAttributeData(BuildInVertexAttribute.Position);
+        if (positionData == null || positionData.Count < 3)
+        {
+            boundingBox = null;
+            return;
+        }
+
+        Vector3 min = new(float.MaxValue);
+        Vector3 max = new(float.MinValue);
+
+        for (int i = 0; i + 2 < positionData.Count; i += 3)
+        {
+            var v = new Vector3(positionData[i], positionData[i + 1], positionData[i + 2]);
+            min = Vector3.Min(min, v);
+            max = Vector3.Max(max, v);
+        }
+
+        boundingBox = new BoundingBox(min, max);
     }
 
     /// <summary>
@@ -240,7 +287,7 @@ public struct VertexAttribute
     /// </summary>
     public List<float> Data;
     /// <summary>
-    /// 是否启用上传。默认只有 location 0~6 (Position 到 Weights_0) 为 true。
+    /// 是否启用上传。默认只有 location 0~7 (Position 到 Weights_0) 为 true。
     /// </summary>
     public bool Enabled;
 }
@@ -309,56 +356,60 @@ public enum BuildInVertexAttribute
     /// </summary>
     TexCoord_0 = 1,
     /// <summary>
+    /// 顶点颜色
+    /// </summary>
+    Color_0 = 2,
+    /// <summary>
     /// 法线
     /// </summary>
-    Normal = 2,
+    Normal = 3,
     /// <summary>
     /// 切线
     /// </summary>
-    Tangent = 3,
+    Tangent = 4,
     /// <summary>
     /// 副切线
     /// </summary>
-    Bitangent = 4,
+    Bitangent = 5,
     /// <summary>
     /// 第一套关节索引
     /// </summary>
-    Joints_0 = 5,
+    Joints_0 = 6,
     /// <summary>
     /// 第一套权重
     /// </summary>
-    Weights_0 = 6,
+    Weights_0 = 7,
 
-    InstancedTransformColumn0 = 7,
-    InstancedTransformColumn1 = 8,
-    InstancedTransformColumn2 = 9,
-    InstancedTransformColumn3 = 10,
+    InstancedTransformColumn0 = 8,
+    InstancedTransformColumn1 = 9,
+    InstancedTransformColumn2 = 10,
+    InstancedTransformColumn3 = 11,
 
-    InstancedNormalTransformColumn0 = 11,
-    InstancedNormalTransformColumn1 = 12,
-    InstancedNormalTransformColumn2 = 13,
-    InstancedNormalTransformColumn3 = 14,
+    InstancedNormalTransformColumn0 = 12,
+    InstancedNormalTransformColumn1 = 13,
+    InstancedNormalTransformColumn2 = 14,
+    InstancedNormalTransformColumn3 = 15,
 
     /// <summary>
     /// 第二套纹理坐标
     /// </summary>
-    TexCoord_1 = 15,
+    TexCoord_1 = 16,
     /// <summary>
     /// 第三套纹理坐标
     /// </summary>
-    TexCoord_2 = 16,
+    TexCoord_2 = 17,
     /// <summary>
     /// 第四套纹理坐标
     /// </summary>
-    TexCoord_3 = 17,
+    TexCoord_3 = 18,
     /// <summary>
     /// 第二套关节索引
     /// </summary>
-    Joints_1 = 18,
+    Joints_1 = 19,
     /// <summary>
     /// 第二套权重
     /// </summary>
-    Weights_1 = 19,
+    Weights_1 = 20,
 }
 
 /// <summary>

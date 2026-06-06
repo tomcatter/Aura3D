@@ -7,16 +7,17 @@ precision mediump float;
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 texCoord;
-layout(location = 2) in vec3 normal;
-layout(location = 3) in vec3 tangent;
-layout(location = 4) in vec3 bitangent;
-layout(location = 5) in vec4 boneIndices;
-layout(location = 6) in vec4 boneWeights;
+layout(location = 2) in vec4 color;
+layout(location = 3) in vec3 normal;
+layout(location = 4) in vec3 tangent;
+layout(location = 5) in vec3 bitangent;
+layout(location = 6) in vec4 boneIndices;
+layout(location = 7) in vec4 boneWeights;
 
 
 #ifdef INSTANCED_MESH
-layout(location = 7) in mat4 modelMatrix;
-layout(location = 11) in mat4 normalMatrix;
+layout(location = 8) in mat4 modelMatrix;
+layout(location = 12) in mat4 normalMatrix;
 #endif
 
 

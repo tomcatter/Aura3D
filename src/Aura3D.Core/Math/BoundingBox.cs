@@ -278,6 +278,17 @@ public class BoundingBox : IEquatable<BoundingBox>
     }
 
     /// <summary>
+    /// 将包围盒沿所有轴扩展指定量，返回新的包围盒。
+    /// </summary>
+    /// <param name="amount">扩展量（正值扩大，负值收缩）。</param>
+    /// <returns>扩展后的新包围盒。</returns>
+    public BoundingBox Expand(float amount)
+    {
+        var expand = new Vector3(amount);
+        return new BoundingBox(Min - expand, Max + expand);
+    }
+
+    /// <summary>
     /// 比较两个包围盒是否相等（考虑浮点精度）
     /// </summary>
     /// <param name="other">另一个包围盒</param>

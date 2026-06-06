@@ -23,14 +23,27 @@ public class Scene
     private readonly HashSet<Node> _dirtyNodes = [];
 
     /// <summary>
+    /// 复用快照列表，避免每帧分配。
+    /// </summary>
+    private readonly List<Node> _nodesSnapshot = [];
+
+    /// <summary>
     /// 获取场景的主相机。
     /// </summary>
     public Camera MainCamera { get; private set; }
 
     /// <summary>
-    /// 获取或设置场景的静态网格八叉树空间索引。
+    /// 获取或设置场景的主方向光源。
+    /// 主方向光会使用 CSM（级联阴影贴图），其余方向光使用普通单张阴影贴图。
+    /// 设置为 <c>null</c> 时禁用 CSM。
     /// </summary>
-    public Octree<Mesh> StaticMeshOctree { get; set; }
+    public DirectionalLight? MainDirectionalLight { get; set; }
+
+    /// <summary>
+    /// 获取或设置场景的网格八叉树空间索引。
+    /// 包含所有网格（静态与骨骼），包围盒仅在 WorldTransform 变更时更新。
+    /// </summary>
+    public Octree<Mesh> MeshOctree { get; set; }
 
     /// <summary>
     /// 获取或设置场景的渲染管线。
@@ -87,7 +100,7 @@ public class Scene
         PipelineSettings = pipelineSettings ?? new PipelineSettings();
         RenderPipeline = createRenderPipeline(this);
 
-        StaticMeshOctree = new Octree<Mesh>(new System.Numerics.Vector3(100, 100, 100), 5);
+        MeshOctree = new Octree<Mesh>(new System.Numerics.Vector3(100, 100, 100), 5);
 
         MainCamera = new Camera();
 
@@ -95,13 +108,9 @@ public class Scene
 
         AddNode(MainCamera);
 
-        // 添加内置的方向轴和参考网格（默认隐藏）
-        AxisGizmo = new AxisGizmo(1.0f);
-        Grid = new Grid(10.0f, 10);
-        AddNode(AxisGizmo);
-        AddNode(Grid);
-        ShowAxisGizmo = false;
-        ShowGrid = false;
+        // 内置的调试可视化配置（默认隐藏）
+        AxisGizmo = new AxisGizmo();
+        Grid = new Grid();
     }
 
     /// <summary>
@@ -163,7 +172,7 @@ public class Scene
 
         if (node is Mesh mesh)
         {
-            StaticMeshOctree.Add(mesh);
+            MeshOctree.Add(mesh);
         }
 
         foreach (var child in node.Children)
@@ -187,6 +196,8 @@ public class Scene
 
         _nodes.Remove(node);
 
+        _dirtyNodes.Remove(node);
+
         node.CurrentScene = null;
 
         RenderPipeline.RemoveNode(node);
@@ -208,7 +219,7 @@ public class Scene
 
         if (node is Mesh mesh)
         {
-            StaticMeshOctree.Remove(mesh);
+            MeshOctree.Remove(mesh);
         }
 
         foreach (var child in node.Children)
@@ -250,22 +261,14 @@ public class Scene
     {
 
         // 快照避免节点 Update 过程中增删子节点导致集合被修改
-        var nodesSnapshot = new List<Node>(_nodes);
-        foreach(var node in nodesSnapshot)
+        _nodesSnapshot.Clear();
+        _nodesSnapshot.AddRange(_nodes);
+        foreach (var node in _nodesSnapshot)
         {
             if (!_nodes.Contains(node))
                 continue;
 
             node.Update(deltaTime);
-            if (node is Mesh mesh)
-            {
-                if (mesh.IsSkinnedMesh && mesh.AnimationSampler != null && mesh.EnableSkeletonBoundingBox == true)
-                {
-                    mesh.CalcSkeletalMeshBoundingBoxInPlayAnimation();
-                    StaticMeshOctree.Update(mesh);
-                }
-
-            }
         }
 
         foreach (var node in _dirtyNodes)
@@ -274,7 +277,7 @@ public class Scene
                 continue;
             if (node is Mesh mesh)
             {
-                StaticMeshOctree.Update(mesh);
+                MeshOctree.Update(mesh);
             }
         }
         _dirtyNodes.Clear();
@@ -374,7 +377,7 @@ public class Scene
 
     /// <summary>
     /// 判断网格是否可被拾取。
-    /// 排除无几何体、无包围盒、以及调试可视化网格（方向轴、网格线等）。
+    /// 排除无几何体或无包围盒的网格。
     /// </summary>
     private static bool IsPickable(Mesh mesh)
     {
@@ -382,14 +385,6 @@ public class Scene
             return false;
         if (mesh.BoundingBox == null)
             return false;
-
-        // 排除使用调试着色器的可视化辅助网格（方向轴、网格线等）
-        if (mesh.Material != null && mesh.Material.HasShader)
-        {
-            var (debugVert, _) = mesh.Material.GetShaderSource("DebugDrawPass");
-            if (debugVert != null)
-                return false;
-        }
 
         return true;
     }

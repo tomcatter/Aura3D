@@ -634,6 +634,9 @@ public static class ModelLoader
             case "TEXCOORD_3":
                 geometry.SetVertexAttribute(BuildInVertexAttribute.TexCoord_3, 2, columns.TexCoords3.SelectMany(v => new float[] { v.X, v.Y }).ToList());
                 break;
+            case "COLOR_0":
+                geometry.SetVertexAttribute(BuildInVertexAttribute.Color_0, 4, columns.Colors0.SelectMany(v => new float[] { v.X, v.Y, v.Z, v.W }).ToList());
+                break; 
             case "NORMAL":
                 geometry.SetVertexAttribute(BuildInVertexAttribute.Normal, 3, columns.Normals.SelectMany(v => new float[] { v.X, v.Y, v.Z }).ToList());
                 break;

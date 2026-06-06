@@ -222,6 +222,26 @@ public partial class RenderPass
     }
 
     /// <summary>
+    /// 向当前着色器的指定 sampler2DArray Uniform 绑定一个 2D 纹理数组。
+    /// </summary>
+    /// <param name="name">Uniform 变量名称。</param>
+    /// <param name="textureArrayId">OpenGL 纹理数组 ID。</param>
+    public void UniformTextureArray(string name, uint textureArrayId)
+    {
+        if (CurrentShader == null)
+            return;
+        var location = CurrentShader.GetUniformLocation(name, gl);
+        if (location == -1)
+            return;
+        var textureUnit = GLEnum.Texture0 + currentTextureUnit;
+        gl.Uniform1(location, currentTextureUnit);
+        gl.ActiveTexture(textureUnit);
+        gl.BindTexture(GLEnum.Texture2DArray, textureArrayId);
+
+        currentTextureUnit++;
+    }
+
+    /// <summary>
     /// 向当前着色器的指定 Uniform 变量绑定一个立方体贴图。
     /// </summary>
     /// <param name="name">Uniform 变量名称。</param>
