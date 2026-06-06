@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Aura3D.Core.Resources;
 using Aura3D.Core.Renderers;
 using Silk.NET.OpenGLES;
 

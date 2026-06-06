@@ -109,7 +109,18 @@ public class InstancedMesh : Node, IGpuResource
     /// </summary>
     public Dictionary<string, InstanceAttribute> InstanceAttributes { get; } = new();
 
-    public Material? Material { get; set; }
+    private Material? _material;
+
+    public Material? Material
+    {
+        get => _material;
+        set
+        {
+            if (_material == value) return;
+            _material = value;
+            RefreshGpuResources();
+        }
+    }
 
     public bool NeedsUpload { get; set; }
 
@@ -364,6 +375,7 @@ public class InstancedMesh : Node, IGpuResource
 
         if (Material != null)
         {
+            list.Add(Material);
             foreach (var channel in Material.Channels)
             {
                 if (channel.Texture != null && channel.Texture is IGpuResource gpuResource)

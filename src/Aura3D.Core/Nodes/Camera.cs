@@ -95,6 +95,25 @@ public class Camera : Node
     public Matrix4x4 ViewProjection => View * Projection;
 
     /// <summary>
+    /// 将世界空间坐标映射到屏幕控件坐标。返回 null 表示目标在相机后方。
+    /// </summary>
+    /// <param name="worldPos">世界空间位置。</param>
+    /// <returns>控件像素坐标，原点在控件左上角；如果目标在相机后方则返回 null。</returns>
+    public Vector2? WorldToScreen(Vector3 worldPos)
+    {
+        var clip = Vector4.Transform(new Vector4(worldPos, 1), ViewProjection);
+        if (clip.W <= 0) return null;
+
+        float ndcX = clip.X / clip.W;
+        float ndcY = clip.Y / clip.W;
+
+        float screenX = (ndcX + 1f) * 0.5f * RenderTarget.Width;
+        float screenY = (1f - ndcY) * 0.5f * RenderTarget.Height;
+
+        return new Vector2(screenX, screenY);
+    }
+
+    /// <summary>
     /// 获取或设置投影类型。
     /// </summary>
     public ProjectionType ProjectionType { get; set; } = ProjectionType.Perspective; // 投影类型
@@ -102,7 +121,17 @@ public class Camera : Node
     /// <summary>
     /// 获取或设置渲染目标。
     /// </summary>
-    public IRenderTarget RenderTarget { get; set; } = new ControlRenderTarget();
+    public IRenderTarget RenderTarget
+    {
+        get => _renderTarget;
+        set
+        {
+            if (_renderTarget == value) return;
+            _renderTarget = value;
+            RefreshGpuResources();
+        }
+    }
+    private IRenderTarget _renderTarget = new ControlRenderTarget();
 
     /// <summary>
     /// 是否渲染背景。

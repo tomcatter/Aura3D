@@ -560,6 +560,7 @@ public partial class Node
     public void ClearPipelineGpuResources()
     {
         _pipelineGpuResources.Clear();
+        _reportedGpuResources.Clear();
     }
 
 
@@ -573,6 +574,40 @@ public partial class Node
         _pipelineGpuResources[name] = resource;
     }
 
+
+    private HashSet<IGpuResource> _reportedGpuResources = new();
+
+    /// <summary>
+    /// 基于 GetGpuResources() 的差异刷新 GPU 资源注册。
+    /// 比较当前已注册资源与最新 GetGpuResources() 结果，自动增减。
+    /// 仅在节点已加入场景时生效。
+    /// </summary>
+    protected void RefreshGpuResources()
+    {
+        if (CurrentScene == null) return;
+        var newResources = new HashSet<IGpuResource>(GetGpuResources());
+
+        foreach (var r in _reportedGpuResources)
+        {
+            if (!newResources.Contains(r))
+                CurrentScene.RenderPipeline.RemoveGpuResource(r);
+        }
+        foreach (var r in newResources)
+        {
+            if (!_reportedGpuResources.Contains(r))
+                CurrentScene.RenderPipeline.AddGpuResource(r);
+        }
+
+        _reportedGpuResources = newResources;
+    }
+
+    /// <summary>
+    /// 在 AddNode 后初始化已注册资源记录，避免首次 RefreshGpuResources 时重复添加。
+    /// </summary>
+    internal void InitializeReportedGpuResources()
+    {
+        _reportedGpuResources = new HashSet<IGpuResource>(GetGpuResources());
+    }
 
     /// <summary>
     /// 获取当前节点使用的 GPU 资源列表。

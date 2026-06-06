@@ -20,17 +20,9 @@ public class Mesh : Node, IOctreeObject
         get => material;
         set
         {
-            if (value != null && CurrentScene != null)
-            {
-                foreach (var channel in value.Channels)
-                {
-                    if (channel.Texture != null && channel.Texture is IGpuResource gpuResource)
-                    {
-                        CurrentScene.RenderPipeline.AddGpuResource(gpuResource);
-                    }
-                }
-            }
+            if (material == value) return;
             material = value;
+            RefreshGpuResources();
         }
     }
 
@@ -67,11 +59,8 @@ public class Mesh : Node, IOctreeObject
             if (value == geometry)
                 return;
 
-            if (value != null && CurrentScene != null)
-            {
-                CurrentScene.RenderPipeline.AddGpuResource(value);
-            }
             geometry = value;
+            RefreshGpuResources();
 
             UpdateWorldBoundingBox();
 
@@ -86,17 +75,14 @@ public class Mesh : Node, IOctreeObject
     /// <returns>GPU 资源列表。</returns>
     public override List<IGpuResource> GetGpuResources()
     {
-        if (Geometry == null)
-        {
-            return [];
-        }
-        var list = new List<IGpuResource>()
-        {
-            Geometry
-        };
+        var list = new List<IGpuResource>();
+
+        if (Geometry != null)
+            list.Add(Geometry);
 
         if (Material != null)
         {
+            list.Add(Material);
             foreach(var channel in Material.Channels)
             {
                 if (channel.Texture != null && channel.Texture is IGpuResource gpuResource)

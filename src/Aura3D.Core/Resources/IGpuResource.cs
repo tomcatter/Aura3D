@@ -10,7 +10,6 @@ public interface IGpuResource
     public void Upload(GL gl);
 
     public void Destroy(GL gl);
-
 }
 
 public interface IClone<T> : IDeepClone<T> where T : IClone<T>

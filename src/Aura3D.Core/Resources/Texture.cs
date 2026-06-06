@@ -19,10 +19,10 @@ public class Texture : BaseTexture<Texture>, IClone<Texture>, IGpuResource, ITex
         var texture = new Resources.Texture();
         texture.SetLdrData(new List<byte> 
         { 
-            color.R, color.G, color.B, 255,
-            color.R, color.G, color.B,255,
-            color.R, color.G, color.B,255,
-            color.R, color.G, color.B,255,
+            color.R, color.G, color.B, color.A,
+            color.R, color.G, color.B, color.A,
+            color.R, color.G, color.B, color.A,
+            color.R, color.G, color.B, color.A,
         }, 2, 2);
         texture.SetIsGammaSpace(false);
         texture.SetColorFormat(ColorFormat.RGBA);
