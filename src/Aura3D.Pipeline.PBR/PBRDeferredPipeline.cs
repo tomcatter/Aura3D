@@ -87,6 +87,9 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
 
         RegisterRenderPass(new TranslucentPass(this, "GBuffer").SetOutPutRenderTarget("BackgroundRenderTarget"), RenderPassGroup.EveryCamera);
 
+        // Particle pass
+        RegisterRenderPass(new ParticlePass(this).SetOutPutRenderTarget("BackgroundRenderTarget"), RenderPassGroup.EveryCamera);
+
         RegisterRenderPass(new ToneMappingPass(this, "BackgroundRenderTarget", "Color").SetOutPutRenderTarget("GammaOutput"), RenderPassGroup.EveryCamera);
 
         RegisterRenderPass(new GammaCorrectionPass(this, "GammaOutput", "Color").SetOutPutRenderTarget("BackgroundRenderTarget"), RenderPassGroup.EveryCamera);

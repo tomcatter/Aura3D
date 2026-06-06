@@ -30,10 +30,13 @@ public class CelShadingPipeline : RenderPipeline, IRenderPipelineCreateInstance
 		LightLimitChangedEvent += translucentPass.UpdateLightNumLimit;
 
 
+        // Particle pass
+        RegisterRenderPass(new ParticlePass(this).SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
+
         RegisterRenderPass(new GammaCorrectionPass(this, "BaseRenderTarget", "Color").SetOutPutRenderTarget("GammaOutput"), RenderPassGroup.EveryCamera);
         RegisterRenderPass(new FxaaPass(this, "GammaOutput", "Color"), RenderPassGroup.EveryCamera);
 
-        // 调试绘制通道（方向轴、网格等），最后渲染以覆盖在所有内容之上
+        // Debug draw pass
         RegisterRenderPass(new DebugDrawPass(this, "BaseRenderTarget"), RenderPassGroup.EveryCamera);
 
         RegisterRenderTarget("BaseRenderTarget")

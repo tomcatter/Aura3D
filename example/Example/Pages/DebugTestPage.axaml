@@ -7,6 +7,7 @@
              xmlns:core="clr-namespace:Aura3D.Core.Renderers;assembly=Aura3D.Core"
              x:DataType="vm:DebugTestViewModel"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+             xmlns:acr="clr-namespace:Aura3D.Pipeline.PBR;assembly=Aura3D.Pipeline.PBR"
              x:Class="Example.Pages.DebugTestPage">
 
   <Design.DataContext>
@@ -297,7 +298,7 @@
     <!-- ═══════════════════════════════════════════════ 3D Viewport ═══ -->
     <a:Aura3DView x:Name="aura3DView"
                   SceneInitialized="Aura3DView_SceneInitialized"
-                  SceneUpdated="Aura3DView_SceneUpdated">
+                  SceneUpdated="Aura3DView_SceneUpdated" x:TypeArguments="acr:PBRDeferredPipeline" >
       <a:Aura3DView.PipelineSettings>
         <core:PipelineSettings CsmCascadeCount="4"
                                CsmShadowMapResolution="2048"

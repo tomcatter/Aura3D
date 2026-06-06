@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
+using Aura3D.Core.Particles;
 
 namespace Example.Pages;
 
@@ -26,6 +27,7 @@ public partial class DebugTestPage : UserControl
     private PointLight? _pointLight;
     private SpotLight? _spotLight;
     private Mesh? _ground;
+    private ParticleSystem? _particles;
 
     // 模型源
     private readonly List<Model> _staticSourceModels = [];
@@ -210,6 +212,47 @@ public partial class DebugTestPage : UserControl
         view.AddNode(_ground);
         _sceneNodes.Add(_ground);
 
+        // ── Particle System ──
+        _particles = new ParticleSystem
+        {
+            Name = "Fire",
+            MaxParticles = 10000,
+            MaxInstancesPerGroup = 2048,
+            BlendMode = BlendMode.Translucent,
+            Position = new Vector3(0, 1, 5),
+        };
+        _particles.Emitters.Add(new ParticleEmitter
+        {
+            Shape = EmissionShape.Circle,
+            ShapeSize = new Vector3(1.5f, 0, 1.5f),
+            EmissionRate = 300,
+            Lifetime = new RangeFloat(0.5f, 1.5f),
+            Velocity = new RangeVector3(new(-0.3f, 2, -0.3f), new(0.3f, 5, 0.3f)),
+            StartSize = new RangeFloat(0.3f, 0.6f),
+            EndSize = new RangeFloat(0.05f, 0.1f),
+            StartColor = Color.Orange,
+            EndColor = Color.FromArgb(0, 255, 30, 0),
+            Gravity = new Vector3(0, 1, 0),
+            Damping = 0.4f,
+        });
+        _particles.Emitters.Add(new ParticleEmitter
+        {
+            Shape = EmissionShape.Sphere,
+            ShapeSize = new Vector3(0.3f, 0.3f, 0.3f),
+            EmissionRate = 100,
+            Lifetime = new RangeFloat(0.2f, 0.6f),
+            Velocity = new RangeVector3(new(-2, 4, -2), new(2, 8, 2)),
+            StartSize = new RangeFloat(0.03f, 0.06f),
+            EndSize = new RangeFloat(0.01f, 0.02f),
+            StartColor = Color.Yellow,
+            EndColor = Color.FromArgb(0, 255, 200, 0),
+            Gravity = new Vector3(0, -9.8f, 0),
+            Damping = 0.1f,
+        });
+        view.AddNode(_particles);
+        _sceneNodes.Add(_particles);
+        _particles.Play();
+
         // ── 静态模型网格 ──
         int staticCount = _vm.StaticMeshCount;
         if (_staticSourceModels.Count > 0 && staticCount > 0)
@@ -304,7 +347,7 @@ public partial class DebugTestPage : UserControl
         _fpsMax = 0;
 
         _vm.TotalCount = _sceneNodes.Count(n => n is Model);
-        _vm.DetailText = $"Static: {staticCount} | Skinned: {skinnedCount} | Lights: 3";
+        _vm.DetailText = $"Static: {staticCount} | Skinned: {skinnedCount} | Lights: 3 | Particles: {_particles?.ActiveCount ?? 0}";
 
         view.RequestNextFrameRendering();
     }

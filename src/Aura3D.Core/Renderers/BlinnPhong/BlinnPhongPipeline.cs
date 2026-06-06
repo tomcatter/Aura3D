@@ -34,6 +34,8 @@ public class BlinnPhongPipeline : RenderPipeline, IRenderPipelineCreateInstance
         RegisterRenderPass(translucentPass, RenderPassGroup.EveryCamera);
         LightLimitChangedEvent += translucentPass.UpdateLightNumLimit;
 
+        // Particle pass
+        RegisterRenderPass(new ParticlePass(this).SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
 
         RegisterRenderPass(new GammaCorrectionPass(this, "BaseRenderTarget", "Color").SetOutPutRenderTarget("GammaOutput"), RenderPassGroup.EveryCamera);
         RegisterRenderPass(new FxaaPass(this, "GammaOutput", "Color"), RenderPassGroup.EveryCamera);
