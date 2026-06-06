@@ -55,13 +55,46 @@ public partial class DebugTestViewModel : ViewModelBase
     private bool _dirLightEnabled = true;
 
     [ObservableProperty]
+    private float _dirLightRotX = -40f;
+
+    [ObservableProperty]
+    private float _dirLightRotY = -30f;
+
+    [ObservableProperty]
     private bool _pointLightEnabled = true;
+
+    [ObservableProperty]
+    private float _pointLightX = -8f;
+
+    [ObservableProperty]
+    private float _pointLightY = 6f;
+
+    [ObservableProperty]
+    private float _pointLightZ = 3f;
 
     [ObservableProperty]
     private float _pointLightRadius = 10f;
 
     [ObservableProperty]
     private bool _spotLightEnabled = true;
+
+    [ObservableProperty]
+    private float _spotLightX = 8f;
+
+    [ObservableProperty]
+    private float _spotLightY = 6f;
+
+    [ObservableProperty]
+    private float _spotLightZ = 3f;
+
+    [ObservableProperty]
+    private float _spotLightRotX = -75f;
+
+    [ObservableProperty]
+    private float _spotLightRotY = -20f;
+
+    [ObservableProperty]
+    private float _spotLightRotZ;
 
     [ObservableProperty]
     private float _spotLightInnerAngle = 10f;

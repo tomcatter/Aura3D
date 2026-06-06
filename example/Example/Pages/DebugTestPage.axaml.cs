@@ -151,8 +151,9 @@ public partial class DebugTestPage : UserControl
         // ── 光照 ──
         _dirLight = new DirectionalLight
         {
-            RotationDegrees = new Vector3(-40, -30, 0),
-            LightColor = Color.White,
+            RotationDegrees = new Vector3(_vm.DirLightRotX, _vm.DirLightRotY, 0),
+            LightColor = Color.FromArgb(80, 80, 80),
+            Position = new Vector3(0f, 10.0f, 0.0f),
             CastShadow = true
         };
         _dirLight.ShadowConfig.FarPlane = 200;
@@ -164,8 +165,8 @@ public partial class DebugTestPage : UserControl
 
         _pointLight = new PointLight
         {
-            Position = new Vector3(0, 5, 0),
-            LightColor = Color.FromArgb(255, 255, 200, 150),
+            Position = new Vector3(_vm.PointLightX, _vm.PointLightY, _vm.PointLightZ),
+            LightColor = Color.FromArgb(255, 255, 80, 80),
             LuminousIntensity = 5000,
             AttenuationRadius = _vm.PointLightRadius
         };
@@ -174,9 +175,9 @@ public partial class DebugTestPage : UserControl
 
         _spotLight = new SpotLight
         {
-            Position = new Vector3(5, 8, 0),
-            RotationDegrees = new Vector3(-30, -90, 0),
-            LightColor = Color.FromArgb(255, 200, 220, 255),
+            Position = new Vector3(_vm.SpotLightX, _vm.SpotLightY, _vm.SpotLightZ),
+            RotationDegrees = new Vector3(_vm.SpotLightRotX, _vm.SpotLightRotY, _vm.SpotLightRotZ),
+            LightColor = Color.FromArgb(255, 80, 255, 80),
             LuminousIntensity = 10000,
             InnerConeAngleDegree = _vm.SpotLightInnerAngle,
             OuterAngleDegree = _vm.SpotLightOuterAngle,
@@ -330,15 +331,21 @@ public partial class DebugTestPage : UserControl
 
         // Lights
         if (_dirLight != null)
+        {
             _dirLight.Enable = _vm.DirLightEnabled;
+            _dirLight.RotationDegrees = new Vector3(_vm.DirLightRotX, _vm.DirLightRotY, 0);
+        }
         if (_pointLight != null)
         {
             _pointLight.Enable = _vm.PointLightEnabled;
+            _pointLight.Position = new Vector3(_vm.PointLightX, _vm.PointLightY, _vm.PointLightZ);
             _pointLight.AttenuationRadius = _vm.PointLightRadius;
         }
         if (_spotLight != null)
         {
             _spotLight.Enable = _vm.SpotLightEnabled;
+            _spotLight.Position = new Vector3(_vm.SpotLightX, _vm.SpotLightY, _vm.SpotLightZ);
+            _spotLight.RotationDegrees = new Vector3(_vm.SpotLightRotX, _vm.SpotLightRotY, _vm.SpotLightRotZ);
             _spotLight.InnerConeAngleDegree = _vm.SpotLightInnerAngle;
             _spotLight.OuterAngleDegree = _vm.SpotLightOuterAngle;
             _spotLight.AttenuationRadius = _vm.SpotLightRadius;
@@ -406,8 +413,19 @@ public partial class DebugTestPage : UserControl
                 if (_dirLight != null) _dirLight.Enable = _vm.DirLightEnabled;
                 aura3DView.RequestNextFrameRendering();
                 break;
+            case nameof(DebugTestViewModel.DirLightRotX):
+            case nameof(DebugTestViewModel.DirLightRotY):
+                if (_dirLight != null) _dirLight.RotationDegrees = new Vector3(_vm.DirLightRotX, _vm.DirLightRotY, 0);
+                aura3DView.RequestNextFrameRendering();
+                break;
             case nameof(DebugTestViewModel.PointLightEnabled):
                 if (_pointLight != null) _pointLight.Enable = _vm.PointLightEnabled;
+                aura3DView.RequestNextFrameRendering();
+                break;
+            case nameof(DebugTestViewModel.PointLightX):
+            case nameof(DebugTestViewModel.PointLightY):
+            case nameof(DebugTestViewModel.PointLightZ):
+                if (_pointLight != null) _pointLight.Position = new Vector3(_vm.PointLightX, _vm.PointLightY, _vm.PointLightZ);
                 aura3DView.RequestNextFrameRendering();
                 break;
             case nameof(DebugTestViewModel.PointLightRadius):
@@ -416,6 +434,18 @@ public partial class DebugTestPage : UserControl
                 break;
             case nameof(DebugTestViewModel.SpotLightEnabled):
                 if (_spotLight != null) _spotLight.Enable = _vm.SpotLightEnabled;
+                aura3DView.RequestNextFrameRendering();
+                break;
+            case nameof(DebugTestViewModel.SpotLightX):
+            case nameof(DebugTestViewModel.SpotLightY):
+            case nameof(DebugTestViewModel.SpotLightZ):
+                if (_spotLight != null) _spotLight.Position = new Vector3(_vm.SpotLightX, _vm.SpotLightY, _vm.SpotLightZ);
+                aura3DView.RequestNextFrameRendering();
+                break;
+            case nameof(DebugTestViewModel.SpotLightRotX):
+            case nameof(DebugTestViewModel.SpotLightRotY):
+            case nameof(DebugTestViewModel.SpotLightRotZ):
+                if (_spotLight != null) _spotLight.RotationDegrees = new Vector3(_vm.SpotLightRotX, _vm.SpotLightRotY, _vm.SpotLightRotZ);
                 aura3DView.RequestNextFrameRendering();
                 break;
             case nameof(DebugTestViewModel.SpotLightInnerAngle):

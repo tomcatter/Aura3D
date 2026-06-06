@@ -17,15 +17,11 @@
     <ScrollViewer DockPanel.Dock="Right" Width="320">
       <StackPanel Spacing="8" Margin="8">
 
-        <!-- Build + Axes/Grid -->
+        <!-- Build -->
         <Border Theme="{StaticResource CardBorder}" Padding="10">
           <StackPanel Spacing="8">
             <TextBlock FontSize="15" FontWeight="Bold"
                        Foreground="{DynamicResource SemiGrey10}" Text="🔬 Debug Test" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <CheckBox IsChecked="{Binding ShowAxes}" Content="轴" />
-              <CheckBox IsChecked="{Binding ShowGrid}" Content="网格" />
-            </StackPanel>
             <Button x:Name="buildButton" HorizontalAlignment="Stretch"
                     FontWeight="Bold" Command="{Binding BuildCommand}">🔨 Build</Button>
           </StackPanel>
@@ -40,6 +36,8 @@
               <TextBlock Text="Enable All Debug Draw" FontWeight="Bold" />
             </CheckBox>
             <Separator Height="1" Background="#444" Margin="0,2" />
+            <CheckBox IsChecked="{Binding ShowAxes}" Content="坐标轴 (Axes)" />
+            <CheckBox IsChecked="{Binding ShowGrid}" Content="网格 (Grid)" />
             <CheckBox IsChecked="{Binding ShowBoundingBox}" Content="包围盒 (Bounding Box)" />
             <CheckBox IsChecked="{Binding ShowDirectionalLight}" Content="方向光 (Directional Light)" />
             <CheckBox IsChecked="{Binding ShowPointLight}" Content="点光源 (Point Light)" />
@@ -67,16 +65,46 @@
                        Foreground="{DynamicResource SemiGrey10}" Text="💡 Lights" />
 
             <!-- Directional Light -->
-            <Border Background="#2A2A2A" CornerRadius="4" Padding="6">
+            <Border Theme="{StaticResource CardBorder}" CornerRadius="4" Padding="6">
               <StackPanel Spacing="4">
                 <CheckBox IsChecked="{Binding DirLightEnabled}" Content="☀ 方向光" FontWeight="Bold" />
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="旋转X:" FontSize="11" Width="45" VerticalAlignment="Center" />
+                  <Slider Minimum="-180" Maximum="180" Value="{Binding DirLightRotX}" Width="110" />
+                  <TextBlock Text="{Binding DirLightRotX, StringFormat={}{0:F0}°}" FontSize="11"
+                             Width="35" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="旋转Y:" FontSize="11" Width="45" VerticalAlignment="Center" />
+                  <Slider Minimum="-180" Maximum="180" Value="{Binding DirLightRotY}" Width="110" />
+                  <TextBlock Text="{Binding DirLightRotY, StringFormat={}{0:F0}°}" FontSize="11"
+                             Width="35" VerticalAlignment="Center" />
+                </StackPanel>
               </StackPanel>
             </Border>
 
             <!-- Point Light -->
-            <Border Background="#2A2A2A" CornerRadius="4" Padding="6">
+            <Border Theme="{StaticResource CardBorder}" CornerRadius="4" Padding="6">
               <StackPanel Spacing="4">
                 <CheckBox IsChecked="{Binding PointLightEnabled}" Content="💡 点光源" FontWeight="Bold" />
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="X:" FontSize="11" Width="20" VerticalAlignment="Center" />
+                  <Slider Minimum="-30" Maximum="30" Value="{Binding PointLightX}" Width="100" />
+                  <TextBlock Text="{Binding PointLightX, StringFormat={}{0:F0}}" FontSize="11"
+                             Width="30" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="Y:" FontSize="11" Width="20" VerticalAlignment="Center" />
+                  <Slider Minimum="0" Maximum="30" Value="{Binding PointLightY}" Width="100" />
+                  <TextBlock Text="{Binding PointLightY, StringFormat={}{0:F0}}" FontSize="11"
+                             Width="30" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="Z:" FontSize="11" Width="20" VerticalAlignment="Center" />
+                  <Slider Minimum="-30" Maximum="30" Value="{Binding PointLightZ}" Width="100" />
+                  <TextBlock Text="{Binding PointLightZ, StringFormat={}{0:F0}}" FontSize="11"
+                             Width="30" VerticalAlignment="Center" />
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <TextBlock Text="衰减半径:" FontSize="11" Width="60" VerticalAlignment="Center" />
                   <Slider Minimum="1" Maximum="50" Value="{Binding PointLightRadius}" Width="130" />
@@ -87,9 +115,41 @@
             </Border>
 
             <!-- Spot Light -->
-            <Border Background="#2A2A2A" CornerRadius="4" Padding="6">
+            <Border Theme="{StaticResource CardBorder}" CornerRadius="4" Padding="6">
               <StackPanel Spacing="4">
                 <CheckBox IsChecked="{Binding SpotLightEnabled}" Content="🔦 聚光灯" FontWeight="Bold" />
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="X:" FontSize="11" Width="20" VerticalAlignment="Center" />
+                  <Slider Minimum="-30" Maximum="30" Value="{Binding SpotLightX}" Width="100" />
+                  <TextBlock Text="{Binding SpotLightX, StringFormat={}{0:F0}}" FontSize="11"
+                             Width="30" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="Y:" FontSize="11" Width="20" VerticalAlignment="Center" />
+                  <Slider Minimum="0" Maximum="30" Value="{Binding SpotLightY}" Width="100" />
+                  <TextBlock Text="{Binding SpotLightY, StringFormat={}{0:F0}}" FontSize="11"
+                             Width="30" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="Z:" FontSize="11" Width="20" VerticalAlignment="Center" />
+                  <Slider Minimum="-30" Maximum="30" Value="{Binding SpotLightZ}" Width="100" />
+                  <TextBlock Text="{Binding SpotLightZ, StringFormat={}{0:F0}}" FontSize="11"
+                             Width="30" VerticalAlignment="Center" />
+                </StackPanel>
+                <Separator Height="1" Background="#444" Margin="0,2" />
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="旋转X:" FontSize="11" Width="45" VerticalAlignment="Center" />
+                  <Slider Minimum="-180" Maximum="180" Value="{Binding SpotLightRotX}" Width="110" />
+                  <TextBlock Text="{Binding SpotLightRotX, StringFormat={}{0:F0}°}" FontSize="11"
+                             Width="35" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="旋转Y:" FontSize="11" Width="45" VerticalAlignment="Center" />
+                  <Slider Minimum="-180" Maximum="180" Value="{Binding SpotLightRotY}" Width="110" />
+                  <TextBlock Text="{Binding SpotLightRotY, StringFormat={}{0:F0}°}" FontSize="11"
+                             Width="35" VerticalAlignment="Center" />
+                </StackPanel>
+                <Separator Height="1" Background="#444" Margin="0,2" />
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <TextBlock Text="内锥角:" FontSize="11" Width="60" VerticalAlignment="Center" />
                   <Slider Minimum="1" Maximum="60" Value="{Binding SpotLightInnerAngle}" Width="130" />

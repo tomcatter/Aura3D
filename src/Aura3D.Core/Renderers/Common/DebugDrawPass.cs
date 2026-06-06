@@ -251,11 +251,11 @@ public class DebugDrawPass : RenderPass
                 continue;
 
             var dir = light.Forward;
+            var center = light.WorldTransform.Translation;
             var color = light.LightColor;
             UniformVector3("uColor", new Vector3(color.R / 255f, color.G / 255f, color.B / 255f));
 
-            // 在世界原点绘制方向指示器（圆圈 + 箭头）
-            var center = Vector3.Zero;
+            // 在光源位置绘制方向指示器（圆圈 + 箭头）
             float iconRadius = 0.4f;
 
             Begin();
@@ -429,10 +429,11 @@ public class DebugDrawPass : RenderPass
 
             var skeleton = model.Skeleton;
             var sampler = model.AnimationSampler;
-            var modelWorld = model.WorldTransform;
+            var meshWorld = mesh.WorldTransform;
 
             // 使用青色绘制骨骼
             UniformVector3("uColor", new Vector3(0f, 1f, 0.8f));
+            gl.Disable(EnableCap.DepthTest);
 
             Begin();
             foreach (var bone in skeleton.Bones)
@@ -446,10 +447,8 @@ public class DebugDrawPass : RenderPass
                 if (sampler != null && sampler.BonesTransform.Count > bone.Index && sampler.BonesTransform.Count > bone.Parent.Index)
                 {
                     // 使用动画数据计算骨骼位置
-                    var childMatrix = sampler.BonesTransform[bone.Index] * bone.WorldMatrix;
-                    var parentMatrix = sampler.BonesTransform[bone.Parent.Index] * bone.Parent.WorldMatrix;
-                    childPos_modelSpace = childMatrix.Translation;
-                    parentPos_modelSpace = parentMatrix.Translation;
+                    childPos_modelSpace = sampler.BonesTransform[bone.Index].Translation;
+                    parentPos_modelSpace = sampler.BonesTransform[bone.Parent.Index].Translation;
                 }
                 else
                 {
@@ -458,12 +457,13 @@ public class DebugDrawPass : RenderPass
                     parentPos_modelSpace = bone.Parent.WorldMatrix.Translation;
                 }
 
-                var childWorld = Vector3.Transform(childPos_modelSpace, modelWorld);
-                var parentWorld = Vector3.Transform(parentPos_modelSpace, modelWorld);
+                var childWorld = Vector3.Transform(childPos_modelSpace, meshWorld);
+                var parentWorld = Vector3.Transform(parentPos_modelSpace, meshWorld);
 
                 Line(parentWorld, childWorld);
             }
             End();
+            gl.Enable(EnableCap.DepthTest);
         }
     }
 
