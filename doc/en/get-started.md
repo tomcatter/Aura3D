@@ -468,6 +468,73 @@ view.RequestNextFrameRendering();
 
 > Calling `RequestNextFrameRendering()` in `SceneUpdated` enables continuous rendering (common for real-time animation scenes).
 
+## Click Picking
+
+Aura3D supports picking objects in the scene by screen coordinates with triangle-level precision:
+
+```csharp
+// Get all hit results at the screen coordinate (sorted by distance)
+List<PickResult> results = view.Scene.Pick(screenX, screenY, view.MainCamera);
+
+// Get the closest hit result
+PickResult? closest = view.Scene.PickClosest(screenX, screenY, view.MainCamera);
+
+if (closest != null)
+{
+    var node = closest.Value.Node;              // The hit node
+    var worldPos = closest.Value.WorldPosition; // World position of the hit point
+    var distance = closest.Value.Distance;      // Distance to camera
+    var instanceIndex = closest.Value.InstanceIndex; // InstancedMesh instance index (null for regular Mesh)
+}
+```
+
+> Typically called in a mouse click event handler after obtaining screen coordinates. Supports regular Mesh, InstancedMesh, and CPU-skinned skeletal meshes.
+
+## Cascaded Shadow Maps (CSM)
+
+CSM solves directional light shadow aliasing at long distances. Specify the main directional light via `Scene.MainDirectionalLight`:
+
+```csharp
+var dl = new DirectionalLight();
+dl.LightColor = Color.White;
+dl.RotationDegrees = new Vector3(-30, 0, 0);
+dl.CastShadow = true;
+view.AddNode(dl);
+
+// Set as main directional light → uses CSM; other directional lights fall back to a single shadow map
+view.Scene.MainDirectionalLight = dl;
+```
+
+CSM parameters are configured via `PipelineSettings`:
+
+```csharp
+var settings = new PipelineSettings
+{
+    CsmCascadeCount = 4,           // Cascade count (default 3, set to 1 to fall back to single shadow map)
+    CsmSplitLambda = 0.5f,         // Split parameter (0=uniform, 1=logarithmic, default 0.5)
+    CsmShadowMapResolution = 2048, // Per-cascade resolution (default 1024)
+};
+```
+
+> Only pipelines that declare `SupportsCSM = true` (e.g., BlinnPhong) will enable CSM.
+
+## Debug Visualization
+
+Enable built-in debug drawing via `PipelineSettings.Debug`:
+
+```csharp
+var debug = view.Scene.RenderPipeline.Settings.Debug;
+debug.Enable = true;                // Master switch
+debug.ShowBoundingBox = true;       // Show bounding boxes for all meshes
+debug.ShowDirectionalLight = true;  // Show directional light direction lines
+debug.ShowPointLight = true;        // Show point light range spheres
+debug.ShowSpotLight = true;         // Show spot light cones
+debug.ShowCamera = true;            // Show camera frustums
+debug.ShowBone = true;              // Show bone hierarchy
+```
+
+> Can also be configured in XAML via `PipelineSettings`. Debug drawing has additional performance overhead; recommended for development only.
+
 ## Specifying a Rendering Pipeline
 
 Specify a pipeline in XAML via generic type parameter:

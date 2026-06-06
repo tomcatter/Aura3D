@@ -106,6 +106,29 @@ dotnet add package Aura3D.Pipeline.CelShading
 
 The cel shading pipeline works the same as the default — load models, set up lights, and the rendering style automatically becomes toon-shaded.
 
+## Point Cloud Pipeline
+
+The built-in `PointCloudPipeline` is designed for point cloud scenes, ready to use without custom shaders:
+
+```xaml
+<Window
+    xmlns:a="https://github.com/CeSun/Aura3D"
+    xmlns:core="clr-namespace:Aura3D.Core.Renderers;assembly=Aura3D.Core"
+    ...>
+    <a:Aura3DView x:TypeArguments="core:PointCloudPipeline"
+                  x:Name="aura3Dview"
+                  SceneInitialized="OnSceneInitialized"/>
+</Window>
+```
+
+Or set in code:
+
+```csharp
+view.CreateRenderPipeline = scene => new PointCloudPipeline(scene);
+```
+
+The point cloud pipeline includes built-in point size control and color attribute support. The render pass chain is: BackgroundPass → PointCloudPass → GammaCorrectionPass → FxaaPass → DebugDrawPass.
+
 ## Custom Rendering Pipelines
 
 Aura3D's pipeline consists of two components: **RenderPipeline** and **RenderPass**. Custom pipelines require implementing both classes. Developers don't need to deal with VAO/VBO details, but basic rendering knowledge is still required.
@@ -471,9 +494,9 @@ Controls the precision of depth testing — how accurately the GPU determines wh
 
 | Value | Precision | When to use |
 |---|---|---|
-| `DepthComponent16` | 16-bit (default) | Normal scenes |
+| `DepthComponent16` | 16-bit | Normal scenes |
 | `DepthComponent24` | 24-bit | Larger scenes, or when finer depth precision is needed |
-| `DepthComponent32f` | 32-bit floating point | Very large scenes (cities, terrain) where 16-bit isn't enough |
+| `DepthComponent32f` | 32-bit floating point (default) | Very large scenes (cities, terrain) where 16-bit isn't enough |
 
 > If distant objects flicker or appear to overlap incorrectly (a visual artifact known as Z-Fighting[^1]), switch to `DepthComponent32f`.
 
@@ -512,6 +535,41 @@ Areas not directly lit by any light source aren't pitch black — ambient light 
 
 > Note: The PBR pipeline uses physically-based IBL ambient lighting and is not affected by this parameter.
 
+#### Cascaded Shadow Maps (CSM)
+
+Directional light shadows can show aliasing at long distances. CSM solves this by splitting the view frustum into multiple cascades, each with its own shadow map. Only pipelines with `SupportsCSM = true` (e.g., BlinnPhong) will use CSM.
+
+Specify which directional light uses CSM via `Scene.MainDirectionalLight`; other directional lights fall back to a single shadow map:
+
+```csharp
+view.Scene.MainDirectionalLight = dl;  // This directional light uses CSM
+```
+
+| Parameter | Effect | Default |
+|---|---|---|
+| `CsmCascadeCount` | Number of cascades. Set to 1 to fall back to a single shadow map | `3` |
+| `CsmSplitLambda` | PSSM split parameter. 0=uniform, 1=logarithmic | `0.5` |
+| `CsmShadowMapResolution` | Shadow map resolution per cascade | `1024` |
+
+> `CsmCascadeCount` and `CsmShadowMapResolution` must be set before pipeline creation. `CsmSplitLambda` can be adjusted at runtime.
+
+#### Debug Visualization (DebugSettings)
+
+Control built-in debug drawing via `PipelineSettings.Debug` to visualize scene structure during development:
+
+```csharp
+var debug = settings.Debug;
+debug.Enable = true;                // Master switch
+debug.ShowBoundingBox = true;       // Show bounding boxes for all meshes
+debug.ShowDirectionalLight = true;  // Show directional light direction lines
+debug.ShowPointLight = true;        // Show point light range spheres
+debug.ShowSpotLight = true;         // Show spot light cones
+debug.ShowCamera = true;            // Show camera frustums
+debug.ShowBone = true;              // Show bone hierarchy
+```
+
+> All `DebugSettings` properties can be adjusted at runtime. Debug drawing has additional performance overhead; recommended for development only.
+
 #### Feature Toggles
 
 | Parameter | Effect | Default |
@@ -529,11 +587,15 @@ Areas not directly lit by any light source aren't pitch black — ambient light 
 | `DirectionalLightLimit` | ✅ Yes | BlinnPhong / PBR / CelShading |
 | `PointLightLimit` | ✅ Yes | BlinnPhong / PBR / CelShading |
 | `SpotLightLimit` | ✅ Yes | BlinnPhong / PBR / CelShading |
+| `CsmCascadeCount` | ✅ Yes | BlinnPhong |
+| `CsmShadowMapResolution` | ✅ Yes | BlinnPhong |
+| `CsmSplitLambda` | ❌ Anytime | BlinnPhong |
 | `ToneMappingExposure` | ❌ Anytime | BlinnPhong / PBR / CelShading |
 | `BrightnessClamp` | ❌ Anytime | BlinnPhong / PBR / CelShading |
 | `AmbientIntensity` | ❌ Anytime | BlinnPhong / CelShading |
 | `EnableFxaa` | ❌ Anytime | All pipelines |
 | `EnableFrustumCulling` | ❌ Anytime | All pipelines |
+| `Debug.*` | ❌ Anytime | All pipelines |
 
 > The NoLight pipeline skips lighting and tone mapping passes, so light limits, exposure, and ambient parameters have no effect on it.
 

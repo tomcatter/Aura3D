@@ -106,6 +106,29 @@ dotnet add package Aura3D.Pipeline.CelShading
 
 卡通管线使用方式与默认管线一致——加载模型、设置光源后即可看到效果，渲染风格会自动变为卡通着色。
 
+## 点云管线
+
+内置的 `PointCloudPipeline` 专为点云场景设计，无需自定义着色器即可快速使用：
+
+```xaml
+<Window
+    xmlns:a="https://github.com/CeSun/Aura3D"
+    xmlns:core="clr-namespace:Aura3D.Core.Renderers;assembly=Aura3D.Core"
+    ...>
+    <a:Aura3DView x:TypeArguments="core:PointCloudPipeline"
+                  x:Name="aura3Dview"
+                  SceneInitialized="OnSceneInitialized"/>
+</Window>
+```
+
+或通过代码指定：
+
+```csharp
+view.CreateRenderPipeline = scene => new PointCloudPipeline(scene);
+```
+
+点云管线内置了点大小控制和颜色属性支持，渲染流程为：BackgroundPass → PointCloudPass → GammaCorrectionPass → FxaaPass → DebugDrawPass。
+
 ## 自定义渲染管线
 
 Aura3D 的渲染管线由 **RenderPipeline** 和 **RenderPass** 两部分组成。自定义管线时需要实现这两个类。开发者无需处理 VAO、VBO 等底层细节，但仍需具备基本的渲染知识。
@@ -471,9 +494,9 @@ view.Scene.RenderPipeline.Settings.EnableFxaa = false;
 
 | 取值 | 精度 | 适用场景 |
 |---|---|---|
-| `DepthComponent16` | 16 位（默认） | 普通场景 |
+| `DepthComponent16` | 16 位 | 普通场景 |
 | `DepthComponent24` | 24 位 | 较大场景，或需要更精细的深度判断 |
-| `DepthComponent32f` | 32 位浮点 | 超大规模场景（城市、地形），16 位精度不够用时 |
+| `DepthComponent32f` | 32 位浮点（默认） | 超大规模场景（城市、地形），16 位精度不够用时 |
 
 > 如果场景中出现远处物体闪烁、前后叠在一起分不清谁在前面（俗称 Z-Fighting[^1]），说明精度不够，换用 `DepthComponent32f` 即可。
 
@@ -512,6 +535,41 @@ view.Scene.RenderPipeline.Settings.EnableFxaa = false;
 
 > 注意：PBR 管线使用基于物理的 IBL 环境光，不受此参数影响。
 
+#### 级联阴影贴图（CSM）
+
+方向光阴影在远距离下容易出现锯齿，CSM 通过将视锥体分割为多个级联、每级使用独立阴影贴图来解决。仅 `SupportsCSM = true` 的管线生效（如 BlinnPhong）。
+
+通过 `Scene.MainDirectionalLight` 指定哪盏方向光使用 CSM，其余方向光退化为单张阴影贴图：
+
+```csharp
+view.Scene.MainDirectionalLight = dl;  // 该方向光使用 CSM
+```
+
+| 参数 | 作用 | 默认值 |
+|---|---|---|
+| `CsmCascadeCount` | 级联数量。设为 1 回退到单阴影贴图 | `3` |
+| `CsmSplitLambda` | PSSM 分割参数。0=均匀分割，1=对数分割 | `0.5` |
+| `CsmShadowMapResolution` | 每级联的阴影贴图分辨率 | `1024` |
+
+> `CsmCascadeCount` 和 `CsmShadowMapResolution` 需在管线创建前设置。`CsmSplitLambda` 可运行时调整。
+
+#### 调试可视化（DebugSettings）
+
+通过 `PipelineSettings.Debug` 控制内置调试绘制，开发阶段帮助可视化场景结构：
+
+```csharp
+var debug = settings.Debug;
+debug.Enable = true;                // 总开关
+debug.ShowBoundingBox = true;       // 显示所有网格的包围盒
+debug.ShowDirectionalLight = true;  // 显示方向光方向线
+debug.ShowPointLight = true;        // 显示点光范围球
+debug.ShowSpotLight = true;         // 显示聚光灯锥体
+debug.ShowCamera = true;            // 显示摄像机视锥体
+debug.ShowBone = true;              // 显示骨骼层次
+```
+
+> 所有 `DebugSettings` 属性均可运行时随时调整。调试绘制有额外性能开销，建议仅开发时开启。
+
 #### 功能开关
 
 | 参数 | 作用 | 默认值 |
@@ -529,11 +587,15 @@ view.Scene.RenderPipeline.Settings.EnableFxaa = false;
 | `DirectionalLightLimit` | ✅ 是 | BlinnPhong / PBR / CelShading |
 | `PointLightLimit` | ✅ 是 | BlinnPhong / PBR / CelShading |
 | `SpotLightLimit` | ✅ 是 | BlinnPhong / PBR / CelShading |
+| `CsmCascadeCount` | ✅ 是 | BlinnPhong |
+| `CsmShadowMapResolution` | ✅ 是 | BlinnPhong |
+| `CsmSplitLambda` | ❌ 随时可改 | BlinnPhong |
 | `ToneMappingExposure` | ❌ 随时可改 | BlinnPhong / PBR / CelShading |
 | `BrightnessClamp` | ❌ 随时可改 | BlinnPhong / PBR / CelShading |
 | `AmbientIntensity` | ❌ 随时可改 | BlinnPhong / CelShading |
 | `EnableFxaa` | ❌ 随时可改 | 全部 |
 | `EnableFrustumCulling` | ❌ 随时可改 | 全部 |
+| `Debug.*` | ❌ 随时可改 | 全部 |
 
 > NoLight 管线不涉及光照和色调映射，光源、曝光、环境光参数对它无效。
 

@@ -85,18 +85,26 @@ private void OnSceneUpdated(object sender, UpdateRoutedEventArgs e)
 
 > This applies to blend spaces and animation graphs as well: their `Update` automatically updates all internal samplers. If `ExternalUpdate = true`, call `Update` on the top-level sampler.
 
-### Skeleton Bounding Box
+### Skeletal Mesh Bounding Boxes
 
-By default, a model's bounding box doesn't change during animation. If the animation range exceeds the initial bounding box, enable skeleton bounding boxes:
+For performance reasons, skeletal meshes do not recompute bounding boxes per-frame based on bone positions. Instead, a T-Pose bounding box is generated from the static vertex data. If the animation moves the model significantly beyond this box (e.g., walking, jumping), frustum culling may incorrectly cull meshes that are still in view.
+
+Use `Model.BoundingBoxPadding` to expand the bounding box in all directions:
 
 ```csharp
-var mesh = model.Meshes[0];
-mesh.EnableSkeletonBoundingBox = true;
-// Recomputes the bounding box per-frame based on bone positions,
-// ensuring correct frustum culling
+// Expand by 2 units in each direction to prevent culling during animation
+model.BoundingBoxPadding = new Vector3(2f);
 ```
 
-> Has a performance cost. Enable only when animation displacement is large (e.g., walking, jumping).
+Or specify a custom bounding box that fully covers the animation range:
+
+```csharp
+model.CustomBoundingBox = new BoundingBox(
+    new Vector3(-5, 0, -5),
+    new Vector3(5, 10, 5));
+```
+
+> Only set this when needed; static models don't require adjustment.
 
 ### Loading External Animations via Assimp
 

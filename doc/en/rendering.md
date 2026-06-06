@@ -34,6 +34,49 @@ sp.CastShadow = true;
 
 > **Note**: Shadow rendering incurs additional performance cost. Enable only when needed, and set shadow map resolution appropriately.
 
+### Cascaded Shadow Maps (CSM)
+
+Directional light shadows can show aliasing at long distances. CSM solves this by splitting the view frustum into multiple cascades, each with its own shadow map.
+
+```csharp
+var dl = new DirectionalLight();
+dl.CastShadow = true;
+view.AddNode(dl);
+
+// Set as main directional light → uses CSM; other directional lights fall back to a single shadow map
+view.Scene.MainDirectionalLight = dl;
+```
+
+CSM parameters are configured via `PipelineSettings` (see [Rendering Pipelines → Pipeline Settings](./pipelines.md#pipeline-settings-pipelinesettings)):
+
+| Parameter | Default | Description |
+|---|---|---|
+| `CsmCascadeCount` | 3 | Number of cascades; set to 1 to fall back to a single shadow map |
+| `CsmSplitLambda` | 0.5 | Split parameter (0=uniform, 1=logarithmic) |
+| `CsmShadowMapResolution` | 1024 | Shadow map resolution per cascade |
+
+## Click Picking
+
+Pick objects in the scene by screen coordinates with triangle-level precision:
+
+```csharp
+// Call in a mouse click event handler after obtaining screen coordinates
+List<PickResult> results = view.Scene.Pick(screenX, screenY, view.MainCamera);
+
+// Or get only the closest result
+PickResult? closest = view.Scene.PickClosest(screenX, screenY, view.MainCamera);
+
+if (closest != null)
+{
+    var node = closest.Value.Node;              // The hit node
+    var worldPos = closest.Value.WorldPosition; // World position of the hit point
+    var distance = closest.Value.Distance;      // Distance to camera
+    var instanceIndex = closest.Value.InstanceIndex; // InstancedMesh instance index (null for regular Mesh)
+}
+```
+
+Supports precise picking of regular Mesh, InstancedMesh, and CPU-skinned skeletal meshes.
+
 ## Point Cloud Rendering
 
 High-performance point clouds using `InstancedMesh` + single-vertex geometry + custom shaders:

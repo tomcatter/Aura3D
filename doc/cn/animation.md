@@ -85,17 +85,26 @@ private void OnSceneUpdated(object sender, UpdateRoutedEventArgs e)
 
 > 适用于动画混合空间和动画状态图：它们的 `Update` 会自动更新内部所有采样器。如果设置了 `ExternalUpdate = true`，需要手动调用顶层的 `Update`。
 
-### 骨骼包围盒
+### 骨骼网格体包围盒
 
-动画播放时模型的包围盒默认不变。如果动画范围超出初始包围盒，开启骨骼包围盒：
+出于性能考虑，骨骼网格体不会逐帧按骨骼位置重新计算包围盒，而是使用静态顶点数据生成一个 T-Pose 包围盒。如果动画使模型明显超出该包围盒（如行走、跳跃），可能导致视锥体剔除错误地裁剪掉仍在视野内的网格。
+
+可通过 `Model.BoundingBoxPadding` 在各方向扩展包围盒：
 
 ```csharp
-var mesh = model.Meshes[0];
-mesh.EnableSkeletonBoundingBox = true;
-// 开启后每帧根据骨骼位置重新计算包围盒，确保视锥体剔除正确
+// 各方向扩大 2 个单位，确保动画位移不被剔除
+model.BoundingBoxPadding = new Vector3(2f);
 ```
 
-> 有性能开销，仅在动画位移较大（如行走、跳跃）时按需开启。
+或指定自定义包围盒完全覆盖动画范围：
+
+```csharp
+model.CustomBoundingBox = new BoundingBox(
+    new Vector3(-5, 0, -5),
+    new Vector3(5, 10, 5));
+```
+
+> 按需设置即可，静止模型无需调整。
 
 ### 使用 Assimp 加载外部动画
 

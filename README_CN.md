@@ -9,7 +9,7 @@
 </div>
 <br/>
 
-![demo](./doc/images/demo.png)
+![demo](./doc/images/example_debugtest.png)
 
 > [!IMPORTANT]
 > 项目正在积极开发中，欢迎通过 [Issue](https://github.com/CeSun/Aura3d/issues) 提交建议和反馈。
@@ -27,6 +27,7 @@ Aura3D 是一个基于 Avalonia 的 3D 渲染控件，底层使用 OpenGL ES 3.0
 
 ### 光照与阴影
 - **方向光 / 点光 / 聚光灯** — 三种光源类型，支持颜色、衰减半径、阴影投射
+- **CSM 级联阴影** — 主方向光自动使用级联阴影贴图，可配置级联数量和分割方案
 - **Blinn-Phong 光照模型** — 默认前向渲染管线
 - **HDR 环境贴图** — 天空盒 / 环境光背景
 
@@ -45,11 +46,15 @@ Aura3D 是一个基于 Avalonia 的 3D 渲染控件，底层使用 OpenGL ES 3.0
 - **GPU 实例化** — `InstancedMesh`，万级实例高性能渲染
 - **层次化实例化** — `InstancedMeshGroup`（类似 UE 的 HISM），支持增量更新与自动分组
 - **视锥体剔除** — 可开关，大幅减少不可见物体的绘制
-- **点云渲染** — 基于实例化的高性能点云
+- **八叉树空间索引** — 自动扩张的八叉树，高效空间查询与剔除
+- **点云渲染** — 内置 `PointCloudPipeline`，基于实例化的高性能点云渲染
 - **图元渲染** — Triangles、Lines、LineStrip、LineLoop、Points、TriangleStrip、TriangleFan
+- **点击拾取** — `Scene.Pick` / `Scene.PickClosest`，支持三角形级别的 Mesh 和 InstancedMesh 拾取
+- **调试可视化** — 内置调试绘制，支持包围盒、光源、骨骼、摄像机视锥体等可视化
 
 ### 平台
 - **Avalonia** — 支持 Windows、Linux、macOS、Android、iOS
+- **.NET 8+** — 支持 .NET 8.0 和 .NET 10.0
 
 ## 快速开始
 

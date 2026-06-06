@@ -34,6 +34,49 @@ sp.CastShadow = true;
 
 > **注意**：阴影渲染会带来额外性能开销。建议仅在需要时开启，并合理设置 Shadow Map 分辨率。
 
+### 级联阴影贴图（CSM）
+
+方向光阴影在远距离下容易出现锯齿，CSM 通过将视锥体分割为多个级联、每级使用独立阴影贴图来解决。
+
+```csharp
+var dl = new DirectionalLight();
+dl.CastShadow = true;
+view.AddNode(dl);
+
+// 设为主方向光 → 使用 CSM；其余方向光退化为单张阴影贴图
+view.Scene.MainDirectionalLight = dl;
+```
+
+CSM 参数通过 `PipelineSettings` 配置（详见 [渲染管线 → 管线配置](./pipelines.md#管线配置pipelinesettings)）：
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `CsmCascadeCount` | 3 | 级联数量，设为 1 回退单阴影贴图 |
+| `CsmSplitLambda` | 0.5 | 分割参数（0=均匀，1=对数） |
+| `CsmShadowMapResolution` | 1024 | 每级联的阴影贴图分辨率 |
+
+## 点击拾取
+
+通过屏幕坐标拾取场景中的物体，返回三角形级别的精确结果：
+
+```csharp
+// 在鼠标点击事件中获取屏幕坐标后调用
+List<PickResult> results = view.Scene.Pick(screenX, screenY, view.MainCamera);
+
+// 或只取最近的结果
+PickResult? closest = view.Scene.PickClosest(screenX, screenY, view.MainCamera);
+
+if (closest != null)
+{
+    var node = closest.Value.Node;              // 命中的节点
+    var worldPos = closest.Value.WorldPosition; // 命中点的世界坐标
+    var distance = closest.Value.Distance;      // 到摄像机的距离
+    var instanceIndex = closest.Value.InstanceIndex; // InstancedMesh 实例索引（普通 Mesh 为 null）
+}
+```
+
+支持普通 Mesh、InstancedMesh 和 CPU 蒙皮骨骼网格的精确拾取。
+
 ## 点云渲染
 
 利用 `InstancedMesh` + 单顶点几何体 + 自定义着色器实现高性能点云：

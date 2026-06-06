@@ -9,7 +9,7 @@
 </div>
 <br/>
 
-![demo](./doc/images/demo.png)
+![demo](./doc/images/example_debugtest.png)
 
 > [!IMPORTANT]
 > The project is under active development. Feedback and suggestions are welcome via [Issues](https://github.com/CeSun/Aura3d/issues).
@@ -27,6 +27,7 @@ Aura3D is an Avalonia-based 3D rendering control built on OpenGL ES 3.0. It prov
 
 ### Lighting & Shadows
 - **Directional / Point / Spot lights** — Three light types with color, attenuation radius, and shadow casting
+- **CSM cascaded shadows** — Automatic cascaded shadow maps for the main directional light, configurable cascade count and split scheme
 - **Blinn-Phong lighting model** — Default forward rendering pipeline
 - **HDR environment maps** — Skybox / ambient background
 
@@ -45,11 +46,15 @@ Aura3D is an Avalonia-based 3D rendering control built on OpenGL ES 3.0. It prov
 - **GPU instancing** — `InstancedMesh` for high-performance rendering of thousands of instances
 - **Hierarchical instancing** — `InstancedMeshGroup` (similar to UE's HISM) with incremental updates and auto-grouping
 - **Frustum culling** — Togglable, greatly reduces invisible draw calls
-- **Point cloud** — High-performance instancing-based point cloud rendering
+- **Octree spatial index** — Auto-expanding octree for efficient spatial queries and culling
+- **Point cloud** — Built-in `PointCloudPipeline` for high-performance instancing-based point cloud rendering
 - **Primitive rendering** — Triangles, Lines, LineStrip, LineLoop, Points, TriangleStrip, TriangleFan
+- **Click picking** — `Scene.Pick` / `Scene.PickClosest` for triangle-precise picking of Mesh and InstancedMesh
+- **Debug visualization** — Built-in debug drawing for bounding boxes, lights, bones, and camera frustums
 
 ### Platforms
 - **Avalonia** — Windows, Linux, macOS, Android, iOS
+- **.NET 8+** — Supports .NET 8.0 and .NET 10.0
 
 ## Quick Start
 

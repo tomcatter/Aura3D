@@ -468,6 +468,73 @@ view.RequestNextFrameRendering();
 
 > 在 `SceneUpdated` 事件中调用 `RequestNextFrameRendering()` 可以实现连续渲染（常用于需要实时更新的动画场景）。
 
+## 点击拾取
+
+Aura3D 支持通过屏幕坐标拾取场景中的物体，返回三角形级别的精确结果：
+
+```csharp
+// 获取屏幕坐标处的所有命中结果（按距离排序）
+List<PickResult> results = view.Scene.Pick(screenX, screenY, view.MainCamera);
+
+// 获取最近的命中结果
+PickResult? closest = view.Scene.PickClosest(screenX, screenY, view.MainCamera);
+
+if (closest != null)
+{
+    var node = closest.Value.Node;              // 命中的节点
+    var worldPos = closest.Value.WorldPosition; // 命中点的世界坐标
+    var distance = closest.Value.Distance;      // 到摄像机的距离
+    var instanceIndex = closest.Value.InstanceIndex; // InstancedMesh 实例索引（普通 Mesh 为 null）
+}
+```
+
+> 通常在鼠标点击事件中获取屏幕坐标后调用。支持普通 Mesh、InstancedMesh 和 CPU 蒙皮骨骼网格。
+
+## 级联阴影贴图（CSM）
+
+CSM（Cascaded Shadow Maps）用于解决方向光阴影在远距离下的锯齿问题。通过 `Scene.MainDirectionalLight` 指定主方向光：
+
+```csharp
+var dl = new DirectionalLight();
+dl.LightColor = Color.White;
+dl.RotationDegrees = new Vector3(-30, 0, 0);
+dl.CastShadow = true;
+view.AddNode(dl);
+
+// 设为主方向光 → 使用 CSM；其余方向光退化为单张阴影贴图
+view.Scene.MainDirectionalLight = dl;
+```
+
+CSM 参数通过 `PipelineSettings` 配置：
+
+```csharp
+var settings = new PipelineSettings
+{
+    CsmCascadeCount = 4,           // 级联数量（默认 3，设为 1 回退单阴影贴图）
+    CsmSplitLambda = 0.5f,         // 分割参数（0=均匀，1=对数，默认 0.5）
+    CsmShadowMapResolution = 2048, // 每级联的分辨率（默认 1024）
+};
+```
+
+> 仅声明了 `SupportsCSM = true` 的管线（如 BlinnPhong）才会启用 CSM。
+
+## 调试可视化
+
+通过 `PipelineSettings.Debug` 开启内置的调试绘制：
+
+```csharp
+var debug = view.Scene.RenderPipeline.Settings.Debug;
+debug.Enable = true;                // 总开关
+debug.ShowBoundingBox = true;       // 显示所有网格的包围盒
+debug.ShowDirectionalLight = true;  // 显示方向光方向线
+debug.ShowPointLight = true;        // 显示点光范围球
+debug.ShowSpotLight = true;         // 显示聚光灯锥体
+debug.ShowCamera = true;            // 显示摄像机视锥体
+debug.ShowBone = true;              // 显示骨骼层次
+```
+
+> 也可在 XAML 中通过 `PipelineSettings` 配置。调试绘制有额外性能开销，建议仅开发时开启。
+
 ## 使用指定渲染管线
 
 在 XAML 中通过泛型参数指定管线：
