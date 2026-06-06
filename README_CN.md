@@ -11,6 +11,8 @@
 
 ![demo](./doc/images/example_debugtest.png)
 
+**Demo 项目：** [TowerDefense3D](https://github.com/CeSun/TowerDefense3D) — 基于 Aura3D 开发的塔防游戏，展示了引擎的实际应用。
+
 > [!IMPORTANT]
 > 项目正在积极开发中，欢迎通过 [Issue](https://github.com/CeSun/Aura3d/issues) 提交建议和反馈。
 

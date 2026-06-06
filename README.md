@@ -11,6 +11,8 @@
 
 ![demo](./doc/images/example_debugtest.png)
 
+**Demo project:** [TowerDefense3D](https://github.com/CeSun/TowerDefense3D) — A tower defense game built with Aura3D, showcasing real-world usage of the engine.
+
 > [!IMPORTANT]
 > The project is under active development. Feedback and suggestions are welcome via [Issues](https://github.com/CeSun/Aura3d/issues).
 
