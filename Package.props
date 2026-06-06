@@ -8,7 +8,7 @@
     <RepositoryUrl>https://github.com/CeSun/Aura3d</RepositoryUrl>        
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/CeSun/Aura3d</PackageProjectUrl>
-	<MinVerTagPrefix>release/</MinVerTagPrefix>
+	<MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
 
   <ItemGroup>
