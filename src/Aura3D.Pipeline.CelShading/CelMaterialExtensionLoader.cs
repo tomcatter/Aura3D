@@ -65,6 +65,8 @@ public class CelMaterialExtensionLoader : MaterialExtensionLoaderBase
                 logicMaterial.Channels.Add(channel);
                 ++i;
             }
+            logicMaterial.SetParameterValue<int>("RenderType", celExt.RenderType);
+
             logicMaterial.SetParameterValue<float>("_RampIndex0", celExt.RampIndex0);
             logicMaterial.SetParameterValue<float>("_RampIndex1", celExt.RampIndex1);
             logicMaterial.SetParameterValue<float>("_RampIndex2", celExt.RampIndex2);
@@ -133,6 +135,12 @@ public class Aura3DCelExtraProperties : ExtraProperties
     /// 高光渐变纹理索引。
     /// </summary>
     public int SpecularRamp;
+
+    // 渲染类型，0为body，1为face
+    public int RenderType;
+
+    // 材质绑定的骨骼
+    public string BoneName;
 
     // Ramp Index：
     public float RampIndex0;
@@ -207,6 +215,9 @@ public class Aura3DCelExtraProperties : ExtraProperties
     {
         base.SerializeProperties(writer);
 
+        SerializeProperty(writer, "RenderType", RenderType);
+        SerializeProperty(writer, "BoneName", BoneName);
+
         SerializeProperty(writer, "ILM", ILM);
         SerializeProperty(writer, "SDF", SDF);
         SerializeProperty(writer, "ShadowRamp", ShadowRamp);
@@ -235,6 +246,9 @@ public class Aura3DCelExtraProperties : ExtraProperties
     {
         switch (jsonPropertyName)
         {
+            case "RenderType": DeserializePropertyValue<Aura3DCelExtraProperties, int>(ref reader, this, out RenderType); break;
+            case "BoneName": DeserializePropertyValue<Aura3DCelExtraProperties, string>(ref reader, this, out BoneName); break;
+
             case "ILM": DeserializePropertyValue<Aura3DCelExtraProperties, int>(ref reader, this, out ILM); break;
             case "SDF": DeserializePropertyValue<Aura3DCelExtraProperties, int>(ref reader, this, out SDF); break;
             case "ShadowRamp": DeserializePropertyValue<Aura3DCelExtraProperties, int>(ref reader, this, out ShadowRamp); break;

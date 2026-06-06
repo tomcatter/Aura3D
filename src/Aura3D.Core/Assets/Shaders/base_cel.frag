@@ -86,6 +86,8 @@ uniform float ambientIntensity;
 
 uniform vec3 cameraPosition;
 
+uniform mat4 modelMatrix;
+
 #ifdef FACE_RENDER
 // Model matrix for face SDF calculation
 uniform mat4 faceModelMatrix;
@@ -180,9 +182,13 @@ float GetFaceShadow(vec2 uv, vec3 lightDirection)
 {
     // Extract head directions from model matrix
     // The character head bone is rotated, so we extract the transformed axes
-    vec3 headDirWSUp = normalize(-vec3(faceModelMatrix[0][0], faceModelMatrix[1][0], faceModelMatrix[2][0]));
-    vec3 headDirWSForward = normalize(vec3(faceModelMatrix[0][1], faceModelMatrix[1][1], faceModelMatrix[2][1]));
-    vec3 headDirWSRight = normalize(-vec3(faceModelMatrix[0][2], faceModelMatrix[1][2], faceModelMatrix[2][2]));
+    vec3 headDirWSUp = normalize(vec3(faceModelMatrix[1]));
+    vec3 headDirWSForward = -normalize(vec3(faceModelMatrix[2]));
+    vec3 headDirWSRight = normalize(vec3(faceModelMatrix[0]));
+
+	// vec3 headDirWSUp = normalize(vec3(modelMatrix[1]));
+    // vec3 headDirWSForward = -normalize(vec3(modelMatrix[2]));
+    // vec3 headDirWSRight = normalize(vec3(modelMatrix[0]));
 
 
     // Project light direction onto head plane (removing up component)

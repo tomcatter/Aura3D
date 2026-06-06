@@ -64,14 +64,17 @@ public class CelLightPass : RenderPass
         gl.CullFace(TriangleFace.Back);
     }
 
+    // 判断是否是渲染脸部的pass
     private static bool IsMeshFaceRender(Mesh mesh)
     {
         if (mesh.Material == null)
             return false;
-        foreach (var channel in mesh.Material.Channels)
+        if(mesh.Material.TryGetParameterValue<int>("RenderType", out int renderType))
         {
-            if (channel.Name == "SDF" && channel.Texture != null)
+            if(renderType == 1)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -258,6 +261,10 @@ public class CelLightPass : RenderPass
 
         if (mesh.Material != null)
         {
+            if (mesh.Tags.Contains("face"))
+            {
+                UniformMatrix4("faceModelMatrix", mesh.WorldTransform);
+            }
             // 卡通渲染扩展参数
             float tempValue = 0;
             if (mesh.Material.TryGetParameterValue<float>("_RampIndex0", out tempValue))
@@ -301,9 +308,10 @@ public class CelLightPass : RenderPass
                     UniformTexture("SDFTextures", channel.Texture);
                     textureFlags |= (int)CelShadingTextureBit.SDFBit;
 
-                    Matrix4x4 faceM = new Matrix4x4(0, 1, 0, 0,
-                                                    -1, 0, 0, 0,
-                                                    0, 0, -1, 0,
+                    // Todo: 临时在这里设置脸部M矩阵，后期改为绑定骨骼矩阵形式
+                    Matrix4x4 faceM = new Matrix4x4(1, 0, 0, 0,
+                                                    0, 1, 0, 0,
+                                                    0, 0, 1, 0,
                                                     0, 0, 0, 1);
                     UniformMatrix4("faceModelMatrix", faceM);
                 }
