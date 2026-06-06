@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:a="https://github.com/CeSun/Aura3D"
+             xmlns:core="clr-namespace:Aura3D.Core;assembly=Aura3D.Core"
              x:Class="Example.Pages.PointCloudPage">
     <DockPanel>
         <StackPanel Orientation="Vertical" DockPanel.Dock="Top" Margin="10" Spacing="4">
@@ -33,6 +34,7 @@
         </StackPanel>
 
         <a:Aura3DView x:Name="aura3Dview"
+                       x:TypeArguments="core:PointCloudPipeline"
                        SceneInitialized="Aura3DView_SceneInitialized"
                        SceneUpdated="Aura3DView_SceneUpdated"/>
     </DockPanel>
