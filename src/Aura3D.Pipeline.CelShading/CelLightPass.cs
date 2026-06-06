@@ -143,7 +143,7 @@ public class CelLightPass : RenderPass
             {
                 var directionalLight = renderPipeline.DirectionalLights[i];
                 UniformVector3($"DirectionalLights[{i}].direction", directionalLight.Forward);
-                UniformVector3($"DirectionalLights[{i}].color", new Vector3(directionalLight.LightColor.R / 255f, directionalLight.LightColor.G / 255f, directionalLight.LightColor.B / 255f));
+                UniformVector3($"DirectionalLights[{i}].color", new Vector3(directionalLight.LightColor.R / 255f * directionalLight.Intensity, directionalLight.LightColor.G / 255f * directionalLight.Intensity, directionalLight.LightColor.B / 255f * directionalLight.Intensity));
                 UniformFloat($"DirectionalLights[{i}].castShadow", directionalLight.CastShadow ? 1.0f : 0.0f);
 
                 var rt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");

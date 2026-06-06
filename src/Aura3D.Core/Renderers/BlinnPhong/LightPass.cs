@@ -293,7 +293,7 @@ public class LightPass : RenderPass
     private void SetupActiveDirectionalLight(int index, DirectionalLight light)
     {
         UniformVector3(_directionalLightDirectionUniforms[index], light.Forward);
-        UniformVector3(_directionalLightColorUniforms[index], new Vector3(light.LightColor.R / 255f, light.LightColor.G / 255f, light.LightColor.B / 255f));
+        UniformVector3(_directionalLightColorUniforms[index], new Vector3(light.LightColor.R / 255f * light.Intensity, light.LightColor.G / 255f * light.Intensity, light.LightColor.B / 255f * light.Intensity));
         UniformFloat(_directionalLightCastShadowUniforms[index], light.CastShadow ? 1.0f : 0.0f);
 
         var csmData = light.GetPipelineGpuResource<CsmShadowData>(nameof(CsmShadowData));
@@ -373,7 +373,7 @@ public class LightPass : RenderPass
 
     private void SetupActivePointLight(int index, PointLight light, Span<Matrix4x4> shadowViews)
     {
-        UniformVector3(_pointLightColorUniforms[index], new Vector3(light.LightColor.R / 255f, light.LightColor.G / 255f, light.LightColor.B / 255f));
+        UniformVector3(_pointLightColorUniforms[index], new Vector3(light.LightColor.R / 255f * light.Intensity, light.LightColor.G / 255f * light.Intensity, light.LightColor.B / 255f * light.Intensity));
         UniformVector3(_pointLightPositionUniforms[index], light.WorldTransform.Translation);
         UniformFloat(_pointLightRadiusUniforms[index], light.AttenuationRadius);
         UniformFloat(_pointLightSoftRatioUniforms[index], light.SoftRatio);
@@ -440,7 +440,7 @@ public class LightPass : RenderPass
 
     private void SetupActiveSpotLight(int index, SpotLight light)
     {
-        UniformVector3(_spotLightColorUniforms[index], new Vector3(light.LightColor.R / 255f, light.LightColor.G / 255f, light.LightColor.B / 255f));
+        UniformVector3(_spotLightColorUniforms[index], new Vector3(light.LightColor.R / 255f * light.Intensity, light.LightColor.G / 255f * light.Intensity, light.LightColor.B / 255f * light.Intensity));
         UniformVector3(_spotLightPositionUniforms[index], light.WorldTransform.Translation);
         UniformVector3(_spotLightDirectionUniforms[index], light.Forward);
         UniformFloat(_spotLightInnerConeCosUniforms[index], MathF.Cos(light.InnerConeAngleDegree.DegreeToRadians()));
