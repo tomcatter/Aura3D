@@ -282,7 +282,6 @@ public enum BlendMode
     Opaque,
     Masked,
     Translucent,
-    Additive,
 }
 
 public enum ShaderType

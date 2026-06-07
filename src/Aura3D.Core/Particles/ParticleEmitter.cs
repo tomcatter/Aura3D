@@ -26,7 +26,6 @@ public class ParticleEmitter
     public float Damping { get; set; } = 0f;
 
     public ITexture? Texture { get; set; }
-    public BlendMode BlendMode { get; set; } = BlendMode.Translucent;
 
     public float ElapsedTime { get; internal set; }
     public float EmissionAccumulator { get; internal set; }

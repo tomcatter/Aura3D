@@ -9,7 +9,8 @@ namespace Aura3D.Core;
 
 /// <summary>
 /// Particle render pass using billboard quads + GPU instancing.
-/// Register this pass in a pipeline's EveryCameraRenderPasses to enable particle rendering.
+/// Renders directly from ParticleSystem nodes, bypassing the InstancedMesh pipeline.
+/// GPU buffer upload is managed by the render pipeline via IGpuResource.
 /// </summary>
 public class ParticlePass : RenderPass
 {
@@ -28,10 +29,9 @@ public class ParticlePass : RenderPass
 
             layout(location = 0) in vec3 position;
             layout(location = 1) in vec2 texCoord;
-            layout(location = 8) in mat4 instanceTransform;
-            layout(location = 2) in vec4 instanceColor;
-            layout(location = 3) in float instanceSize;
-            layout(location = 4) in float instanceAgeRatio;
+            layout(location = 2) in vec4 instancePosRot;
+            layout(location = 3) in vec4 instanceColor;
+            layout(location = 4) in vec2 instanceSizeAge;
 
             uniform mat4 viewMatrix;
             uniform mat4 projectionMatrix;
@@ -45,23 +45,24 @@ public class ParticlePass : RenderPass
 
             void main()
             {
-                vec3 worldPos = vec3(instanceTransform[3][0], instanceTransform[3][1], instanceTransform[3][2]);
-
-                float cosA = instanceTransform[0][0];
-                float sinA = instanceTransform[1][0];
+                vec3 worldPos = instancePosRot.xyz;
+                float rot = instancePosRot.w;
+                float cosA = cos(rot);
+                float sinA = sin(rot);
 
                 vec3 right = cameraRight * cosA + cameraUp * sinA;
                 vec3 upVal = -cameraRight * sinA + cameraUp * cosA;
 
+                float size = instanceSizeAge.x;
                 vec3 offset = right * position.x + upVal * position.y;
-                vec3 billboardPos = worldPos + offset * instanceSize;
+                vec3 billboardPos = worldPos + offset * size;
 
                 gl_Position = projectionMatrix * viewMatrix * vec4(billboardPos, 1.0);
 
                 vTexCoord = texCoord;
                 vColor = instanceColor;
                 vColor.a *= uGlobalAlpha;
-                vAgeRatio = instanceAgeRatio;
+                vAgeRatio = instanceSizeAge.y;
             }
             """;
 
@@ -97,16 +98,12 @@ public class ParticlePass : RenderPass
                 vec2 uv = vTexCoord;
                 #endif
                 vec4 texColor = texture(uParticleTexture, uv);
-                outColor = texColor * vColor;
+                float a = texColor.a * vColor.a;
+                outColor = vec4(texColor.rgb * vColor.rgb * a, a);
                 #else
                 float dist = length(vTexCoord - 0.5) * 2.0;
-                #ifdef PARTICLE_ADDITIVE
-                float alpha = vColor.a * exp(-dist * dist * 3.0);
-                outColor = vec4(vColor.rgb * alpha, alpha);
-                #else
-                float alpha = 1.0 - smoothstep(0.5, 1.0, dist);
-                outColor = vec4(vColor.rgb, vColor.a * alpha);
-                #endif
+                float a = vColor.a * (1.0 - smoothstep(0.5, 1.0, dist));
+                outColor = vec4(vColor.rgb * a, a);
                 #endif
             }
             """;
@@ -127,28 +124,23 @@ public class ParticlePass : RenderPass
         Matrix4x4.Invert(camera.View, out var invView);
         var camRight = new Vector3(invView.M11, invView.M12, invView.M13);
         var camUp = new Vector3(invView.M21, invView.M22, invView.M23);
+        var camPos = new Vector3(invView.M41, invView.M42, invView.M43);
 
         // Opaque
-        RenderParticleGroups(im => IsMaterialBlendMode(im.Material, BlendMode.Opaque),
-            camera.View, camera.Projection, camRight, camUp, "PARTICLE_OPAQUE");
+        RenderParticleSystems(BlendMode.Opaque,
+            camera.View, camera.Projection, camRight, camUp, camPos, "PARTICLE_OPAQUE");
 
         // Masked
-        RenderParticleGroups(im => IsMaterialBlendMode(im.Material, BlendMode.Masked),
-            camera.View, camera.Projection, camRight, camUp, "PARTICLE_MASKED");
+        RenderParticleSystems(BlendMode.Masked,
+            camera.View, camera.Projection, camRight, camUp, camPos, "PARTICLE_MASKED");
 
-        // Translucent
+        // Translucent (premultiplied alpha, back-to-front sorted)
         gl.Enable(EnableCap.Blend);
-        gl.BlendFunc(GLEnum.SrcAlpha, GLEnum.OneMinusSrcAlpha);
+        gl.BlendFunc(GLEnum.One, GLEnum.OneMinusSrcAlpha);
         gl.DepthMask(false);
 
-        RenderParticleGroups(im => IsParticleMesh(im) && IsMaterialBlendMode(im.Material, BlendMode.Translucent),
-            camera.View, camera.Projection, camRight, camUp, "PARTICLE_TRANSLUCENT");
-
-        // Additive
-        gl.BlendFunc(GLEnum.SrcAlpha, GLEnum.One);
-
-        RenderParticleGroups(im => IsParticleMesh(im) && IsMaterialBlendMode(im.Material, BlendMode.Additive),
-            camera.View, camera.Projection, camRight, camUp, "PARTICLE_ADDITIVE");
+        RenderParticleSystems(BlendMode.Translucent,
+            camera.View, camera.Projection, camRight, camUp, camPos, "PARTICLE_TRANSLUCENT");
 
         gl.Enable(EnableCap.DepthTest);
         gl.DepthMask(true);
@@ -157,21 +149,38 @@ public class ParticlePass : RenderPass
 
     public override void AfterRender(Camera camera) { }
 
-    private void RenderParticleGroups(
-        Func<InstancedMesh, bool> filter, Matrix4x4 view, Matrix4x4 proj,
-        Vector3 camRight, Vector3 camUp, string baseDefine)
+    private void RenderParticleSystems(
+        BlendMode blendMode, Matrix4x4 view, Matrix4x4 proj,
+        Vector3 camRight, Vector3 camUp, Vector3 camPos, string baseDefine)
     {
-        foreach (var im in renderPipeline.InstancedMeshes)
+        // Collect matching systems
+        var systems = new List<ParticleSystem>();
+        foreach (var ps in renderPipeline.ParticleSystems)
         {
-            if (!im.Enable || im.InstanceCount == 0) continue;
-            if (!IsParticleMesh(im)) continue;
-            if (!filter(im)) continue;
+            if (!ps.Enable || !ps.IsPlaying || ps.ActiveCount == 0) continue;
+            if (ps.BlendMode != blendMode) continue;
+            systems.Add(ps);
+        }
 
-            var mat = im.Material;
-            bool hasTex = mat != null
-                && mat.TryGetParameterValue<ITexture>("uParticleTexture", out _);
-            bool hasFlipbook = mat != null
-                && mat.TryGetParameterValue<Vector2>("uFlipbookTiles", out _);
+        // Sort systems back-to-front by center distance to camera (for correct inter-system blending)
+        if (blendMode == BlendMode.Translucent)
+        {
+            systems.Sort((a, b) =>
+            {
+                float da = Vector3.DistanceSquared(a.WorldTransform.Translation, camPos);
+                float db = Vector3.DistanceSquared(b.WorldTransform.Translation, camPos);
+                return db.CompareTo(da);
+            });
+        }
+
+        foreach (var ps in systems)
+        {
+
+            // Sort translucent particles back-to-front
+            ps.SortByDistance(camPos);
+
+            bool hasTex = ps.ParticleTexture != null;
+            bool hasFlipbook = hasTex && (ps.FlipbookTiles.X > 1f || ps.FlipbookTiles.Y > 1f);
 
             if (hasTex && hasFlipbook)
                 UseShader(baseDefine, "PARTICLE_TEXTURE", "PARTICLE_FLIPBOOK");
@@ -180,20 +189,23 @@ public class ParticlePass : RenderPass
             else
                 UseShader(baseDefine);
 
-            UseShader_Internal(mat);
-            RenderParticleGroup(im, view, proj, camRight, camUp);
+            UseShader_Internal();
+            SetCommonUniforms(view, proj, camRight, camUp);
+
+            if (hasTex)
+                UniformTexture("uParticleTexture", ps.ParticleTexture!);
+
+            if (hasFlipbook)
+                UniformVector2("uFlipbookTiles", ps.FlipbookTiles);
+
+            // Repack sorted data and upload, then draw
+            ps.GpuBuffer.SetParticleData(ps.Particles!, ps.ActiveCount);
+            ps.GpuBuffer.Upload(gl!);
+            ps.GpuBuffer.Draw(gl!);
         }
     }
 
-    private static bool IsParticleMesh(InstancedMesh im)
-    {
-        return im.InstanceAttributes.ContainsKey(
-            ((BuildInVertexAttribute)ParticleRenderData.InstanceSizeLocation).ToString());
-    }
-
-    public unsafe void RenderParticleGroup(
-        InstancedMesh im, Matrix4x4 view, Matrix4x4 proj,
-        Vector3 camRight, Vector3 camUp)
+    private void SetCommonUniforms(Matrix4x4 view, Matrix4x4 proj, Vector3 camRight, Vector3 camUp)
     {
         ClearTextureUnit();
         UniformMatrix4("viewMatrix", view);
@@ -201,25 +213,5 @@ public class ParticlePass : RenderPass
         UniformVector3("cameraRight", camRight);
         UniformVector3("cameraUp", camUp);
         UniformFloat("uGlobalAlpha", GlobalAlpha);
-
-        if (im.Material != null && im.Material.TryGetParameterValue<ITexture>("uParticleTexture", out var tex))
-            UniformTexture("uParticleTexture", tex);
-
-        if (im.Material != null && im.Material.TryGetParameterValue<Vector2>("uFlipbookTiles", out var tiles))
-            UniformVector2("uFlipbookTiles", tiles);
-
-        if (im.Material != null && im.Material.HasShader)
-        {
-            var cb = im.Material.GetShaderPassParametersCallback(ShaderName);
-            cb?.Invoke(this);
-        }
-
-        gl.BindVertexArray(im.Vao);
-
-        if (im.IndicesCount > 0)
-            gl.DrawElementsInstanced(GLEnum.Triangles, (uint)im.IndicesCount,
-                GLEnum.UnsignedInt, (void*)0, (uint)im.InstanceCount);
-        else
-            gl.DrawArraysInstanced(GLEnum.Triangles, 0, (uint)im.VertexCount, (uint)im.InstanceCount);
     }
 }

@@ -70,6 +70,8 @@ public abstract partial class RenderPipeline
 
     public List<InstancedMesh> InstancedMeshes { get; } = new List<InstancedMesh>();
 
+    public List<ParticleSystem> ParticleSystems { get; } = new List<ParticleSystem>();
+
     /// <summary>
     /// 获取场景中的所有相机节点列表。
     /// </summary>
@@ -349,6 +351,9 @@ public abstract partial class RenderPipeline
             case DirectionalLight directionalLight:
                 DirectionalLights.Add(directionalLight);
                 break;
+            case ParticleSystem particleSystem:
+                ParticleSystems.Add(particleSystem);
+                break;
         }
 
         foreach (var gpuResource in node.GetGpuResources())
@@ -384,6 +389,9 @@ public abstract partial class RenderPipeline
                 break;
             case DirectionalLight directionalLight:
                 DirectionalLights.Remove(directionalLight);
+                break;
+            case ParticleSystem particleSystem:
+                ParticleSystems.Remove(particleSystem);
                 break;
         }
         foreach(var gpuResource in node.GetGpuResources())

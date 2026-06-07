@@ -15,14 +15,18 @@ public class ParticleSystem : Node
         set { if (!_isPlaying) _maxParticles = value; }
     }
 
-    public int MaxInstancesPerGroup { get; set; } = 2048;
-    public List<ParticleEmitter> Emitters { get; } = new();
     public BlendMode BlendMode { get; set; } = BlendMode.Translucent;
     public ITexture? ParticleTexture { get; set; }
     public Vector2 FlipbookTiles { get; set; } = Vector2.One;
     public bool IsPlaying => _isPlaying;
     public int ActiveCount => _activeCount;
-    public int GroupCount => _renderGroups.Count;
+    public List<ParticleEmitter> Emitters { get; } = new();
+
+    /// <summary>Internal: CPU-side particle data array, accessed by ParticlePass for rendering.</summary>
+    internal ParticleData[] Particles => _particles;
+
+    /// <summary>Internal: GPU buffer, accessed by ParticlePass for drawing.</summary>
+    internal ParticleGpuBuffer GpuBuffer => _gpuBuffer;
 
     public void Play()
     {
@@ -33,14 +37,12 @@ public class ParticleSystem : Node
         _isPaused = false;
         _rng = new Random();
         foreach (var e in Emitters) { e.ElapsedTime = 0; e.EmissionAccumulator = 0; }
-        _needsRebuild = true;
     }
 
     public void Stop()
     {
         _isPlaying = false; _isPaused = false; _activeCount = 0;
         _particles = Array.Empty<ParticleData>();
-        DestroyRenderGroups();
     }
 
     public void Pause() => _isPaused = !_isPaused;
@@ -53,14 +55,29 @@ public class ParticleSystem : Node
 
         ParticleSimulation.Update(_particles!, ref _activeCount, _maxParticles, Emitters, dt, _rng, WorldTransform.Translation);
 
-        if (_needsRebuild) { RebuildRenderGroups(); _needsRebuild = false; }
-        else TryIncrementalUpdate();
+        _gpuBuffer.SetParticleData(_particles, _activeCount);
+    }
+
+    /// <summary>
+    /// Sort particles by distance to camera (back-to-front) for correct alpha blending.
+    /// Called by ParticlePass during rendering.
+    /// </summary>
+    internal void SortByDistance(Vector3 camPos)
+    {
+        if (_activeCount <= 1 || BlendMode == BlendMode.Opaque || BlendMode == BlendMode.Masked) return;
+        int n = _activeCount;
+        var camPosLocal = camPos;
+        System.Array.Sort(_particles!, 0, n, Comparer<ParticleData>.Create((a, b) =>
+        {
+            float da = Vector3.DistanceSquared(a.Position, camPosLocal);
+            float db = Vector3.DistanceSquared(b.Position, camPosLocal);
+            return db.CompareTo(da);
+        }));
     }
 
     public override List<IGpuResource> GetGpuResources()
     {
-        var list = new List<IGpuResource>();
-        foreach (var g in _renderGroups) list.AddRange(g.GetGpuResources());
+        var list = new List<IGpuResource> { _gpuBuffer };
         if (ParticleTexture is IGpuResource gr) list.Add(gr);
         return list;
     }
@@ -68,99 +85,7 @@ public class ParticleSystem : Node
     private int _maxParticles = 10000;
     private ParticleData[] _particles = Array.Empty<ParticleData>();
     private int _activeCount;
-    private bool _isPlaying, _isPaused, _needsRebuild;
+    private bool _isPlaying, _isPaused;
     private Random _rng = new();
-    private readonly List<InstancedMesh> _renderGroups = new();
-    private readonly List<Matrix4x4> _transformsBuf = new();
-    private readonly List<Vector4> _colorsBuf = new();
-    private readonly List<float> _sizesBuf = new();
-    private readonly List<float> _ageRatiosBuf = new();
-    private int _lastRebuildActiveCount;
-
-    private void RebuildRenderGroups()
-    {
-        DestroyRenderGroups();
-        if (_activeCount == 0) return;
-
-        var sharedGeo = ParticleRenderData.GetSharedBillboardGeometry();
-        var material = CreateMaterial();
-        int groupCount = (_activeCount + MaxInstancesPerGroup - 1) / MaxInstancesPerGroup;
-
-        for (int g = 0; g < groupCount; g++)
-        {
-            int start = g * MaxInstancesPerGroup;
-            int count = System.Math.Min(MaxInstancesPerGroup, _activeCount - start);
-
-            _transformsBuf.Clear(); _colorsBuf.Clear(); _sizesBuf.Clear(); _ageRatiosBuf.Clear();
-            for (int i = 0; i < count; i++)
-            {
-                ref var p = ref _particles[start + i];
-                _transformsBuf.Add(Matrix4x4.CreateFromYawPitchRoll(0, 0, p.Rotation)
-                                  * Matrix4x4.CreateTranslation(p.Position));
-                _colorsBuf.Add(p.CurrentColor);
-                _sizesBuf.Add(p.CurrentSize);
-                _ageRatiosBuf.Add(p.AgeRatio);
-            }
-
-            var im = ParticleRenderData.CreateBillboardInstancedMesh(
-                sharedGeo.DeepClone(), material?.DeepClone(), $"{Name}_G{g}");
-
-            for (int i = 0; i < count; i++) im.AddInstance(_transformsBuf[i]);
-            ParticleRenderData.SetParticleInstanceAttributes(im, _colorsBuf, _sizesBuf, _ageRatiosBuf);
-
-            AddChild(im, AttachToParentRule.KeepWorld);
-            _renderGroups.Add(im);
-        }
-        _lastRebuildActiveCount = _activeCount;
-    }
-
-    private void TryIncrementalUpdate()
-    {
-        if (_activeCount != _lastRebuildActiveCount) { _needsRebuild = true; return; }
-
-        for (int g = 0; g < _renderGroups.Count; g++)
-        {
-            int start = g * MaxInstancesPerGroup;
-            int count = System.Math.Min(MaxInstancesPerGroup, _activeCount - start);
-            var group = _renderGroups[g];
-
-            for (int i = 0; i < count; i++)
-            {
-                ref var p = ref _particles[start + i];
-                group.UpdateInstance(i, Matrix4x4.CreateFromYawPitchRoll(0, 0, p.Rotation)
-                                        * Matrix4x4.CreateTranslation(p.Position));
-            }
-
-            _colorsBuf.Clear(); _sizesBuf.Clear(); _ageRatiosBuf.Clear();
-            for (int i = 0; i < count; i++)
-            {
-                ref var p = ref _particles[start + i];
-                _colorsBuf.Add(p.CurrentColor);
-                _sizesBuf.Add(p.CurrentSize);
-                _ageRatiosBuf.Add(p.AgeRatio);
-            }
-            ParticleRenderData.SetParticleInstanceAttributes(group, _colorsBuf, _sizesBuf, _ageRatiosBuf);
-        }
-    }
-
-    private void DestroyRenderGroups()
-    {
-        foreach (var g in _renderGroups)
-        { if (_children.Contains(g)) RemoveChild(g, AttachToParentRule.KeepWorld); }
-        _renderGroups.Clear();
-        _needsRebuild = true;
-    }
-
-    private Material CreateMaterial()
-    {
-        var mat = new Material { BlendMode = BlendMode };
-        if (ParticleTexture != null)
-        {
-            mat.SetParameterValue("uParticleTexture", ParticleTexture);
-            mat.SetTexture("uParticleTexture", ParticleTexture);
-            if (FlipbookTiles.X > 1f || FlipbookTiles.Y > 1f)
-                mat.SetParameterValue("uFlipbookTiles", FlipbookTiles);
-        }
-        return mat;
-    }
+    private readonly ParticleGpuBuffer _gpuBuffer = new();
 }

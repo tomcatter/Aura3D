@@ -69,7 +69,7 @@ public static class ParticleSimulation
             var g = em?.Gravity ?? Vector3.Zero;
             var d = em?.Damping ?? 0f;
             r.Velocity += g * dt;
-            r.Velocity *= 1f - d * dt;
+            r.Velocity *= MathF.Max(0f, 1f - d * dt);
             r.Position += r.Velocity * dt;
             r.Rotation += r.AngularVelocity * dt;
             r.Age += dt;

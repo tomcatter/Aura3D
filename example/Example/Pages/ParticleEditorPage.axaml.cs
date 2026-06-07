@@ -67,7 +67,6 @@ public partial class ParticleEditorPage : UserControl
         {
             Name = "EditorEmitter",
             MaxParticles = _vm.MaxParticles,
-            MaxInstancesPerGroup = 2048,
             BlendMode = BlendMode.Translucent,
             Position = new Vector3(_vm.PosX, _vm.PosY, _vm.PosZ),
         };
@@ -115,7 +114,6 @@ public partial class ParticleEditorPage : UserControl
             AngularVelocity = new RangeFloat(_vm.AngularVelocityMin, _vm.AngularVelocityMax),
             Gravity = new Vector3(0, _vm.GravityY, 0),
             Damping = _vm.Damping,
-            BlendMode = BlendMode.Translucent,
         };
         emitters.Add(em);
     }
@@ -141,8 +139,7 @@ public partial class ParticleEditorPage : UserControl
         _vm.FpsBarColor = fps switch { < 30 => "#FF6B6B", < 60 => "#FFD93D", _ => "#6BCB77" };
 
         var pc = _ps?.ActiveCount ?? 0;
-        var gc = _ps?.GroupCount ?? 0;
-        _vm.DetailText = $"Particles: {pc}  |  Groups: {gc}  |  Pos: ({_vm.PosX:F1}, {_vm.PosY:F1}, {_vm.PosZ:F1})";
+        _vm.DetailText = $"Particles: {pc}  |  Pos: ({_vm.PosX:F1}, {_vm.PosY:F1}, {_vm.PosZ:F1})";
 
         aura3DView.RequestNextFrameRendering();
     }

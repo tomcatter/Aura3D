@@ -29,9 +29,7 @@ public partial class DebugTestPage : UserControl
     private SpotLight? _spotLight;
     private Mesh? _ground;
     private ParticleSystem? _particles;
-    private ParticleSystem? _smokeParticles;
     private Texture? _fireTexture;
-    private Texture? _smokeTexture;
     private Node? _fireGroup;
 
     // 模型源
@@ -155,7 +153,6 @@ public partial class DebugTestPage : UserControl
         _spotLight = null;
         _ground = null;
         _particles = null;
-        _smokeParticles = null;
         _fireGroup = null;
 
         // ── 光照 ──
@@ -247,10 +244,9 @@ public partial class DebugTestPage : UserControl
         {
             Name = "Flame",
             MaxParticles = 10000,
-            MaxInstancesPerGroup = 2048,
-            BlendMode = BlendMode.Additive,
+            BlendMode = BlendMode.Translucent,
             ParticleTexture = _fireTexture,
-            FlipbookTiles = new Vector2(6, 6),
+            FlipbookTiles = new Vector2(8, 8),
         };
 
         _particles.Emitters.Add(new ParticleEmitter
@@ -262,8 +258,8 @@ public partial class DebugTestPage : UserControl
             Velocity = new RangeVector3(new(-0.3f, 2, -0.3f), new(0.3f, 5, 0.3f)),
             StartSize = new RangeFloat(0.6f, 1.2f),
             EndSize = new RangeFloat(0.3f, 0.6f),
-            StartColor = Color.FromArgb(200, 255, 180, 60),
-            EndColor = Color.FromArgb(0, 255, 80, 0),
+            StartColor = Color.FromArgb(255, 255, 180, 60),
+            EndColor = Color.FromArgb(255, 255, 80, 0),
             Gravity = new Vector3(0, 1.5f, 0),
             Damping = 0.4f,
         });
@@ -286,41 +282,6 @@ public partial class DebugTestPage : UserControl
 
         _fireGroup.AddChild(_particles, AttachToParentRule.KeepLocal);
         _particles.Play();
-
-        // Smoke (5x5 flipbook, local coords)
-        if (_smokeTexture == null)
-        {
-            using var stream = AssetLoader.Open(new Uri("avares://Example/Assets/Textures/smoke.png"));
-            _smokeTexture = TextureLoader.LoadTexture(stream);
-        }
-
-        _smokeParticles = new ParticleSystem
-        {
-            Name = "Smoke",
-            MaxParticles = 3000,
-            MaxInstancesPerGroup = 2048,
-            BlendMode = BlendMode.Translucent,
-            ParticleTexture = _smokeTexture,
-            FlipbookTiles = new Vector2(5, 5),
-        };
-
-        _smokeParticles.Emitters.Add(new ParticleEmitter
-        {
-            Shape = EmissionShape.Circle,
-            ShapeSize = new Vector3(0.8f, 0, 0.8f),
-            EmissionRate = 20,
-            Lifetime = new RangeFloat(1.5f, 3.0f),
-            Velocity = new RangeVector3(new(-0.3f, 1.5f, -0.3f), new(0.3f, 3.5f, 0.3f)),
-            StartSize = new RangeFloat(0.5f, 0.8f),
-            EndSize = new RangeFloat(1.2f, 2.0f),
-            StartColor = Color.FromArgb(255, 80, 70, 60),
-            EndColor = Color.FromArgb(0, 50, 45, 40),
-            Gravity = new Vector3(0, 0.3f, 0),
-            Damping = 0.6f,
-        });
-
-        _fireGroup.AddChild(_smokeParticles, AttachToParentRule.KeepLocal);
-        _smokeParticles.Play();
 
         // ── 静态模型网格 ──
         int staticCount = _vm.StaticMeshCount;
