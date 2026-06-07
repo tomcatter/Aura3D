@@ -30,16 +30,6 @@ public class Aura3DView : Aura3DViewBase
     }
 
 
-    public static readonly RoutedEvent<RoutedEventArgs> SetupPipelineEvent =
-      RoutedEvent.Register<Aura3DView, RoutedEventArgs>(nameof(SceneInitialized), RoutingStrategies.Direct);
-
-    public event EventHandler<RoutedEventArgs> SetupPipeline
-    {
-        add => AddHandler(SetupPipelineEvent, value);
-        remove => RemoveHandler(SetupPipelineEvent, value);
-    }
-
-
     public static readonly RoutedEvent<InitializedRoutedEventArgs> SceneInitializedEvent =
       RoutedEvent.Register<Aura3DView, InitializedRoutedEventArgs>(nameof(SceneInitialized), RoutingStrategies.Direct);
 
@@ -55,8 +45,8 @@ public class Aura3DView : Aura3DViewBase
 
     public event EventHandler<DestroyedRoutedEventArgs> SceneDestroyed
     {
-        add => AddHandler(SceneInitializedEvent, value);
-        remove => RemoveHandler(SceneInitializedEvent, value);
+        add => AddHandler(SceneDestroyedEvent, value);
+        remove => RemoveHandler(SceneDestroyedEvent, value);
     }
 
     public static readonly RoutedEvent<UpdateRoutedEventArgs> OnSceneUpdatedEvent =
@@ -69,8 +59,6 @@ public class Aura3DView : Aura3DViewBase
     }
     protected override void OnOpenGlInit(GlInterface gl)
     {
-        RoutedEventArgs args = new RoutedEventArgs(SetupPipelineEvent);
-        RaiseEvent(args);
         base.OnOpenGlInit(gl);
     }
 
