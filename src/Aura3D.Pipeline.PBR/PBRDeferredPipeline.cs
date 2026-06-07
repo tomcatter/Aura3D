@@ -67,8 +67,6 @@ public class PBRDeferredPipeline : RenderPipeline, IRenderPipelineCreateInstance
 
         RegisterRenderPass(new PrefilteredEnvironmentMapPass(this), RenderPassGroup.EveryCamera);
 
-        RegisterRenderPass(new PrefilteredEnvironmentMapPass(this), RenderPassGroup.EveryCamera);
-
         RegisterRenderPass(new BasePass(this).SetOutPutRenderTarget("GBuffer"), RenderPassGroup.EveryCamera);
 
         RegisterRenderPass(new IBLAmbientPass(this, "GBuffer").SetOutPutRenderTarget("BaseRenderTarget"), RenderPassGroup.EveryCamera);
