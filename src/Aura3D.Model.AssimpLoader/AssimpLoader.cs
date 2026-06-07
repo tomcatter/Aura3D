@@ -21,7 +21,7 @@ public static class AssimpLoader
 
         var scene = importer.ImportFile(path, DefaultFlags);
 
-        var model = processScene(scene, directory,  loadTextureFunc); 
+        var model = processScene(scene, directory, loadTextureFunc);
 
         var skeleton = processSkeleton(scene);
 
@@ -52,7 +52,7 @@ public static class AssimpLoader
 
         var animations = processAnimations(scene);
 
-        foreach(var animation in animations)
+        foreach (var animation in animations)
         {
             animation.Skeleton = skeleton;
         }
@@ -187,11 +187,11 @@ public static class AssimpLoader
             var animation = new Core.Resources.Animation();
 
             float maxTime = 0;
-            foreach(var assChannel in assAnimation.NodeAnimationChannels)
+            foreach (var assChannel in assAnimation.NodeAnimationChannels)
             {
                 var channel = new AnimationChannel();
 
-                foreach(var posKey in assChannel.PositionKeys)
+                foreach (var posKey in assChannel.PositionKeys)
                 {
                     channel.PositionKeyframes.Add(new Keyframe<Vector3>
                     {
@@ -224,7 +224,7 @@ public static class AssimpLoader
                 }
 
                 animation.Channels.Add(assChannel.NodeName, channel);
-            }   
+            }
             animation.Name = assAnimation.Name;
             animation.Duration = maxTime;
             animations.Add(animation);
@@ -232,7 +232,7 @@ public static class AssimpLoader
         return animations;
     }
 
-    
+
     private unsafe static Core.Nodes.Model processScene(Scene scene, string? directory, Func<string, Core.Resources.Texture>? loadTextureFunc)
     {
 
@@ -248,7 +248,7 @@ public static class AssimpLoader
 
         processNodeMesh(scene, scene.RootNode, skeleton, materialsMap, meshes);
 
-        foreach(var mesh in meshes)
+        foreach (var mesh in meshes)
         {
             model.AddChild(mesh, AttachToParentRule.KeepLocal);
         }
@@ -260,7 +260,7 @@ public static class AssimpLoader
     {
         if (assimpNode.HasMeshes)
         {
-            foreach(var meshIndex in assimpNode.MeshIndices)
+            foreach (var meshIndex in assimpNode.MeshIndices)
             {
                 var assimpMesh = scene.Meshes[meshIndex];
 
@@ -284,9 +284,10 @@ public static class AssimpLoader
     {
         if (assimpNode.Parent == null)
             return Matrix4x4.Transpose(assimpNode.Transform);
-        else 
+        else
             return Matrix4x4.Transpose(assimpNode.Transform) * GetWorldTransform(assimpNode.Parent);
     }
+
     private static unsafe void processMaterial(Scene scene, Dictionary<int, Core.Resources.Material> materialsMap, string? path, Func<string, Core.Resources.Texture>? loadTextureFunc)
     {
         for (int i = 0; i < scene.MaterialCount; i++)
@@ -306,13 +307,13 @@ public static class AssimpLoader
             }
 
             Core.Resources.Texture? texture = null;
-            
+
             if (assimpMaterial.HasTextureDiffuse && assimpMaterial.TextureDiffuse.FilePath != null)
             {
                 var slot = assimpMaterial.TextureDiffuse;
                 texture = processTexture(scene, slot, path, loadTextureFunc);
 
-               
+
             }
             else if (assimpMaterial.PBR.HasTextureBaseColor && assimpMaterial.PBR.TextureBaseColor.FilePath != null)
             {
@@ -320,6 +321,11 @@ public static class AssimpLoader
                 texture = processTexture(scene, slot, path, loadTextureFunc);
 
             }
+            else if (assimpMaterial.HasColorDiffuse)
+            {
+                texture = Texture.CreateFromColor(Color.FromArgb((int)(assimpMaterial.ColorDiffuse.X * 255), (int)(assimpMaterial.ColorDiffuse.Y * 255), (int)(assimpMaterial.ColorDiffuse.Z * 255)));
+            }
+
             if (texture == null)
             {
                 texture = Texture.CreateFromColor(Color.White);
@@ -333,7 +339,7 @@ public static class AssimpLoader
                 Texture = texture,
             });
 
-            Core.Resources.Texture? normalTexture = null  ;
+            Core.Resources.Texture? normalTexture = null;
             if (assimpMaterial.HasTextureNormal && assimpMaterial.TextureNormal.FilePath != null)
             {
                 var slot = assimpMaterial.TextureNormal;
@@ -350,8 +356,6 @@ public static class AssimpLoader
                 Name = "Normal",
                 Texture = normalTexture,
             });
-
-
             materialsMap.Add(i, material);
         }
     }
@@ -415,7 +419,7 @@ public static class AssimpLoader
         }
         else
         {
-            if (loadTextureFunc!=null)
+            if (loadTextureFunc != null)
             {
                 return loadTextureFunc(textureSlot.FilePath);
             }
@@ -432,7 +436,7 @@ public static class AssimpLoader
                         return TextureLoader.LoadTexture(stream);
                     }
                 }
-                catch(FileNotFoundException)
+                catch (FileNotFoundException)
                 {
                     return null;
                 }
@@ -510,7 +514,7 @@ public static class AssimpLoader
         if (assimpMesh.HasNormals)
         {
             geometry.SetVertexAttribute(BuildInVertexAttribute.Normal, 3, normals);
-        }    
+        }
         if (assimpMesh.HasVertexColors(0))
         {
             geometry.SetVertexAttribute(BuildInVertexAttribute.Color_0, 4, colors);
@@ -549,7 +553,7 @@ public static class AssimpLoader
             {
                 var id = skeleton.Bones.First(b => b.Name == bone.Name).Index;
 
-                foreach(var vertexWeight in bone.VertexWeights)
+                foreach (var vertexWeight in bone.VertexWeights)
                 {
                     joints[vertexWeight.VertexID * 4 + len[vertexWeight.VertexID]] = id;
                     weights[vertexWeight.VertexID * 4 + len[vertexWeight.VertexID]] = vertexWeight.Weight;
@@ -562,7 +566,7 @@ public static class AssimpLoader
         return mesh;
     }
 
-    
+
     private static void processBoneNode(Assimp.Node assimpNode, Dictionary<string, Core.Resources.Bone> boneMap)
     {
         if (assimpNode.Parent != null && assimpNode.HasMeshes == false)
@@ -583,7 +587,7 @@ public static class AssimpLoader
 
         }
 
-        foreach(var child in assimpNode.Children)
+        foreach (var child in assimpNode.Children)
         {
             processBoneNode(child, boneMap);
         }
@@ -650,7 +654,7 @@ public static class AssimpLoader
             {
                 skeleton.Root = bone;
                 bone.LocalMatrix = bone.WorldMatrix;
-               // bone.WorldMatrix = bone.LocalMatrix;
+                // bone.WorldMatrix = bone.LocalMatrix;
             }
             else
             {
