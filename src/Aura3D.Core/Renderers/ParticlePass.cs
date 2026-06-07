@@ -153,11 +153,12 @@ public class ParticlePass : RenderPass
         BlendMode blendMode, Matrix4x4 view, Matrix4x4 proj,
         Vector3 camRight, Vector3 camUp, Vector3 camPos, string baseDefine)
     {
-        // Collect matching systems
+        // Collect matching systems (skip mesh-mode systems — they render through InstancedMesh)
         var systems = new List<ParticleSystem>();
         foreach (var ps in renderPipeline.ParticleSystems)
         {
             if (!ps.Enable || !ps.IsPlaying || ps.ActiveCount == 0) continue;
+            if (ps.UseMeshRenderer) continue;
             if (ps.BlendMode != blendMode) continue;
             systems.Add(ps);
         }

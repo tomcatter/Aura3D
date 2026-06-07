@@ -270,6 +270,44 @@
           </StackPanel>
         </Border>
 
+        <!-- Dust Position (Mesh Particles) -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="🪨 Dust (Mesh Particles)" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="X:" Width="20" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-20" Maximum="20" Value="{Binding DustPosX}" Width="130"/>
+              <TextBlock Text="{Binding DustPosX, StringFormat={}{0:F1}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Y:" Width="20" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="0" Maximum="10" Value="{Binding DustPosY}" Width="130"/>
+              <TextBlock Text="{Binding DustPosY, StringFormat={}{0:F1}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Z:" Width="20" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-20" Maximum="20" Value="{Binding DustPosZ}" Width="130"/>
+              <TextBlock Text="{Binding DustPosZ, StringFormat={}{0:F1}}" Width="40" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <Separator Height="1" Background="#444" Margin="0,2" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="RX:" Width="25" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-180" Maximum="180" Value="{Binding DustRotX}" Width="125"/>
+              <TextBlock Text="{Binding DustRotX, StringFormat={}{0:F0}°}" Width="35" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="RY:" Width="25" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-180" Maximum="180" Value="{Binding DustRotY}" Width="125"/>
+              <TextBlock Text="{Binding DustRotY, StringFormat={}{0:F0}°}" Width="35" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="RZ:" Width="25" VerticalAlignment="Center" FontSize="11"/>
+              <Slider Minimum="-180" Maximum="180" Value="{Binding DustRotZ}" Width="125"/>
+              <TextBlock Text="{Binding DustRotZ, StringFormat={}{0:F0}°}" Width="35" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
         <!-- FPS -->
         <Border Theme="{StaticResource CardBorder}" Padding="10"
                 Background="#1E1E2E">

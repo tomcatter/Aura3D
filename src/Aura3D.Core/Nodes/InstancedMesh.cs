@@ -442,6 +442,51 @@ public class InstancedMesh : Node, IGpuResource
         NeedsUpload = true;
     }
 
+    /// <summary>
+    /// Bulk-replace all instances with the given world-space transforms.
+    /// More efficient than calling AddInstance/RemoveInstance per frame for dynamic data like particles.
+    /// </summary>
+    /// <param name="transforms">World-space transform for each instance.</param>
+    public unsafe void SetInstances(IReadOnlyList<Matrix4x4> transforms)
+    {
+        EnsureDefaultAttributes();
+
+        var transformAttr = InstanceAttributes["InstanceTransform"];
+        var normalAttr = InstanceAttributes["InstanceNormalTransform"];
+
+        // Clear existing data
+        transformAttr.Data.Clear();
+        normalAttr.Data.Clear();
+
+        int count = transforms.Count;
+        transformAttr.Data.Capacity = count * 16;
+        normalAttr.Data.Capacity = count * 16;
+
+        for (int i = 0; i < count; i++)
+        {
+            var t = transforms[i];
+
+            // Transform matrix (16 floats)
+            float* p = (float*)&t;
+            for (int j = 0; j < 16; j++)
+                transformAttr.Data.Add(p[j]);
+
+            // Normal matrix = transpose(inverse(transform))
+            Matrix4x4.Invert(t, out var inv);
+            var normalMatrix = Matrix4x4.Transpose(inv);
+            p = (float*)&normalMatrix;
+            for (int j = 0; j < 16; j++)
+                normalAttr.Data.Add(p[j]);
+        }
+
+        _instanceCount = count;
+
+        _instanceWorldBoundingBoxes.Clear();
+        _worldBoundingBoxDirty = true;
+
+        NeedsUpload = true;
+    }
+
     public void Destroy(GL gl)
     {
         geometry.Destroy(gl);

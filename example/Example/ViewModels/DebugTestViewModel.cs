@@ -202,6 +202,28 @@ public partial class DebugTestViewModel : ViewModelBase
     private float _firePosZ = 5f;
 
     // ═══════════════════════════════════════════════
+    //  Dust (Mesh Particles)
+    // ═══════════════════════════════════════════════
+
+    [ObservableProperty]
+    private float _dustPosX = 3f;
+
+    [ObservableProperty]
+    private float _dustPosY = 0.05f;
+
+    [ObservableProperty]
+    private float _dustPosZ = 3f;
+
+    [ObservableProperty]
+    private float _dustRotX;
+
+    [ObservableProperty]
+    private float _dustRotY;
+
+    [ObservableProperty]
+    private float _dustRotZ;
+
+    // ═══════════════════════════════════════════════
     //  Build Command
     // ═══════════════════════════════════════════════
 

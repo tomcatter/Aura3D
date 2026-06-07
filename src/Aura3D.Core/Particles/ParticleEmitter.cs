@@ -25,6 +25,12 @@ public class ParticleEmitter
     public Vector3 Gravity { get; set; } = new(0f, -9.8f, 0f);
     public float Damping { get; set; } = 0f;
 
+    /// <summary>
+    /// Scale multiplier for mesh-based particles. Applied on top of the per-particle size.
+    /// Ignored for billboard particles.
+    /// </summary>
+    public float MeshScale { get; set; } = 1f;
+
     public ITexture? Texture { get; set; }
 
     public float ElapsedTime { get; internal set; }

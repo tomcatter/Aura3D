@@ -7,10 +7,11 @@ public static class ParticleSimulation
     public static void Update(
         ParticleData[] particles, ref int activeCount, int maxParticles,
         IReadOnlyList<ParticleEmitter> emitters, float deltaTime, Random rng,
-        Vector3 worldOffset)
+        Vector3 worldOffset, Quaternion worldRotation = default)
     {
+        if (worldRotation == default) worldRotation = Quaternion.Identity;
         RemoveDead(particles, ref activeCount);
-        Emit(particles, ref activeCount, maxParticles, emitters, deltaTime, rng, worldOffset);
+        Emit(particles, ref activeCount, maxParticles, emitters, deltaTime, rng, worldOffset, worldRotation);
         UpdateAlive(particles, activeCount, emitters, deltaTime);
     }
 
@@ -26,7 +27,7 @@ public static class ParticleSimulation
 
     private static void Emit(
         ParticleData[] p, ref int n, int max, IReadOnlyList<ParticleEmitter> emitters,
-        float dt, Random rng, Vector3 offset)
+        float dt, Random rng, Vector3 offset, Quaternion worldRotation)
     {
         if (n >= max) return;
         for (int e = 0; e < emitters.Count; e++)
@@ -39,16 +40,19 @@ public static class ParticleSimulation
             em.EmissionAccumulator = toEmit - cnt;
             int rem = max - n;
             if (cnt > rem) cnt = rem;
-            for (int j = 0; j < cnt; j++) { p[n] = NewParticle(em, e, rng, offset); n++; }
+            for (int j = 0; j < cnt; j++) { p[n] = NewParticle(em, e, rng, offset, worldRotation); n++; }
         }
     }
 
-    private static ParticleData NewParticle(ParticleEmitter em, int idx, Random rng, Vector3 offset)
+    private static ParticleData NewParticle(ParticleEmitter em, int idx, Random rng,
+        Vector3 offset, Quaternion worldRotation)
     {
+        var localPos = SamplePosition(em, rng);
+        var localVel = em.Velocity.Random(rng);
         return new ParticleData
         {
-            Position = offset + SamplePosition(em, rng),
-            Velocity = em.Velocity.Random(rng),
+            Position = offset + Vector3.Transform(localPos, worldRotation),
+            Velocity = Vector3.Transform(localVel, worldRotation),
             Lifetime = em.Lifetime.Random(rng),
             StartSize = em.StartSize.Random(rng),
             EndSize = em.EndSize.Random(rng),

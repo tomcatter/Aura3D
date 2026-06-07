@@ -31,6 +31,8 @@ public partial class DebugTestPage : UserControl
     private ParticleSystem? _particles;
     private Texture? _fireTexture;
     private Node? _fireGroup;
+    private ParticleSystem? _dustParticles;
+    private Mesh? _stonesMesh;
 
     // 模型源
     private readonly List<Model> _staticSourceModels = [];
@@ -131,6 +133,22 @@ public partial class DebugTestPage : UserControl
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load Soldier: {ex.Message}");
         }
+
+        // Stones model (for mesh particles)
+        try
+        {
+            var stonesModel = await System.Threading.Tasks.Task.Run(() =>
+            {
+                using var stream = AssetLoader.Open(
+                    new Uri("avares://Example/Assets/Models/stones_01.glb"));
+                return ModelLoader.LoadGlbModel(stream);
+            });
+            _stonesMesh = stonesModel?.Meshes.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load stones_01: {ex.Message}");
+        }
     }
 
     // ─── Build Scene ─────────────────────────────────────────
@@ -154,6 +172,7 @@ public partial class DebugTestPage : UserControl
         _ground = null;
         _particles = null;
         _fireGroup = null;
+        _dustParticles = null;
 
         // ── 光照 ──
         _dirLight = new DirectionalLight
@@ -282,6 +301,65 @@ public partial class DebugTestPage : UserControl
 
         _fireGroup.AddChild(_particles, AttachToParentRule.KeepLocal);
         _particles.Play();
+
+        // ── Mesh Particle System (Dust/Debris — bullet impact at ground) ──
+        if (_stonesMesh != null)
+        {
+            _dustParticles = new ParticleSystem
+            {
+                Name = "DustDebris",
+                MaxParticles = 750,
+                BlendMode = BlendMode.Opaque,
+                ParticleMesh = _stonesMesh,
+            };
+
+                // Main burst: debris flying outward and upward from impact point
+                _dustParticles.Emitters.Add(new ParticleEmitter
+                {
+                    Shape = EmissionShape.Hemisphere,
+                    ShapeSize = new Vector3(0.3f, 0.6f, 0.3f),
+                    EmissionRate = 100,
+                    Looping = true,
+                    Lifetime = new RangeFloat(0.5f, 1.5f),
+                    Velocity = new RangeVector3(new(-4f, 3, -4f), new(4f, 10, 4f)),
+                    StartSize = new RangeFloat(2.0f, 2.0f),
+                    EndSize = new RangeFloat(2.0f, 2.0f),
+                    StartColor = Color.FromArgb(255, 200, 180, 150),
+                    EndColor = Color.FromArgb(0, 200, 180, 150),
+                    Rotation = new RangeFloat(0f, MathF.PI * 2),
+                    AngularVelocity = new RangeFloat(-12f, 12f),
+                    Gravity = new Vector3(0f, -12f, 0f),
+                    Damping = 2f,
+                    MeshScale = 1.0f,
+                });
+
+                // Secondary: smaller lingering dust cloud
+                _dustParticles.Emitters.Add(new ParticleEmitter
+                {
+                    Shape = EmissionShape.Circle,
+                    ShapeSize = new Vector3(0.8f, 0, 0.8f),
+                    EmissionRate = 38,
+                    Looping = true,
+                    Lifetime = new RangeFloat(0.8f, 2.5f),
+                    Velocity = new RangeVector3(new(-1.5f, 0.5f, -1.5f), new(1.5f, 3, 1.5f)),
+                    StartSize = new RangeFloat(2.0f, 2.0f),
+                    EndSize = new RangeFloat(2.0f, 2.0f),
+                    StartColor = Color.FromArgb(200, 180, 160, 140),
+                    EndColor = Color.FromArgb(0, 180, 160, 140),
+                    Rotation = new RangeFloat(0f, MathF.PI * 2),
+                    AngularVelocity = new RangeFloat(-6f, 6f),
+                    Gravity = new Vector3(0f, -6f, 0f),
+                    Damping = 1f,
+                    MeshScale = 1.0f,
+                });
+
+                // Place at impact point on ground
+                _dustParticles.Position = new Vector3(_vm.DustPosX, _vm.DustPosY, _vm.DustPosZ);
+                _dustParticles.RotationDegrees = new Vector3(_vm.DustRotX, _vm.DustRotY, _vm.DustRotZ);
+                view.AddNode(_dustParticles);
+                _sceneNodes.Add(_dustParticles);
+                _dustParticles.Play();
+        }
 
         // ── 静态模型网格 ──
         int staticCount = _vm.StaticMeshCount;
@@ -585,6 +663,21 @@ public partial class DebugTestPage : UserControl
             case nameof(DebugTestViewModel.FirePosZ):
                 if (_fireGroup != null)
                     _fireGroup.Position = new Vector3(_vm.FirePosX, _vm.FirePosY, _vm.FirePosZ);
+                aura3DView.RequestNextFrameRendering();
+                break;
+
+            // Dust position / rotation
+            case nameof(DebugTestViewModel.DustPosX):
+            case nameof(DebugTestViewModel.DustPosY):
+            case nameof(DebugTestViewModel.DustPosZ):
+            case nameof(DebugTestViewModel.DustRotX):
+            case nameof(DebugTestViewModel.DustRotY):
+            case nameof(DebugTestViewModel.DustRotZ):
+                if (_dustParticles != null)
+                {
+                    _dustParticles.Position = new Vector3(_vm.DustPosX, _vm.DustPosY, _vm.DustPosZ);
+                    _dustParticles.RotationDegrees = new Vector3(_vm.DustRotX, _vm.DustRotY, _vm.DustRotZ);
+                }
                 aura3DView.RequestNextFrameRendering();
                 break;
 

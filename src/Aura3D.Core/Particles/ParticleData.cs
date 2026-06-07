@@ -30,6 +30,20 @@ public struct ParticleData
 
     public readonly float CurrentSize => StartSize + (EndSize - StartSize) * AgeRatio;
     public readonly Vector4 CurrentColor => Vector4.Lerp(StartColor, EndColor, AgeRatio);
+
+    /// <summary>
+    /// Build a world-space Matrix4x4 from particle data for mesh instanced rendering.
+    /// Position is assumed to already be in world space (includes emitter offset).
+    /// Rotation is applied as Y-axis spin. Scale is uniform from CurrentSize.
+    /// </summary>
+    public readonly Matrix4x4 ToWorldMatrix(float meshScale = 1f)
+    {
+        var scale = CurrentSize * meshScale;
+        var rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, Rotation);
+        return Matrix4x4.CreateScale(scale)
+             * Matrix4x4.CreateFromQuaternion(rot)
+             * Matrix4x4.CreateTranslation(Position);
+    }
 }
 
 public struct RangeFloat
