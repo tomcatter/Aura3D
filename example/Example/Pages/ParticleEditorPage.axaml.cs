@@ -67,7 +67,6 @@ public partial class ParticleEditorPage : UserControl
         {
             Name = "EditorEmitter",
             MaxParticles = _vm.MaxParticles,
-            BlendMode = BlendMode.Translucent,
             Position = new Vector3(_vm.PosX, _vm.PosY, _vm.PosZ),
         };
 
@@ -98,6 +97,7 @@ public partial class ParticleEditorPage : UserControl
         if (_vm == null) return;
         var em = new ParticleEmitter
         {
+            BlendMode = BlendMode.Translucent,
             EmissionRate = _vm.EmissionRate,
             Shape = (EmissionShape)_vm.ShapeIndex,
             ShapeSize = new Vector3(_vm.ShapeSizeX, _vm.ShapeSizeY, _vm.ShapeSizeZ),

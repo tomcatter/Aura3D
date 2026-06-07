@@ -4,15 +4,25 @@ namespace Aura3D.Core.Particles;
 
 public static class ParticleSimulation
 {
+    /// <summary>
+    /// Run one simulation step for a single emitter.
+    /// Operates on emitter.Particles / emitter.ActiveCount / emitter.MaxParticles directly.
+    /// </summary>
     public static void Update(
-        ParticleData[] particles, ref int activeCount, int maxParticles,
-        IReadOnlyList<ParticleEmitter> emitters, float deltaTime, Random rng,
+        ParticleEmitter emitter, float deltaTime, Random rng,
         Vector3 worldOffset, Quaternion worldRotation = default)
     {
         if (worldRotation == default) worldRotation = Quaternion.Identity;
-        RemoveDead(particles, ref activeCount);
-        Emit(particles, ref activeCount, maxParticles, emitters, deltaTime, rng, worldOffset, worldRotation);
-        UpdateAlive(particles, activeCount, emitters, deltaTime);
+
+        var particles = emitter.Particles;
+        int activeCount = emitter.ActiveCount;
+        int max = emitter.MaxParticles;
+
+        RemoveDead(particles!, ref activeCount);
+        Emit(particles!, ref activeCount, max, emitter, deltaTime, rng, worldOffset, worldRotation);
+        UpdateAlive(particles!, activeCount, emitter, deltaTime);
+
+        emitter.ActiveCount = activeCount;
     }
 
     private static void RemoveDead(ParticleData[] p, ref int n)
@@ -26,25 +36,22 @@ public static class ParticleSimulation
     }
 
     private static void Emit(
-        ParticleData[] p, ref int n, int max, IReadOnlyList<ParticleEmitter> emitters,
+        ParticleData[] p, ref int n, int max, ParticleEmitter em,
         float dt, Random rng, Vector3 offset, Quaternion worldRotation)
     {
         if (n >= max) return;
-        for (int e = 0; e < emitters.Count; e++)
-        {
-            var em = emitters[e];
-            if (em.IsFinished) continue;
-            em.ElapsedTime += dt;
-            float toEmit = em.EmissionRate * dt + em.EmissionAccumulator;
-            int cnt = (int)toEmit;
-            em.EmissionAccumulator = toEmit - cnt;
-            int rem = max - n;
-            if (cnt > rem) cnt = rem;
-            for (int j = 0; j < cnt; j++) { p[n] = NewParticle(em, e, rng, offset, worldRotation); n++; }
-        }
+        if (em.IsFinished) return;
+
+        em.ElapsedTime += dt;
+        float toEmit = em.EmissionRate * dt + em.EmissionAccumulator;
+        int cnt = (int)toEmit;
+        em.EmissionAccumulator = toEmit - cnt;
+        int rem = max - n;
+        if (cnt > rem) cnt = rem;
+        for (int j = 0; j < cnt; j++) { p[n] = NewParticle(em, rng, offset, worldRotation); n++; }
     }
 
-    private static ParticleData NewParticle(ParticleEmitter em, int idx, Random rng,
+    private static ParticleData NewParticle(ParticleEmitter em, Random rng,
         Vector3 offset, Quaternion worldRotation)
     {
         var localPos = SamplePosition(em, rng);
@@ -60,20 +67,19 @@ public static class ParticleSimulation
             EndColor = em.GetEndColorVector(),
             Rotation = em.Rotation.Random(rng),
             AngularVelocity = em.AngularVelocity.Random(rng),
-            EmitterIndex = idx,
+            EmitterIndex = 0, // all particles in this array belong to the owning emitter
         };
     }
 
-    private static void UpdateAlive(ParticleData[] p, int n, IReadOnlyList<ParticleEmitter> emitters, float dt)
+    private static void UpdateAlive(ParticleData[] p, int n, ParticleEmitter em, float dt)
     {
+        var gravity = em.Gravity;
+        var damping = em.Damping;
         for (int i = 0; i < n; i++)
         {
             ref var r = ref p[i];
-            var em = r.EmitterIndex < emitters.Count ? emitters[r.EmitterIndex] : null;
-            var g = em?.Gravity ?? Vector3.Zero;
-            var d = em?.Damping ?? 0f;
-            r.Velocity += g * dt;
-            r.Velocity *= MathF.Max(0f, 1f - d * dt);
+            r.Velocity += gravity * dt;
+            r.Velocity *= MathF.Max(0f, 1f - damping * dt);
             r.Position += r.Velocity * dt;
             r.Rotation += r.AngularVelocity * dt;
             r.Age += dt;

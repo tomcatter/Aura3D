@@ -5,7 +5,7 @@ namespace Aura3D.Core.Particles;
 
 /// <summary>
 /// Manages GPU buffers for particle instanced rendering.
-/// Single interleaved VBO per ParticleSystem, with grow-only capacity.
+/// Single interleaved VBO per ParticleEmitter, with grow-only capacity.
 /// Implements IGpuResource so the render pipeline manages its upload/destroy lifecycle.
 /// </summary>
 public unsafe class ParticleGpuBuffer : IGpuResource
@@ -22,20 +22,20 @@ public unsafe class ParticleGpuBuffer : IGpuResource
     private bool _dataDirty;
 
     /// <summary>
-    /// Shared quad VBO + EBO — created once, reused across all ParticleSystems.
+    /// Shared quad VBO + EBO — created once, reused across all ParticleEmitters.
     /// </summary>
     private static uint _sharedQuadVbo;
     private static uint _sharedQuadEbo;
     private static bool _quadInitialized;
 
     /// <summary>
-    /// Per-system VAO that combines the shared quad geometry with this system's instance VBO.
+    /// Per-emitter VAO that combines the shared quad geometry with this emitter's instance VBO.
     /// </summary>
     private uint _vao;
 
     /// <summary>
     /// Pack particle CPU data into internal buffer. No GL calls.
-    /// Called by ParticleSystem.Update() after simulation.
+    /// Called by ParticleSystem.Simulate() after simulation and by ParticlePass before rendering.
     /// </summary>
     public void SetParticleData(ParticleData[] particles, int activeCount)
     {

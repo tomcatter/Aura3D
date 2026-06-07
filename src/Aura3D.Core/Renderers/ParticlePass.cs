@@ -153,35 +153,38 @@ public class ParticlePass : RenderPass
         BlendMode blendMode, Matrix4x4 view, Matrix4x4 proj,
         Vector3 camRight, Vector3 camUp, Vector3 camPos, string baseDefine)
     {
-        // Collect matching systems (skip mesh-mode systems — they render through InstancedMesh)
-        var systems = new List<ParticleSystem>();
+        // Collect matching emitters across all systems (skip mesh-mode — they render through InstancedMesh)
+        var emitterEntries = new List<(ParticleSystem System, ParticleEmitter Emitter)>();
         foreach (var ps in renderPipeline.ParticleSystems)
         {
-            if (!ps.Enable || !ps.IsPlaying || ps.ActiveCount == 0) continue;
-            if (ps.UseMeshRenderer) continue;
-            if (ps.BlendMode != blendMode) continue;
-            systems.Add(ps);
+            if (!ps.Enable || !ps.IsPlaying) continue;
+            foreach (var em in ps.Emitters)
+            {
+                if (em.ActiveCount == 0) continue;
+                if (em.UseMeshRenderer) continue;
+                if (em.BlendMode != blendMode) continue;
+                emitterEntries.Add((ps, em));
+            }
         }
 
-        // Sort systems back-to-front by center distance to camera (for correct inter-system blending)
+        // Sort translucent emitters back-to-front by system center distance
         if (blendMode == BlendMode.Translucent)
         {
-            systems.Sort((a, b) =>
+            emitterEntries.Sort((a, b) =>
             {
-                float da = Vector3.DistanceSquared(a.WorldTransform.Translation, camPos);
-                float db = Vector3.DistanceSquared(b.WorldTransform.Translation, camPos);
+                float da = Vector3.DistanceSquared(a.System.WorldTransform.Translation, camPos);
+                float db = Vector3.DistanceSquared(b.System.WorldTransform.Translation, camPos);
                 return db.CompareTo(da);
             });
         }
 
-        foreach (var ps in systems)
+        foreach (var (ps, em) in emitterEntries)
         {
+            // Sort translucent particles within this emitter back-to-front
+            em.SortByDistance(camPos);
 
-            // Sort translucent particles back-to-front
-            ps.SortByDistance(camPos);
-
-            bool hasTex = ps.ParticleTexture != null;
-            bool hasFlipbook = hasTex && (ps.FlipbookTiles.X > 1f || ps.FlipbookTiles.Y > 1f);
+            bool hasTex = em.Texture != null;
+            bool hasFlipbook = hasTex && (em.FlipbookTiles.X > 1f || em.FlipbookTiles.Y > 1f);
 
             if (hasTex && hasFlipbook)
                 UseShader(baseDefine, "PARTICLE_TEXTURE", "PARTICLE_FLIPBOOK");
@@ -194,15 +197,18 @@ public class ParticlePass : RenderPass
             SetCommonUniforms(view, proj, camRight, camUp);
 
             if (hasTex)
-                UniformTexture("uParticleTexture", ps.ParticleTexture!);
+                UniformTexture("uParticleTexture", em.Texture!);
 
             if (hasFlipbook)
-                UniformVector2("uFlipbookTiles", ps.FlipbookTiles);
+                UniformVector2("uFlipbookTiles", em.FlipbookTiles);
 
-            // Repack sorted data and upload, then draw
-            ps.GpuBuffer.SetParticleData(ps.Particles!, ps.ActiveCount);
-            ps.GpuBuffer.Upload(gl!);
-            ps.GpuBuffer.Draw(gl!);
+            // Pack sorted data, upload, and draw this emitter's particles
+            if (em.Particles != null && em.GpuBuffer != null)
+            {
+                em.GpuBuffer.SetParticleData(em.Particles, em.ActiveCount);
+                em.GpuBuffer.Upload(gl!);
+                em.GpuBuffer.Draw(gl!);
+            }
         }
     }
 

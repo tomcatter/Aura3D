@@ -264,9 +264,6 @@ public partial class DebugTestPage : UserControl
         {
             Name = "Flame",
             MaxParticles = 10000,
-            BlendMode = BlendMode.Translucent,
-            ParticleTexture = _fireTexture,
-            FlipbookTiles = new Vector2(8, 8),
         };
 
         _particles.Emitters.Add(new ParticleEmitter
@@ -282,6 +279,9 @@ public partial class DebugTestPage : UserControl
             EndColor = Color.FromArgb(255, 255, 80, 0),
             Gravity = new Vector3(0, 1.5f, 0),
             Damping = 0.4f,
+            BlendMode = BlendMode.Translucent,
+            Texture = _fireTexture,
+            FlipbookTiles = new Vector2(8, 8),
         });
 
         _particles.Emitters.Add(new ParticleEmitter
@@ -298,6 +298,9 @@ public partial class DebugTestPage : UserControl
             EndColor = Color.FromArgb(0, 255, 80, 0),
             Gravity = new Vector3(0, 2f, 0),
             Damping = 0.2f,
+            BlendMode = BlendMode.Translucent,
+            Texture = _fireTexture,
+            FlipbookTiles = new Vector2(8, 8),
         });
 
         _fireGroup.AddChild(_particles, AttachToParentRule.KeepLocal);
@@ -310,8 +313,6 @@ public partial class DebugTestPage : UserControl
             {
                 Name = "DustDebris",
                 MaxParticles = 750,
-                BlendMode = BlendMode.Opaque,
-                ParticleMesh = _stonesMesh,
             };
 
                 // Main burst: debris flying outward and upward from impact point
@@ -332,6 +333,8 @@ public partial class DebugTestPage : UserControl
                     Gravity = new Vector3(0f, -12f, 0f),
                     Damping = 2f,
                     MeshScale = 1.0f,
+                    BlendMode = BlendMode.Opaque,
+                    Mesh = _stonesMesh,
                 });
 
                 // Secondary: smaller lingering dust cloud
@@ -352,6 +355,8 @@ public partial class DebugTestPage : UserControl
                     Gravity = new Vector3(0f, -6f, 0f),
                     Damping = 1f,
                     MeshScale = 1.0f,
+                    BlendMode = BlendMode.Opaque,
+                    Mesh = _stonesMesh,
                 });
 
                 // Place at impact point on ground

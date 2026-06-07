@@ -7,47 +7,38 @@ namespace Aura3D.Core.Nodes;
 
 /// <summary>
 /// High-performance particle system node using CPU simulation.
-/// Supports two render modes:
-/// - Billboard (default): GPU instanced billboard quads via ParticlePass.
-/// - Mesh: when ParticleMesh is set, particles render as 3D mesh instances through the normal
-///   mesh rendering pipeline (InstancedMesh → NoLightPass/LightPass/TranslucentPass).
-/// The CPU simulation is identical in both modes.
+/// Each emitter manages its own particles, GPU buffer (billboard mode),
+/// and InstancedMesh (mesh mode) independently.
+/// The system provides shared lifecycle management and bounding box estimation.
 /// </summary>
 public class ParticleSystem : Node
 {
+    /// <summary>
+    /// System-level maximum particle count. Each emitter has its own MaxParticles;
+    /// this property can be used as a convenience to set all emitter capacities at once.
+    /// Only settable when not playing.
+    /// </summary>
     public int MaxParticles
     {
         get => _maxParticles;
-        set { if (!_isPlaying) _maxParticles = value; }
+        set
+        {
+            if (!_isPlaying)
+                _maxParticles = value;
+        }
     }
 
-    public BlendMode BlendMode { get; set; } = BlendMode.Translucent;
-    public ITexture? ParticleTexture { get; set; }
-    public Vector2 FlipbookTiles { get; set; } = Vector2.One;
     public bool IsPlaying => _isPlaying;
-    public int ActiveCount => _activeCount;
+    public int ActiveCount => Emitters.Sum(e => e.ActiveCount);
     public List<ParticleEmitter> Emitters { get; } = new();
 
-    // ---- Mesh mode ----
-
-    /// <summary>
-    /// The mesh to use for each particle. When set, particles render as 3D mesh instances
-    /// through the normal mesh pipeline. When null (default), particles use the billboard quad path.
-    /// </summary>
-    public Mesh? ParticleMesh { get; set; }
-
-    /// <summary>
-    /// Optional material override for mesh-mode particles.
-    /// When null, the material from ParticleMesh is used.
-    /// </summary>
-    public Material? ParticleMaterial { get; set; }
+    // ---- Visibility culling ----
 
     private BoundingBox? _customBoundingBox;
 
     /// <summary>
-    /// Optional custom world-space bounding box for mesh-mode particles.
-    /// When set, this overrides the automatic estimate and syncs to the InstancedMesh.
-    /// Set this to optimize culling if you know your particle spread precisely.
+    /// Optional custom world-space bounding box for all emitters.
+    /// When set, this overrides the automatic estimate.
     /// </summary>
     public BoundingBox? CustomBoundingBox
     {
@@ -57,13 +48,19 @@ public class ParticleSystem : Node
             _customBoundingBox = value;
             _estimatedBbox = value ?? EstimateWorldBoundingBox();
             if (_estimatedBbox != null)
-                _instancedMesh?.SetStaticWorldBoundingBox(_estimatedBbox);
+            {
+                foreach (var em in Emitters)
+                {
+                    if (em.InstancedMesh != null)
+                        em.InstancedMesh.SetStaticWorldBoundingBox(_estimatedBbox);
+                }
+            }
         }
     }
 
     /// <summary>
     /// When enabled, the particle simulation is skipped if the system's bounding box
-    /// is outside the main camera frustum. Requires mesh mode.
+    /// is outside the main camera frustum.
     /// </summary>
     public bool EnableVisibilityCulling { get; set; } = false;
 
@@ -72,47 +69,41 @@ public class ParticleSystem : Node
     /// </summary>
     public BoundingBox? WorldBoundingBox => _estimatedBbox;
 
-    /// <summary>
-    /// Whether this system renders through the mesh pipeline (true) or billboard pipeline (false).
-    /// </summary>
-    public bool UseMeshRenderer => ParticleMesh != null;
-
-    // ---- Internal: billboard mode ----
-
-    /// <summary>Internal: CPU-side particle data array, accessed by ParticlePass for rendering.</summary>
-    internal ParticleData[] Particles => _particles;
-
-    /// <summary>Internal: GPU buffer, accessed by ParticlePass for drawing.</summary>
-    internal ParticleGpuBuffer GpuBuffer => _gpuBuffer;
+    // ---- Lifecycle ----
 
     public void Play()
     {
         if (_isPlaying) return;
-        _particles = new ParticleData[_maxParticles];
-        _activeCount = 0;
         _isPlaying = true;
         _isPaused = false;
-        _rng = new Random();
         _accumulatedSkippedTime = 0f;
-        foreach (var e in Emitters) { e.ElapsedTime = 0; e.EmissionAccumulator = 0; }
 
-        // Use custom bounding box if set, otherwise auto-estimate
         _estimatedBbox = _customBoundingBox ?? EstimateWorldBoundingBox();
 
-        // Mesh mode: create InstancedMesh from the source mesh
-        if (UseMeshRenderer)
+        foreach (var em in Emitters)
         {
-            _instancedMesh = InstancedMesh.FromMesh(ParticleMesh!);
-            if (ParticleMaterial != null)
-                _instancedMesh.Material = ParticleMaterial;
-            _instancedMesh.Name = $"{Name}_ParticleInstances";
-            _instancedMesh.EnableFrustumCulling = false;
+            em.ElapsedTime = 0;
+            em.EmissionAccumulator = 0;
+            em.Particles = new ParticleData[em.MaxParticles];
+            em.ActiveCount = 0;
+            em.Rng = new Random();
+            em.GpuBuffer = new ParticleGpuBuffer();
+            em.InstanceTransforms = null;
 
-            if (_estimatedBbox != null)
-                _instancedMesh.SetStaticWorldBoundingBox(_estimatedBbox);
-            // Safe to parent: the INSTANCED_MESH shader uses per-instance matrices directly,
-            // ignoring the node's WorldTransform. AddChild ensures proper lifecycle cleanup.
-            AddChild(_instancedMesh, AttachToParentRule.KeepWorld);
+            // Mesh mode: create InstancedMesh per emitter
+            if (em.UseMeshRenderer)
+            {
+                em.InstancedMesh = InstancedMesh.FromMesh(em.Mesh!);
+                if (em.Material != null)
+                    em.InstancedMesh.Material = em.Material;
+                em.InstancedMesh.Name = $"{Name}_Emitter{Emitters.IndexOf(em)}_Instances";
+                em.InstancedMesh.EnableFrustumCulling = false;
+
+                if (_estimatedBbox != null)
+                    em.InstancedMesh.SetStaticWorldBoundingBox(_estimatedBbox);
+
+                AddChild(em.InstancedMesh, AttachToParentRule.KeepWorld);
+            }
         }
     }
 
@@ -120,19 +111,27 @@ public class ParticleSystem : Node
     {
         _isPlaying = false;
         _isPaused = false;
-        _activeCount = 0;
-        _particles = Array.Empty<ParticleData>();
 
-        // Clean up mesh mode
-        if (_instancedMesh != null)
+        foreach (var em in Emitters)
         {
-            if (_children.Contains(_instancedMesh))
-                RemoveChild(_instancedMesh, AttachToParentRule.KeepWorld);
-            _instancedMesh = null;
+            em.Particles = Array.Empty<ParticleData>();
+            em.ActiveCount = 0;
+            em.GpuBuffer = null;
+            em.Rng = null;
+            em.InstanceTransforms = null;
+
+            if (em.InstancedMesh != null)
+            {
+                if (_children.Contains(em.InstancedMesh))
+                    RemoveChild(em.InstancedMesh, AttachToParentRule.KeepWorld);
+                em.InstancedMesh = null;
+            }
         }
     }
 
     public void Pause() => _isPaused = !_isPaused;
+
+    // ---- Update ----
 
     public override void Update(double delta)
     {
@@ -140,10 +139,8 @@ public class ParticleSystem : Node
         if (!_isPlaying || _isPaused) return;
         float dt = (float)delta;
 
-        // Update frustum planes (always, so they're fresh)
         UpdateCachedFrustumPlanes();
 
-        // Visibility check
         bool isVisible = !EnableVisibilityCulling
             || _estimatedBbox == null
             || _cachedFrustumPlanes == null
@@ -151,12 +148,10 @@ public class ParticleSystem : Node
 
         if (!isVisible)
         {
-            // Accumulate skipped time so we can catch up later
             _accumulatedSkippedTime += dt;
             return;
         }
 
-        // Apply accumulated time from when we were invisible (fast-forward catch-up)
         if (_accumulatedSkippedTime > 0f)
         {
             float catchUp = MathF.Min(_accumulatedSkippedTime, 2f);
@@ -169,18 +164,27 @@ public class ParticleSystem : Node
 
     private void Simulate(float dt)
     {
-        ParticleSimulation.Update(_particles!, ref _activeCount, _maxParticles, Emitters, dt, _rng,
-            WorldTransform.Translation, WorldTransform.Rotation());
+        var worldPos = WorldTransform.Translation;
+        var worldRot = WorldTransform.Rotation();
 
-        if (UseMeshRenderer)
+        foreach (var em in Emitters)
         {
-            UpdateMeshInstances();
-        }
-        else
-        {
-            _gpuBuffer.SetParticleData(_particles, _activeCount);
+            if (em.Rng == null || em.Particles == null) continue;
+
+            ParticleSimulation.Update(em, dt, em.Rng, worldPos, worldRot);
+
+            if (em.UseMeshRenderer)
+            {
+                em.UpdateMeshInstances(worldRot);
+            }
+            else
+            {
+                em.GpuBuffer?.SetParticleData(em.Particles, em.ActiveCount);
+            }
         }
     }
+
+    // ---- Frustum culling ----
 
     private void UpdateCachedFrustumPlanes()
     {
@@ -195,85 +199,32 @@ public class ParticleSystem : Node
         MatrixHelper.ExtractPlanes(vp, _cachedFrustumPlanes);
     }
 
-    /// <summary>
-    /// Convert alive particles to world-space transforms and update the InstancedMesh.
-    /// Emission rotation is handled by ParticleSimulation; here we only compose
-    /// the system rotation with the particle's own spin for correct mesh orientation.
-    /// </summary>
-    private void UpdateMeshInstances()
-    {
-        if (_instancedMesh == null) return;
-
-        int n = _activeCount;
-        if (_instanceTransforms == null || _instanceTransforms.Length < n)
-            _instanceTransforms = new Matrix4x4[n];
-
-        var systemRot = WorldTransform.Rotation();
-
-        for (int i = 0; i < n; i++)
-        {
-            ref var p = ref _particles![i];
-            var em = p.EmitterIndex < Emitters.Count ? Emitters[p.EmitterIndex] : null;
-            float meshScale = em?.MeshScale ?? 1f;
-
-            // Particle's own spin, composed with system rotation
-            var spinRot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, p.Rotation);
-            var finalRot = Quaternion.Concatenate(systemRot, spinRot);
-
-            _instanceTransforms[i] =
-                Matrix4x4.CreateScale(p.CurrentSize * meshScale)
-                * Matrix4x4.CreateFromQuaternion(finalRot)
-                * Matrix4x4.CreateTranslation(p.Position);
-        }
-
-        _instancedMesh.SetInstances(
-            new ArraySegment<Matrix4x4>(_instanceTransforms, 0, n));
-    }
-
-    /// <summary>
-    /// Sort particles by distance to camera (back-to-front) for correct alpha blending.
-    /// Called by ParticlePass during rendering (billboard mode only).
-    /// </summary>
-    internal void SortByDistance(Vector3 camPos)
-    {
-        if (_activeCount <= 1 || BlendMode == BlendMode.Opaque || BlendMode == BlendMode.Masked) return;
-        int n = _activeCount;
-        var camPosLocal = camPos;
-        System.Array.Sort(_particles!, 0, n, Comparer<ParticleData>.Create((a, b) =>
-        {
-            float da = Vector3.DistanceSquared(a.Position, camPosLocal);
-            float db = Vector3.DistanceSquared(b.Position, camPosLocal);
-            return db.CompareTo(da);
-        }));
-    }
+    // ---- GPU resources ----
 
     public override List<IGpuResource> GetGpuResources()
     {
         var list = new List<IGpuResource>();
 
-        if (!UseMeshRenderer)
+        foreach (var em in Emitters)
         {
-            // Billboard mode: ParticleSystem owns GpuBuffer and texture
-            list.Add(_gpuBuffer);
-            if (ParticleTexture is IGpuResource gr)
-                list.Add(gr);
+            if (!em.UseMeshRenderer)
+            {
+                // Billboard mode: add GpuBuffer and texture
+                if (em.GpuBuffer != null)
+                    list.Add(em.GpuBuffer);
+                if (em.Texture is IGpuResource gr)
+                    list.Add(gr);
+            }
+            // Mesh mode: InstancedMesh is a child node — it manages its own GPU resources
         }
-        // Mesh mode: InstancedMesh is a child node — it manages its own GPU resources
-        // via the scene graph. Duplicating here would cause double ref-counting.
 
         return list;
     }
 
-    private int _maxParticles = 10000;
-    private ParticleData[] _particles = Array.Empty<ParticleData>();
-    private int _activeCount;
-    private bool _isPlaying, _isPaused;
-    private Random _rng = new();
-    private readonly ParticleGpuBuffer _gpuBuffer = new();
+    // ---- Bounding box estimation ----
 
-    // Mesh mode
     /// <summary>
-    /// Estimate a static world bounding box from emitter settings.
+    /// Estimate a static world bounding box from all emitter settings.
     /// Uses max velocity × max lifetime to determine spread radius.
     /// </summary>
     private BoundingBox? EstimateWorldBoundingBox()
@@ -293,17 +244,15 @@ public class ParticleSystem : Node
 
             maxLifetime = MathF.Max(maxLifetime, em.Lifetime.Max);
             maxSize = MathF.Max(maxSize, em.StartSize.Max);
-            gravityY = MathF.Min(gravityY, em.Gravity.Y); // gravity is negative
+            gravityY = MathF.Min(gravityY, em.Gravity.Y);
         }
 
-        // Horizontal: tight estimate
         float rx = maxVx * maxLifetime * 0.2f + maxSize;
         float rz = maxVz * maxLifetime * 0.2f + maxSize;
 
         float upY, downY;
         if (gravityY < 0)
         {
-            // Gravity-affected: asymmetric Y — tight upward (v²/2g), wider downward
             float g = MathF.Abs(gravityY);
             upY = (maxVy * maxVy) / (2f * g) + maxSize;
             float velDown = maxVy * maxLifetime * 0.2f;
@@ -312,7 +261,6 @@ public class ParticleSystem : Node
         }
         else
         {
-            // No gravity: symmetric spread
             upY = maxVy * maxLifetime * 0.2f + maxSize;
             downY = upY;
         }
@@ -323,8 +271,10 @@ public class ParticleSystem : Node
             new Vector3(center.X + rx, center.Y + upY,  center.Z + rz));
     }
 
-    private InstancedMesh? _instancedMesh;
-    private Matrix4x4[]? _instanceTransforms;
+    // ---- Fields ----
+
+    private int _maxParticles = 10000;
+    private bool _isPlaying, _isPaused;
     private Plane[]? _cachedFrustumPlanes;
     private BoundingBox? _estimatedBbox;
     private float _accumulatedSkippedTime;
