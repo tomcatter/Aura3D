@@ -119,6 +119,11 @@ public class DebugDrawPass : RenderPass
             DrawBoundingBoxes();
         }
 
+        if (renderPipeline.Settings.Debug.ShowParticleBounds)
+        {
+            DrawParticleBounds();
+        }
+
         if (renderPipeline.Settings.Debug.ShowDirectionalLight)
         {
             DrawDirectionalLights();
@@ -216,8 +221,9 @@ public class DebugDrawPass : RenderPass
     private void DrawBoundingBoxes()
     {
         UniformMatrix4("modelMatrix", Matrix4x4.Identity);
-        UniformVector3("uColor", new Vector3(0.25f, 1.0f, 0.25f));
 
+        // Meshes + InstancedMeshes (green)
+        UniformVector3("uColor", new Vector3(0.25f, 1.0f, 0.25f));
         Begin();
         foreach (var mesh in Meshes)
         {
@@ -228,12 +234,30 @@ public class DebugDrawPass : RenderPass
                 continue;
             WireBox(bb.Min, bb.Max);
         }
-
         foreach (var im in renderPipeline.InstancedMeshes)
         {
             if (!im.Enable)
                 continue;
             var bb = im.WorldBoundingBox;
+            if (bb == null)
+                continue;
+            WireBox(bb.Min, bb.Max);
+        }
+        End();
+    }
+
+    private void DrawParticleBounds()
+    {
+        UniformMatrix4("modelMatrix", Matrix4x4.Identity);
+        UniformVector3("uColor", new Vector3(1.0f, 0.5f, 0.1f)); // orange
+        Begin();
+        foreach (var ps in renderPipeline.ParticleSystems)
+        {
+            if (!ps.Enable)
+                continue;
+            if (!ps.IsPlaying || ps.ActiveCount == 0)
+                continue;
+            var bb = ps.WorldBoundingBox;
             if (bb == null)
                 continue;
             WireBox(bb.Min, bb.Max);

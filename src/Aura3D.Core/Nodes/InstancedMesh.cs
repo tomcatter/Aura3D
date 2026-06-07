@@ -481,10 +481,20 @@ public class InstancedMesh : Node, IGpuResource
 
         _instanceCount = count;
 
-        _instanceWorldBoundingBoxes.Clear();
         _worldBoundingBoxDirty = true;
 
         NeedsUpload = true;
+    }
+
+    /// <summary>
+    /// Set a single static world bounding box (e.g., estimated from emitter spread).
+    /// Call after creation to avoid per-frame bounding box updates.
+    /// </summary>
+    public void SetStaticWorldBoundingBox(BoundingBox box)
+    {
+        _instanceWorldBoundingBoxes.Clear();
+        _instanceWorldBoundingBoxes.Add(box);
+        _worldBoundingBoxDirty = true;
     }
 
     public void Destroy(GL gl)

@@ -37,6 +37,9 @@ public partial class DebugTestViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showBone;
 
+    [ObservableProperty]
+    private bool _showParticleBounds;
+
     // ═══════════════════════════════════════════════
     //  Picking
     // ═══════════════════════════════════════════════

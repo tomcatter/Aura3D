@@ -42,6 +42,36 @@ public class ParticleSystem : Node
     /// </summary>
     public Material? ParticleMaterial { get; set; }
 
+    private BoundingBox? _customBoundingBox;
+
+    /// <summary>
+    /// Optional custom world-space bounding box for mesh-mode particles.
+    /// When set, this overrides the automatic estimate and syncs to the InstancedMesh.
+    /// Set this to optimize culling if you know your particle spread precisely.
+    /// </summary>
+    public BoundingBox? CustomBoundingBox
+    {
+        get => _customBoundingBox;
+        set
+        {
+            _customBoundingBox = value;
+            _estimatedBbox = value ?? EstimateWorldBoundingBox();
+            if (_estimatedBbox != null)
+                _instancedMesh?.SetStaticWorldBoundingBox(_estimatedBbox);
+        }
+    }
+
+    /// <summary>
+    /// When enabled, the particle simulation is skipped if the system's bounding box
+    /// is outside the main camera frustum. Requires mesh mode.
+    /// </summary>
+    public bool EnableVisibilityCulling { get; set; } = false;
+
+    /// <summary>
+    /// World-space bounding box for debug display and visibility culling.
+    /// </summary>
+    public BoundingBox? WorldBoundingBox => _estimatedBbox;
+
     /// <summary>
     /// Whether this system renders through the mesh pipeline (true) or billboard pipeline (false).
     /// </summary>
@@ -63,7 +93,11 @@ public class ParticleSystem : Node
         _isPlaying = true;
         _isPaused = false;
         _rng = new Random();
+        _accumulatedSkippedTime = 0f;
         foreach (var e in Emitters) { e.ElapsedTime = 0; e.EmissionAccumulator = 0; }
+
+        // Use custom bounding box if set, otherwise auto-estimate
+        _estimatedBbox = _customBoundingBox ?? EstimateWorldBoundingBox();
 
         // Mesh mode: create InstancedMesh from the source mesh
         if (UseMeshRenderer)
@@ -72,6 +106,10 @@ public class ParticleSystem : Node
             if (ParticleMaterial != null)
                 _instancedMesh.Material = ParticleMaterial;
             _instancedMesh.Name = $"{Name}_ParticleInstances";
+            _instancedMesh.EnableFrustumCulling = false;
+
+            if (_estimatedBbox != null)
+                _instancedMesh.SetStaticWorldBoundingBox(_estimatedBbox);
             // Safe to parent: the INSTANCED_MESH shader uses per-instance matrices directly,
             // ignoring the node's WorldTransform. AddChild ensures proper lifecycle cleanup.
             AddChild(_instancedMesh, AttachToParentRule.KeepWorld);
@@ -102,6 +140,35 @@ public class ParticleSystem : Node
         if (!_isPlaying || _isPaused) return;
         float dt = (float)delta;
 
+        // Update frustum planes (always, so they're fresh)
+        UpdateCachedFrustumPlanes();
+
+        // Visibility check
+        bool isVisible = !EnableVisibilityCulling
+            || _estimatedBbox == null
+            || _cachedFrustumPlanes == null
+            || _estimatedBbox.IsBoxInsideFrustum(_cachedFrustumPlanes);
+
+        if (!isVisible)
+        {
+            // Accumulate skipped time so we can catch up later
+            _accumulatedSkippedTime += dt;
+            return;
+        }
+
+        // Apply accumulated time from when we were invisible (fast-forward catch-up)
+        if (_accumulatedSkippedTime > 0f)
+        {
+            float catchUp = MathF.Min(_accumulatedSkippedTime, 2f);
+            _accumulatedSkippedTime = 0f;
+            Simulate(catchUp);
+        }
+
+        Simulate(dt);
+    }
+
+    private void Simulate(float dt)
+    {
         ParticleSimulation.Update(_particles!, ref _activeCount, _maxParticles, Emitters, dt, _rng,
             WorldTransform.Translation, WorldTransform.Rotation());
 
@@ -113,6 +180,19 @@ public class ParticleSystem : Node
         {
             _gpuBuffer.SetParticleData(_particles, _activeCount);
         }
+    }
+
+    private void UpdateCachedFrustumPlanes()
+    {
+        if (!EnableVisibilityCulling) return;
+        var cameras = CurrentScene?.RenderPipeline?.Cameras;
+        if (cameras == null || cameras.Count == 0) return;
+        var cam = cameras[0];
+        if (!cam.Enable) return;
+
+        var vp = cam.View * cam.Projection;
+        _cachedFrustumPlanes ??= new Plane[6];
+        MatrixHelper.ExtractPlanes(vp, _cachedFrustumPlanes);
     }
 
     /// <summary>
@@ -171,17 +251,15 @@ public class ParticleSystem : Node
     {
         var list = new List<IGpuResource>();
 
-        if (UseMeshRenderer)
+        if (!UseMeshRenderer)
         {
-            if (_instancedMesh != null)
-                list.AddRange(_instancedMesh.GetGpuResources());
-        }
-        else
-        {
+            // Billboard mode: ParticleSystem owns GpuBuffer and texture
             list.Add(_gpuBuffer);
             if (ParticleTexture is IGpuResource gr)
                 list.Add(gr);
         }
+        // Mesh mode: InstancedMesh is a child node — it manages its own GPU resources
+        // via the scene graph. Duplicating here would cause double ref-counting.
 
         return list;
     }
@@ -194,6 +272,60 @@ public class ParticleSystem : Node
     private readonly ParticleGpuBuffer _gpuBuffer = new();
 
     // Mesh mode
+    /// <summary>
+    /// Estimate a static world bounding box from emitter settings.
+    /// Uses max velocity × max lifetime to determine spread radius.
+    /// </summary>
+    private BoundingBox? EstimateWorldBoundingBox()
+    {
+        if (Emitters.Count == 0) return null;
+
+        float maxVx = 0f, maxVy = 0f, maxVz = 0f;
+        float maxLifetime = 0f;
+        float maxSize = 0f;
+        float gravityY = 0f;
+
+        foreach (var em in Emitters)
+        {
+            maxVx = MathF.Max(maxVx, MathF.Max(MathF.Abs(em.Velocity.Min.X), MathF.Abs(em.Velocity.Max.X)));
+            maxVy = MathF.Max(maxVy, MathF.Max(MathF.Abs(em.Velocity.Min.Y), MathF.Abs(em.Velocity.Max.Y)));
+            maxVz = MathF.Max(maxVz, MathF.Max(MathF.Abs(em.Velocity.Min.Z), MathF.Abs(em.Velocity.Max.Z)));
+
+            maxLifetime = MathF.Max(maxLifetime, em.Lifetime.Max);
+            maxSize = MathF.Max(maxSize, em.StartSize.Max);
+            gravityY = MathF.Min(gravityY, em.Gravity.Y); // gravity is negative
+        }
+
+        // Horizontal: tight estimate
+        float rx = maxVx * maxLifetime * 0.2f + maxSize;
+        float rz = maxVz * maxLifetime * 0.2f + maxSize;
+
+        float upY, downY;
+        if (gravityY < 0)
+        {
+            // Gravity-affected: asymmetric Y — tight upward (v²/2g), wider downward
+            float g = MathF.Abs(gravityY);
+            upY = (maxVy * maxVy) / (2f * g) + maxSize;
+            float velDown = maxVy * maxLifetime * 0.2f;
+            float gravDrop = 0.15f * g * maxLifetime * maxLifetime;
+            downY = velDown + gravDrop + maxSize;
+        }
+        else
+        {
+            // No gravity: symmetric spread
+            upY = maxVy * maxLifetime * 0.2f + maxSize;
+            downY = upY;
+        }
+
+        var center = WorldTransform.Translation;
+        return new BoundingBox(
+            new Vector3(center.X - rx, center.Y - downY, center.Z - rz),
+            new Vector3(center.X + rx, center.Y + upY,  center.Z + rz));
+    }
+
     private InstancedMesh? _instancedMesh;
     private Matrix4x4[]? _instanceTransforms;
+    private Plane[]? _cachedFrustumPlanes;
+    private BoundingBox? _estimatedBbox;
+    private float _accumulatedSkippedTime;
 }

@@ -36,6 +36,7 @@
             <CheckBox IsChecked="{Binding ShowSpotLight}" Content="Spot Light" />
             <CheckBox IsChecked="{Binding ShowCamera}" Content="Camera" />
             <CheckBox IsChecked="{Binding ShowBone}" Content="Bones" />
+            <CheckBox IsChecked="{Binding ShowParticleBounds}" Content="Particle Bounds" />
           </StackPanel>
         </Border>
 

@@ -149,6 +149,7 @@ public partial class DebugTestPage : UserControl
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load stones_01: {ex.Message}");
         }
+
     }
 
     // ─── Build Scene ─────────────────────────────────────────
@@ -455,7 +456,7 @@ public partial class DebugTestPage : UserControl
         _fpsMax = 0;
 
         _vm.TotalCount = _sceneNodes.Count(n => n is Model);
-        _vm.DetailText = $"Static: {staticCount} | Skinned: {skinnedCount} | Lights: 3 | Particles: {_particles?.ActiveCount ?? 0}";
+        _vm.DetailText = $"Static: {staticCount} | Skinned: {skinnedCount} | Lights: 3";
 
         view.RequestNextFrameRendering();
     }
@@ -482,6 +483,7 @@ public partial class DebugTestPage : UserControl
         debug.ShowSpotLight = _vm.ShowSpotLight;
         debug.ShowCamera = _vm.ShowCamera;
         debug.ShowBone = _vm.ShowBone;
+        debug.ShowParticleBounds = _vm.ShowParticleBounds;
 
         // Picking
         aura3DView.EnablePicking = _vm.EnablePicking;
@@ -566,6 +568,10 @@ public partial class DebugTestPage : UserControl
                 break;
             case nameof(DebugTestViewModel.ShowBone):
                 scene.RenderPipeline.Settings.Debug.ShowBone = _vm.ShowBone;
+                aura3DView.RequestNextFrameRendering();
+                break;
+            case nameof(DebugTestViewModel.ShowParticleBounds):
+                scene.RenderPipeline.Settings.Debug.ShowParticleBounds = _vm.ShowParticleBounds;
                 aura3DView.RequestNextFrameRendering();
                 break;
 

@@ -39,4 +39,9 @@ public class DebugSettings
     /// 是否显示骨骼调试可视化。
     /// </summary>
     public bool ShowBone { get; set; } = false;
+
+    /// <summary>
+    /// 是否显示粒子系统包围盒（橙色线框）。
+    /// </summary>
+    public bool ShowParticleBounds { get; set; } = false;
 }
