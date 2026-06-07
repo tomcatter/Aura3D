@@ -106,4 +106,24 @@ public partial class AnimationFeaturesViewModel : ViewModelBase
     }
 
     public event Action? ResetRequested;
+
+    // ─── BoneAttachment LocalOffset ─────────────────────────
+
+    [ObservableProperty]
+    private double _offsetX = -9.4;
+
+    [ObservableProperty]
+    private double _offsetY = 6.7;
+
+    [ObservableProperty]
+    private double _offsetZ = 3.5;
+
+    [ObservableProperty]
+    private double _offsetYaw = -17;
+
+    [ObservableProperty]
+    private double _offsetPitch = 90;
+
+    [ObservableProperty]
+    private double _offsetRoll;
 }

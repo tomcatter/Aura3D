@@ -167,6 +167,55 @@
           </StackPanel>
         </Border>
 
+        <!-- Bone Attachment Offset -->
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="6">
+            <TextBlock FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SemiGrey10}" Text="🔧 Torch Offset" />
+
+            <!-- Position -->
+            <TextBlock FontSize="12" FontWeight="Bold" Text="Position" />
+            <Grid ColumnDefinitions="14,*,36" RowDefinitions="Auto,Auto,Auto">
+              <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="X" />
+              <Slider Grid.Row="0" Grid.Column="1" Minimum="-20" Maximum="20"
+                      Value="{Binding OffsetX}" TickFrequency="0.5" />
+              <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
+                         Text="{Binding OffsetX, StringFormat={}{0:F1}}" />
+              <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Y" />
+              <Slider Grid.Row="1" Grid.Column="1" Minimum="-20" Maximum="20"
+                      Value="{Binding OffsetY}" TickFrequency="0.5" />
+              <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center"
+                         Text="{Binding OffsetY, StringFormat={}{0:F1}}" />
+              <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Z" />
+              <Slider Grid.Row="2" Grid.Column="1" Minimum="-20" Maximum="20"
+                      Value="{Binding OffsetZ}" TickFrequency="0.5" />
+              <TextBlock Grid.Row="2" Grid.Column="2" VerticalAlignment="Center"
+                         Text="{Binding OffsetZ, StringFormat={}{0:F1}}" />
+            </Grid>
+
+            <!-- Rotation -->
+            <TextBlock FontSize="12" FontWeight="Bold" Text="Rotation (°)" />
+            <Grid ColumnDefinitions="14,*,36" RowDefinitions="Auto,Auto,Auto">
+              <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Y" />
+              <Slider Grid.Row="0" Grid.Column="1" Minimum="-180" Maximum="180"
+                      Value="{Binding OffsetYaw}" TickFrequency="5" />
+              <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
+                         Text="{Binding OffsetYaw, StringFormat={}{0:F0}}°" />
+              <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="P" />
+              <Slider Grid.Row="1" Grid.Column="1" Minimum="-180" Maximum="180"
+                      Value="{Binding OffsetPitch}" TickFrequency="5" />
+              <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center"
+                         Text="{Binding OffsetPitch, StringFormat={}{0:F0}}°" />
+              <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="R" />
+              <Slider Grid.Row="2" Grid.Column="1" Minimum="-180" Maximum="180"
+                      Value="{Binding OffsetRoll}" TickFrequency="5" />
+              <TextBlock Grid.Row="2" Grid.Column="2" VerticalAlignment="Center"
+                         Text="{Binding OffsetRoll, StringFormat={}{0:F0}}°" />
+            </Grid>
+
+          </StackPanel>
+        </Border>
+
         <!-- Feature Summary -->
         <Border Theme="{StaticResource CardBorder}" Padding="10">
           <StackPanel Spacing="3">

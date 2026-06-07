@@ -1,6 +1,7 @@
 using Aura3D.Avalonia;
 using Aura3D.Core;
 using Aura3D.Core.Nodes;
+using Aura3D.Core.Particles;
 using Aura3D.Core.Resources;
 using Aura3D.Model;
 using Avalonia;
@@ -19,9 +20,16 @@ namespace Example.Pages;
 
 public partial class AnimationFeaturesPage : UserControl
 {
+    private CameraController _cameraController = null!;
+
     public AnimationFeaturesPage()
     {
         InitializeComponent();
+
+        _cameraController = new CameraController(aura3DView)
+        {
+            MoveSpeed = 100f
+        };
 
         // Wire up loop mode radio buttons
         loopRadio.IsChecked = true;
@@ -116,6 +124,7 @@ public partial class AnimationFeaturesPage : UserControl
     AnimationSampler? animationSampler;
     AnimationGraph? animationGraph;
     AnimationBlendSpace? animationBlendSpace;
+    BoneAttachment? rightHandAttachment;
 
     // ─── Scene Initialization ─────────────────────────────────
 
@@ -171,9 +180,6 @@ public partial class AnimationFeaturesPage : UserControl
         }
         vm.SelectedAnimation = displayNames[0];
 
-        // Position the model
-        model.RotationDegrees = new Vector3(0, 180, 0);
-
         // === Create basic animation sampler (default mode) ===
         animationSampler = new AnimationSampler(animations[0])
         {
@@ -225,7 +231,7 @@ public partial class AnimationFeaturesPage : UserControl
         // === Lighting ===
         var dl = new DirectionalLight
         {
-            RotationDegrees = new Vector3(-30, -60, 0),
+            RotationDegrees = new Vector3(-30, 60, 0),
             LightColor = Color.White,
             CastShadow = true
         };
@@ -254,6 +260,9 @@ public partial class AnimationFeaturesPage : UserControl
 
         // === Add model to scene ===
         view.AddNode(model);
+
+        // === Bone Attachment Demo ===
+        SetupBoneAttachments(view);
 
         view.MainCamera.FitToBoundingBox(model.BoundingBox, 0.5f);
         view.MainCamera.Position += view.MainCamera.Up * 100;
@@ -291,6 +300,18 @@ public partial class AnimationFeaturesPage : UserControl
         if (vm.IsBlendSpaceMode && animationBlendSpace != null)
         {
             animationBlendSpace.SetAxis((float)vm.BlendX, (float)vm.BlendY);
+        }
+
+        // Update BoneAttachment LocalOffset from ViewModel
+        if (rightHandAttachment != null)
+        {
+            var degToRad = MathF.PI / 180f;
+            rightHandAttachment.LocalOffset =
+                Matrix4x4.CreateTranslation((float)vm.OffsetX, (float)vm.OffsetY, (float)vm.OffsetZ)
+                * Matrix4x4.CreateFromYawPitchRoll(
+                    (float)(vm.OffsetYaw * degToRad),
+                    (float)(vm.OffsetPitch * degToRad),
+                    (float)(vm.OffsetRoll * degToRad));
         }
     }
 
@@ -388,6 +409,138 @@ public partial class AnimationFeaturesPage : UserControl
             animationBlendSpace.ExternalUpdate = external;
 
         UpdatePlaybackStatus();
+    }
+
+    private void SetupBoneAttachments(Aura3DView view)
+    {
+        if (model?.Skeleton == null)
+            return;
+
+        var boneMap = model.Skeleton.GetBoneIndexMap();
+
+        // 输出所有骨骼名，便于调试
+        System.Diagnostics.Debug.WriteLine("=== Skeleton Bones ===");
+        foreach (var kv in boneMap)
+            System.Diagnostics.Debug.WriteLine($"  [{kv.Value}] {kv.Key}");
+
+        // 按匹配优先级查找右手骨骼
+        string? rightHandName = null;
+        var boneNames = boneMap.Keys.ToList();
+
+        // 策略1：精确匹配 hand_r / hand_r_end
+        rightHandName = boneNames.FirstOrDefault(b =>
+        {
+            var l = b.ToLowerInvariant();
+            return l.EndsWith("hand_r") || l.EndsWith("hand_r_end");
+        });
+
+        // 策略2：包含 right + hand
+        if (rightHandName == null)
+            rightHandName = boneNames.FirstOrDefault(b =>
+            {
+                var l = b.ToLowerInvariant();
+                return l.Contains("righthand") || l.Contains("right_hand");
+            });
+
+        // 策略3：包含 hand_r
+        if (rightHandName == null)
+            rightHandName = boneNames.FirstOrDefault(b =>
+                b.ToLowerInvariant().Contains("hand_r"));
+
+        // 策略4：兜底，包含 hand
+        if (rightHandName == null)
+            rightHandName = boneNames.FirstOrDefault(b =>
+                b.ToLowerInvariant().Contains("hand"));
+
+        System.Diagnostics.Debug.WriteLine($"Right hand bone: {rightHandName ?? "NOT FOUND"}");
+
+        // 取模型层级中的第一个 Mesh，使用其 WorldTransform
+        //（正确传递 Model 与 Mesh 之间可能的中间节点变换）
+        var targetMesh = model.Meshes.FirstOrDefault();
+        if (rightHandName != null && targetMesh != null)
+        {
+            rightHandAttachment = new BoneAttachment
+            {
+                Name = "RightHandAttachment",
+                Mesh = targetMesh,
+                BoneName = rightHandName,
+                // 沿 X 轴旋转 90 度让圆柱从手部向前伸出
+                LocalOffset = Matrix4x4.CreateFromYawPitchRoll(0, MathF.PI / 2, 0)
+            };
+
+            // 火把柄：细长圆柱
+            var torchHandle = new Mesh
+            {
+                Name = "TorchHandle",
+                Geometry = new Aura3D.Core.Geometries.CylinderGeometry(1.5f, 1.5f, 30, 16),
+                Material = new Material
+                {
+                    Channels = [
+                        new Channel()
+                        {
+                            Name = "BaseColor",
+                            Texture = Texture.CreateFromColor(Color.FromArgb(255, 139, 90, 43))
+                        }
+                    ]
+                }
+            };
+            // 火焰粒子系统
+            var fire = new ParticleSystem
+            {
+                Name = "TorchFire",
+                MaxParticles = 200,
+                BlendMode = BlendMode.Translucent
+            };
+            // 放在手柄顶端
+            fire.Position = new Vector3(0, 15, 0);
+
+            // 内焰：亮黄/白色，小而快
+            fire.Emitters.Add(new ParticleEmitter
+            {
+                EmissionRate = 80f,
+                Shape = EmissionShape.Cone,
+                ConeAngle = 10f,
+                Lifetime = new RangeFloat(0.3f, 0.8f),
+                StartSize = new RangeFloat(3f, 6f),
+                EndSize = new RangeFloat(1f, 2f),
+                StartColor = Color.FromArgb(255, 255, 200, 50),
+                EndColor = Color.FromArgb(0, 255, 100, 20),
+                Velocity = new RangeVector3(new(-1, 8, -1), new(1, 15, 1)),
+                Gravity = new Vector3(0, -2, 0)
+            });
+
+            // 外焰：橙红，大而慢
+            fire.Emitters.Add(new ParticleEmitter
+            {
+                EmissionRate = 40f,
+                Shape = EmissionShape.Cone,
+                ConeAngle = 15f,
+                Lifetime = new RangeFloat(0.5f, 1.2f),
+                StartSize = new RangeFloat(5f, 10f),
+                EndSize = new RangeFloat(2f, 4f),
+                StartColor = Color.FromArgb(255, 255, 120, 20),
+                EndColor = Color.FromArgb(0, 200, 40, 10),
+                Velocity = new RangeVector3(new(-1.5f, 5, -1.5f), new(1.5f, 12, 1.5f)),
+                Gravity = new Vector3(0, -1, 0)
+            });
+
+            torchHandle.AddChild(fire, AttachToParentRule.KeepLocal);
+            fire.Play();
+
+            // 点光源跟随火焰
+            var torchLight = new PointLight
+            {
+                Name = "TorchLight",
+                LightColor = Color.FromArgb(255, 255, 160, 60),
+                LuminousIntensity = 1000f,
+                AttenuationRadius = 100f
+            };
+            torchLight.Position = new Vector3(0, 15, 0);
+            torchHandle.AddChild(torchLight, AttachToParentRule.KeepLocal);
+
+            rightHandAttachment.AddChild(torchHandle, AttachToParentRule.KeepLocal);
+            view.AddNode(rightHandAttachment);
+        }
     }
 
     private void UpdatePlaybackStatus()
