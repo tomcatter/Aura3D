@@ -15,7 +15,7 @@ public static class AssimpLoader
 {
     public unsafe static Core.Nodes.Model Load(string path, Func<string, Core.Resources.Texture>? loadTextureFunc = null)
     {
-        var importer = new AssimpContext();
+        using var importer = new AssimpContext();
 
         var directory = Path.GetDirectoryName(path);
 
@@ -38,7 +38,7 @@ public static class AssimpLoader
 
     public unsafe static List<Core.Resources.Animation> LoadAnimations(string path, Skeleton? skeleton = null)
     {
-        var importer = new AssimpContext();
+        using var importer = new AssimpContext();
 
         var directory = Path.GetDirectoryName(path);
 
@@ -61,7 +61,7 @@ public static class AssimpLoader
 
     public unsafe static List<Core.Resources.Animation> LoadAnimations(Stream stream, Skeleton? skeleton = null, string? extension = null)
     {
-        var importer = new AssimpContext();
+        using var importer = new AssimpContext();
 
         var scene = importer.ImportFileFromStream(stream, DefaultFlags, extension);
 
@@ -84,7 +84,7 @@ public static class AssimpLoader
 
     public unsafe static Core.Nodes.Model Load(Stream stream, string? extension = null, Func<string, Core.Resources.Texture>? loadTextureFunc = null)
     {
-        var importer = new AssimpContext();
+        using var importer = new AssimpContext();
 
         var scene = importer.ImportFileFromStream(stream, DefaultFlags, extension);
 
@@ -106,7 +106,7 @@ public static class AssimpLoader
     public static (Core.Nodes.Model, List<Core.Resources.Animation>) LoadModelAndAnimations(string path, Func<string, Core.Resources.Texture>? loadTextureFunc = null)
     {
 
-        var importer = new AssimpContext();
+        using var importer = new AssimpContext();
 
         var directory = Path.GetDirectoryName(path);
 
@@ -137,11 +137,9 @@ public static class AssimpLoader
         return (model, animations);
     }
 
-
-
     public static (Core.Nodes.Model, List<Core.Resources.Animation>) LoadModelAndAnimations(Stream stream, string? extension = null, Func<string, Core.Resources.Texture>? loadTextureFunc = null)
     {
-        var importer = new AssimpContext();
+        using var importer = new AssimpContext();
 
         var scene = importer.ImportFileFromStream(stream, DefaultFlags, extension);
 
@@ -175,7 +173,7 @@ public static class AssimpLoader
                   | PostProcessSteps.GenerateNormals
                   | PostProcessSteps.OptimizeMeshes
                   | PostProcessSteps.CalculateTangentSpace
-                | PostProcessSteps.GenerateUVCoords;
+                  | PostProcessSteps.GenerateUVCoords;
     private unsafe static List<Core.Resources.Animation> processAnimations(Scene scene)
     {
         List<Core.Resources.Animation> animations = [];
