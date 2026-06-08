@@ -105,6 +105,8 @@ public class ParticleSystem : Node
                 AddChild(em.InstancedMesh, AttachToParentRule.KeepWorld);
             }
         }
+
+        RefreshGpuResources();
     }
 
     public void Stop()
@@ -127,9 +129,13 @@ public class ParticleSystem : Node
                 em.InstancedMesh = null;
             }
         }
+
+        RefreshGpuResources();
     }
 
     public void Pause() => _isPaused = !_isPaused;
+
+    public void NotifyGpuResourcesChanged() => RefreshGpuResources();
 
     // ---- Update ----
 
