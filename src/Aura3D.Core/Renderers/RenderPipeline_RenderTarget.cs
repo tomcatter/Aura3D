@@ -73,9 +73,8 @@ public abstract partial class RenderPipeline
                 foreach(var (textureName, textureFormat) in rtConf.Textures)
                 {
                     rt.Item1.AddRenderTexture(textureName, textureFormat);
-                    rt.Item1.Upload(gl!);
-                    rt.Item1.NeedsUpload = false;
                 }
+                EnsureUploaded(rt.Item1);
                 rtMap.Add(size, rt);
             }
             else

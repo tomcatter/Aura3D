@@ -64,8 +64,6 @@ public unsafe class ParticleGpuBuffer : IGpuResource
             UploadInstanceData(gl);
             _dataDirty = false;
         }
-
-        NeedsUpload = false;
     }
 
     /// <summary>
