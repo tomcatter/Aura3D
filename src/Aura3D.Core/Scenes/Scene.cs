@@ -58,27 +58,7 @@ public class Scene
         get => _background;
         set
         {
-            var oldValue = _background;
-
-            if (oldValue.IsT0 && oldValue.AsT0 != null)
-            {
-                this.RenderPipeline.RemoveGpuResource(oldValue.AsT0);
-            }
-            else if (oldValue.IsT1 && oldValue.AsT1 != null)
-            {
-                this.RenderPipeline.RemoveGpuResource(oldValue.AsT1);
-            }
-
             _background = value;
-
-            if (value.IsT0 && value.AsT0 != null)
-            {
-                this.RenderPipeline.AddGpuResource(value.AsT0);
-            }
-            else if (value.IsT1 && value.AsT1 != null)
-            {
-                this.RenderPipeline.AddGpuResource(value.AsT1);
-            }
         }
     }
 

@@ -199,28 +199,6 @@ public class ParticleSystem : Node
         MatrixHelper.ExtractPlanes(vp, _cachedFrustumPlanes);
     }
 
-    // ---- GPU resources ----
-
-    public override List<IGpuResource> GetGpuResources()
-    {
-        var list = new List<IGpuResource>();
-
-        foreach (var em in Emitters)
-        {
-            if (!em.UseMeshRenderer)
-            {
-                // Billboard mode: add GpuBuffer and texture
-                if (em.GpuBuffer != null)
-                    list.Add(em.GpuBuffer);
-                if (em.Texture is IGpuResource gr)
-                    list.Add(gr);
-            }
-            // Mesh mode: InstancedMesh is a child node — it manages its own GPU resources
-        }
-
-        return list;
-    }
-
     // ---- Bounding box estimation ----
 
     /// <summary>

@@ -278,6 +278,8 @@ public partial class RenderPass
     {
         if (CurrentShader == null)
             return;
+        if (texture is IGpuResource gpuRes)
+            renderPipeline.EnsureUploaded(gpuRes);
         var location = CurrentShader.GetUniformLocation(name, gl);
         if (location == -1)
             return;
@@ -299,6 +301,8 @@ public partial class RenderPass
             return;
         if (CurrentShader == null)
             return;
+        if (texture is IGpuResource gpuRes)
+            renderPipeline.EnsureUploaded(gpuRes);
         var location = CurrentShader.GetUniformLocation(name, gl);
         if (location == -1)
             return;

@@ -75,7 +75,6 @@ public abstract partial class RenderPipeline
                     rt.Item1.AddRenderTexture(textureName, textureFormat);
                     rt.Item1.Upload(gl!);
                     rt.Item1.NeedsUpload = false;
-                    AddGpuResource(rt.Item1);
                 }
                 rtMap.Add(size, rt);
             }

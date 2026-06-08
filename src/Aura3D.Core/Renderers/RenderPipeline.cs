@@ -113,32 +113,6 @@ public abstract partial class RenderPipeline
     public List<RenderPass> OnceRenderPasses { get; } = new List<RenderPass>();
 
     /// <summary>
-    /// 获取当前渲染管线管理的所有 GPU 资源集合。
-    /// </summary>
-    public HashSet<IGpuResource> GpuResources { get; } = new HashSet<IGpuResource>();
-
-    /// <summary>
-    /// GPU 资源引用计数，跟踪每个资源被多少个节点引用。
-    /// </summary>
-    Dictionary<IGpuResource, int> _gpuResourceRefCounts = new();
-
-    /// <summary>
-    /// 延迟卸载缓存，ref count 归零的资源移入此处，等待超时后真正销毁。
-    /// </summary>
-    Dictionary<IGpuResource, DateTime> _pendingDestroyResources = new();
-
-    /// <summary>
-    /// 获取或设置延迟卸载超时时间（秒）。移除节点后 GPU 资源不会立即销毁，
-    /// 而是缓存该时长，若在此期间重新添加则可复用。默认 5 秒。
-    /// </summary>
-    public float ResourceUnloadDelay { get; set; } = 5f;
-
-    /// <summary>
-    /// 获取需要更新上传的 GPU 资源集合。
-    /// </summary>
-    public HashSet<IGpuResource> NeedUpdateResources { get; } = new HashSet<IGpuResource>();
-
-    /// <summary>
     /// 获取或设置方向光源的最大数量限制。
     /// </summary>
     public int DirectionalLightLimit
@@ -230,100 +204,17 @@ public abstract partial class RenderPipeline
     }
 
     /// <summary>
-    /// 更新所有 GPU 资源，上传新增或已标记需要更新的资源到 GPU，并清理已移除资源。
+    /// 确保指定 GPU 资源已上传到 GPU。若 NeedsUpload 为 true 则执行 Upload 并清标记。
+    /// 所有渲染通道使用资源前必须通过此方法，实现懒上传。
     /// </summary>
-    public void UpdateGpuResources()
+    public void EnsureUploaded(IGpuResource resource)
     {
-        foreach(var (isAdd, gpuResource) in modifyGpuResourceList)
+        if (resource.NeedsUpload)
         {
-            if (isAdd)
-            {
-                if (_pendingDestroyResources.Remove(gpuResource))
-                {
-                    // 从延迟卸载缓存中取回，GPU 数据仍在，无需重新上传
-                    GpuResources.Add(gpuResource);
-                    _gpuResourceRefCounts[gpuResource] = 1;
-                }
-                else if (GpuResources.Contains(gpuResource))
-                {
-                    // 已在活跃集合中，递增引用计数
-                    _gpuResourceRefCounts[gpuResource]++;
-                }
-                else
-                {
-                    // 新资源
-                    GpuResources.Add(gpuResource);
-                    _gpuResourceRefCounts[gpuResource] = 1;
-                }
-            }
-            else
-            {
-                if (_gpuResourceRefCounts.TryGetValue(gpuResource, out int refCount))
-                {
-                    refCount--;
-                    if (refCount > 0)
-                    {
-                        // 仍有其他节点引用，仅递减引用计数
-                        _gpuResourceRefCounts[gpuResource] = refCount;
-                    }
-                    else
-                    {
-                        // 引用归零，移入延迟卸载缓存
-                        GpuResources.Remove(gpuResource);
-                        _gpuResourceRefCounts.Remove(gpuResource);
-                        _pendingDestroyResources[gpuResource] = DateTime.Now;
-                    }
-                }
-            }
-        }
-        modifyGpuResourceList.Clear();
-
-        // 检查延迟卸载缓存中超时的资源，真正销毁
-        var now = DateTime.Now;
-        var expiredResources = new List<IGpuResource>();
-        foreach (var (resource, removeTime) in _pendingDestroyResources)
-        {
-            if ((now - removeTime).TotalSeconds >= ResourceUnloadDelay)
-            {
-                expiredResources.Add(resource);
-            }
-        }
-        foreach (var resource in expiredResources)
-        {
-            _pendingDestroyResources.Remove(resource);
-            resource.Destroy(gl!);
-            resource.NeedsUpload = true;
-        }
-
-        foreach (var gpuResource in GpuResources)
-        {
-            if (gpuResource.NeedsUpload == true)
-            {
-                gpuResource.Upload(gl!);
-                gpuResource.NeedsUpload = false;
-            }
+            resource.Upload(gl!);
+            resource.NeedsUpload = false;
         }
     }
-
-    /// <summary>
-    /// 将指定的 GPU 资源添加到当前渲染管线中。
-    /// </summary>
-    /// <param name="gpuResource">要添加的 GPU 资源。</param>
-    public void AddGpuResource(IGpuResource gpuResource)
-    {
-        modifyGpuResourceList.Add((true, gpuResource));
-    }
-
-    /// <summary>
-    /// 从当前渲染管线中移除指定的 GPU 资源。
-    /// </summary>
-    /// <param name="gpuResource">要移除的 GPU 资源。</param>
-    public void RemoveGpuResource(IGpuResource gpuResource)
-    {
-        modifyGpuResourceList.Add((false, gpuResource));
-    }
-
-    List<(bool isAdd, IGpuResource gpuResource)> modifyGpuResourceList = [];
 
     /// <summary>
     /// 将节点添加到当前渲染管线，并根据节点类型分类管理。
@@ -355,13 +246,6 @@ public abstract partial class RenderPipeline
                 ParticleSystems.Add(particleSystem);
                 break;
         }
-
-        foreach (var gpuResource in node.GetGpuResources())
-        {
-            AddGpuResource(gpuResource);
-        }
-
-        node.InitializeReportedGpuResources();
     }
 
     /// <summary>
@@ -394,12 +278,6 @@ public abstract partial class RenderPipeline
                 ParticleSystems.Remove(particleSystem);
                 break;
         }
-        foreach(var gpuResource in node.GetGpuResources())
-        {
-            RemoveGpuResource(gpuResource);
-        }
-
-        node.ClearPipelineGpuResources();
     }
 
     private void UpdateLightLimit()
@@ -420,7 +298,6 @@ public abstract partial class RenderPipeline
     {
         UpdateRenderTargetsLRU();
         UpdateLightLimit();
-        UpdateGpuResources();
 
         BeforeRender();
         foreach (var renderPass in OnceRenderPasses)
@@ -617,11 +494,8 @@ public abstract partial class RenderPipeline
         if (_internalCube == null)
         {
             _internalCube = new InternalCube();
-            _internalCube.Upload(gl);
-            _internalCube.NeedsUpload = false;
-            GpuResources.Add(_internalCube);
-            _gpuResourceRefCounts[_internalCube] = 1;
         }
+        EnsureUploaded(_internalCube);
         gl.BindVertexArray(_internalCube.Vao);
         gl.DrawArrays(GLEnum.Triangles, 0, 36);
     }
@@ -636,11 +510,8 @@ public abstract partial class RenderPipeline
         if (_internalQuad == null)
         {
             _internalQuad = new InternalQuad();
-            _internalQuad.Upload(gl!);
-            _internalQuad.NeedsUpload = false;
-            GpuResources.Add(_internalQuad);
-            _gpuResourceRefCounts[_internalQuad] = 1;
         }
+        EnsureUploaded(_internalQuad);
         gl.BindVertexArray(_internalQuad.Vao);
         gl.DrawElements(GLEnum.Triangles, 6, GLEnum.UnsignedInt, (void*)0);
     }
@@ -650,22 +521,6 @@ public abstract partial class RenderPipeline
     /// </summary>
     public virtual void Destroy()
     {
-        foreach(var gpuResource in GpuResources)
-        {
-            gpuResource.Destroy(gl!);
-            gpuResource.NeedsUpload = true;
-        }
-
-        GpuResources.Clear();
-        _gpuResourceRefCounts.Clear();
-
-        foreach (var gpuResource in _pendingDestroyResources.Keys)
-        {
-            gpuResource.Destroy(gl!);
-            gpuResource.NeedsUpload = true;
-        }
-        _pendingDestroyResources.Clear();
-
         foreach (var pass in OnceRenderPasses)
         {
             pass.Destroy();

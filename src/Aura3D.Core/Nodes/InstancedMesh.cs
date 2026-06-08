@@ -118,7 +118,6 @@ public class InstancedMesh : Node, IGpuResource
         {
             if (_material == value) return;
             _material = value;
-            RefreshGpuResources();
         }
     }
 
@@ -364,27 +363,6 @@ public class InstancedMesh : Node, IGpuResource
         instancedMesh.EnsureDefaultAttributes();
 
         return instancedMesh;
-    }
-
-    public override List<IGpuResource> GetGpuResources()
-    {
-        var list = new List<IGpuResource>()
-        {
-            this
-        };
-
-        if (Material != null)
-        {
-            list.Add(Material);
-            foreach (var channel in Material.Channels)
-            {
-                if (channel.Texture != null && channel.Texture is IGpuResource gpuResource)
-                {
-                    list.Add(gpuResource);
-                }
-            }
-        }
-        return list;
     }
 
     /// <summary>

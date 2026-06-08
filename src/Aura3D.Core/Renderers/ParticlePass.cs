@@ -206,7 +206,7 @@ public class ParticlePass : RenderPass
             if (em.Particles != null && em.GpuBuffer != null)
             {
                 em.GpuBuffer.SetParticleData(em.Particles, em.ActiveCount);
-                em.GpuBuffer.Upload(gl!);
+                renderPipeline.EnsureUploaded(em.GpuBuffer);
                 em.GpuBuffer.Draw(gl!);
             }
         }

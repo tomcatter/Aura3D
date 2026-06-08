@@ -128,7 +128,6 @@ public class Camera : Node
         {
             if (_renderTarget == value) return;
             _renderTarget = value;
-            RefreshGpuResources();
         }
     }
     private IRenderTarget _renderTarget = new ControlRenderTarget();
@@ -137,19 +136,6 @@ public class Camera : Node
     /// 是否渲染背景。
     /// </summary>
     public bool IsRenderBackground = true;
-
-    /// <summary>
-    /// 获取当前相机使用的 GPU 资源列表。
-    /// </summary>
-    /// <returns>GPU 资源列表。</returns>
-    public override List<IGpuResource> GetGpuResources()
-    {
-        var list = new List<IGpuResource>();
-
-        list.Add(RenderTarget);
-
-        return list;
-    }
 
     /// <summary>
     /// 使相机朝向指定目标点。

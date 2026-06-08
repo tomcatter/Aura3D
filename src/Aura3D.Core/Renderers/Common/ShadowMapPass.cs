@@ -101,7 +101,7 @@ public class ShadowMapPass : RenderPass
             if (rt == null)
             {
                 rt = new RenderTarget().SetDepthTexture(TextureFormat.DepthComponent24).SetSize(1024, 1024);
-                rt.Upload(gl);
+                renderPipeline.EnsureUploaded(rt);
                 spotLight.SetPipelineGpuResource("ShadowMapRenderTarget", rt);
             }
 
@@ -185,7 +185,6 @@ public class ShadowMapPass : RenderPass
                     csmData.FboId = gl.GenFramebuffer();
 
                     directionalLight.SetPipelineGpuResource(nameof(CsmShadowData), csmData);
-                    renderPipeline.AddGpuResource(csmData);
                 }
 
                 // 更新每帧变化的级联数据
@@ -256,7 +255,7 @@ public class ShadowMapPass : RenderPass
                 if (rt == null)
                 {
                     rt = new RenderTarget().SetDepthTexture(TextureFormat.DepthComponent24).SetSize(DefaultShadowMapRes, DefaultShadowMapRes);
-                    rt.Upload(gl);
+                    renderPipeline.EnsureUploaded(rt);
                     directionalLight.SetPipelineGpuResource("ShadowMapRenderTarget", rt);
                 }
 

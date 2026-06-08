@@ -52,7 +52,6 @@ public class CelLightPass : RenderPass
         VertexShader = ShaderResource.MeshVert;
         FragmentShader = ShaderResource.CelFrag;
         rampTexture = TextureLoader.LoadTexture(ShaderResource.CelRamp2);
-        renderPipeline.AddGpuResource(rampTexture);
     }
 
     public override void BeforeRender(Camera camera)

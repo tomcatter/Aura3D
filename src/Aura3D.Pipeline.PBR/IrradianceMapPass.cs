@@ -98,7 +98,7 @@ void main()
             .AddRenderTexture("Irradiance", TextureFormat.Rgb16f)
             .SetDepthTexture(TextureFormat.DepthComponent16);
 
-            irradianceMap.Upload(gl);
+            renderPipeline.EnsureUploaded(irradianceMap);
         }
 
 
@@ -140,9 +140,11 @@ void main()
             UniformMatrix4("view", views[i]);
             
             UniformInt("environmentMap", 0);
-            
+
+            renderPipeline.EnsureUploaded(ibl);
+
             gl.ActiveTexture(TextureUnit.Texture0);
-            
+
             gl.BindTexture(TextureTarget.TextureCubeMap, ibl.TextureId);
 
             RenderCube();
