@@ -166,8 +166,6 @@ public class LightPass : RenderPass
 
     public override void Destroy()
     {
-        defaultBaseColor.Destroy(gl);
-        defaultNormal.Destroy(gl);
     }
 
     public override void BeforeRender(Camera camera)

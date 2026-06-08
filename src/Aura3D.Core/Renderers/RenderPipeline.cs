@@ -113,6 +113,11 @@ public abstract partial class RenderPipeline
     public List<RenderPass> OnceRenderPasses { get; } = new List<RenderPass>();
 
     /// <summary>
+    /// 管线追踪的所有已上传 GPU 资源，用于管线销毁时统一清理。
+    /// </summary>
+    public HashSet<IGpuResource> GpuResources { get; } = new HashSet<IGpuResource>();
+
+    /// <summary>
     /// 获取或设置方向光源的最大数量限制。
     /// </summary>
     public int DirectionalLightLimit
@@ -213,6 +218,7 @@ public abstract partial class RenderPipeline
         {
             resource.Upload(gl!);
             resource.NeedsUpload = false;
+            GpuResources.Add(resource);
         }
     }
 
@@ -521,6 +527,14 @@ public abstract partial class RenderPipeline
     /// </summary>
     public virtual void Destroy()
     {
+        foreach(var gpuResource in GpuResources)
+        {
+            gpuResource.Destroy(gl!);
+            gpuResource.NeedsUpload = true;
+        }
+
+        GpuResources.Clear();
+
         foreach (var pass in OnceRenderPasses)
         {
             pass.Destroy();

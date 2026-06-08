@@ -235,6 +235,7 @@ public class ShadowMapPass : RenderPass
                 var oldRt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
                 if (oldRt != null)
                 {
+                    renderPipeline.GpuResources.Remove(oldRt);
                     oldRt.Destroy(gl);
                     directionalLight.RemovePipelineGpuResource("ShadowMapRenderTarget");
                 }
