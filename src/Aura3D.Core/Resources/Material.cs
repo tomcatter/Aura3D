@@ -64,6 +64,15 @@ public class Material : IClone<Material>, IGpuResource
     /// <param name="key">参数键名</param>
     /// <param name="value">参数值</param>
     /// <returns>是否成功获取</returns>
+    /// <summary>
+    /// 遍历所有参数键值对
+    /// </summary>
+    public IEnumerable<KeyValuePair<string, object>> EnumerateParameters()
+    {
+        foreach (var kv in parameters)
+            yield return kv;
+    }
+
     public bool TryGetParameterValue<T>(string key, out T value)
     {
         if (parameters.TryGetValue(key, out var obj) && obj is T t)

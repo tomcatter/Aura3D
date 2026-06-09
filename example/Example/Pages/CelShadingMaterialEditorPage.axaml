@@ -10,22 +10,68 @@
              x:Class="Example.Pages.CelShadingMaterialEditorPage">
   <DockPanel>
     <!-- Right Panel: World Editor -->
-    <ScrollViewer DockPanel.Dock="Right" Width="280">
-      <StackPanel Spacing="6" Margin="8">
-        <Border Theme="{StaticResource CardBorder}" Padding="10">
-          <StackPanel Spacing="4">
-            <TextBlock FontSize="14" FontWeight="Bold" Text="World Outliner" />
-            <TreeView x:Name="NodeTree" ItemsSource="{Binding RootNodes}">
-              <TreeView.ItemTemplate>
-                <TreeDataTemplate ItemsSource="{Binding Children}">
-                  <TextBlock Text="{Binding DisplayName}" FontSize="12" />
-                </TreeDataTemplate>
-              </TreeView.ItemTemplate>
-            </TreeView>
-          </StackPanel>
-        </Border>
-      </StackPanel>
-    </ScrollViewer>
+    <Grid DockPanel.Dock="Right" Width="280" RowDefinitions="*,5,*">
+      <!-- World Outliner -->
+      <Border Grid.Row="0" Theme="{StaticResource CardBorder}" Padding="10" Margin="8,8,8,0">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" FontSize="14" FontWeight="Bold" Text="World Outliner" Margin="0,0,0,4" />
+          <TreeView x:Name="NodeTree" ItemsSource="{Binding RootNodes}" SelectionChanged="NodeTree_SelectionChanged">
+            <TreeView.ItemTemplate>
+              <TreeDataTemplate ItemsSource="{Binding Children}">
+                <TextBlock Text="{Binding DisplayName}" FontSize="12" />
+              </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+          </TreeView>
+        </DockPanel>
+      </Border>
+
+      <!-- Splitter -->
+      <GridSplitter Grid.Row="1" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"
+                    Background="#444" Cursor="SizeNorthSouth" Margin="8,0" />
+
+      <!-- Material Editor -->
+      <Border Grid.Row="2" Theme="{StaticResource CardBorder}" Padding="10" Margin="8,0,8,8">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" FontSize="14" FontWeight="Bold" Text="Material Editor" Margin="0,0,0,4" />
+          <Panel IsVisible="{Binding HasMaterial}">
+            <ScrollViewer>
+              <StackPanel Spacing="8">
+                <!-- Channels -->
+                <ItemsControl ItemsSource="{Binding Channels}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Theme="{StaticResource CardBorder}" Padding="6" Margin="0,2">
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding TextureInfo}" FontSize="11" Foreground="#AAA" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Parameters -->
+                <ItemsControl ItemsSource="{Binding Parameters}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Theme="{StaticResource CardBorder}" Padding="6" Margin="0,2">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Grid.Column="0" Text="{Binding Key}" FontSize="11" />
+                          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="{Binding Value}" FontSize="11" Foreground="#7EC8E3" />
+                            <TextBlock Text="{Binding TypeName}" FontSize="10" Foreground="#666" />
+                          </StackPanel>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </ScrollViewer>
+          </Panel>
+        </DockPanel>
+      </Border>
+    </Grid>
 
     <!-- 3D Viewport -->
     <a:Aura3DView x:TypeArguments="acr:CelShadingPipeline" x:Name="aura3Dview"

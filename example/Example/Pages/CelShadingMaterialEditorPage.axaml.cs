@@ -1,9 +1,11 @@
 using Aura3D.Avalonia;
 using Aura3D.Core;
 using Aura3D.Core.Nodes;
+using Aura3D.Core.Resources;
 using Aura3D.Model;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using Example.ViewModels;
@@ -95,6 +97,7 @@ public partial class CelShadingMaterialEditorPage : UserControl
         using (var s = AssetLoader.Open(new Uri("avares://Example/Assets/Models/NPC_Avatar_Girl_Sword_Nilou.glb")))
         {
             var model = ModelLoader.LoadGlbModel(s);
+            model.Name = "Nilou";
 
             view.AddNode(model);
 
@@ -141,6 +144,54 @@ public partial class CelShadingMaterialEditorPage : UserControl
         dl.RotationDegrees = dl.RotationDegrees + (new Vector3(0, 30, 0) * (float)args.DeltaTime);
     }
 
+    private void NodeTree_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_vm == null) return;
+
+        if (NodeTree.SelectedItem is not NodeItem nodeItem || nodeItem.Node is not Mesh mesh)
+        {
+            _vm.Channels.Clear();
+            _vm.Parameters.Clear();
+            _vm.HasMaterial = false;
+            return;
+        }
+
+        var material = mesh.Material;
+        if (material == null)
+        {
+            _vm.Channels.Clear();
+            _vm.Parameters.Clear();
+            _vm.HasMaterial = false;
+            return;
+        }
+
+        _vm.HasMaterial = true;
+
+        // Channels
+        _vm.Channels.Clear();
+        foreach (var channel in material.Channels)
+        {
+            if (channel.Texture != null)
+            {
+                _vm.Channels.Add(new ChannelItem(channel.Name, channel.Texture.GetType().Name));
+            }
+        }
+
+        // Parameters
+        _vm.Parameters.Clear();
+        foreach (var kv in material.EnumerateParameters())
+        {
+            var valueStr = kv.Value switch
+            {
+                System.Numerics.Vector4 v => $"({v.X:F3}, {v.Y:F3}, {v.Z:F3}, {v.W:F3})",
+                float f => $"{f:F4}",
+                int i => i.ToString(),
+                _ => kv.Value.ToString() ?? ""
+            };
+            _vm.Parameters.Add(new ParameterItem(kv.Key, valueStr, kv.Value.GetType().Name));
+        }
+    }
+
     private void RefreshNodeTree(Aura3DView view)
     {
         if (_vm == null || view.Scene == null) return;
@@ -156,8 +207,8 @@ public partial class CelShadingMaterialEditorPage : UserControl
     private static NodeItem BuildNodeItem(Node node)
     {
         var typeName = node.GetType().Name;
-        var displayName = string.IsNullOrEmpty(node.Name) ? typeName : $"{node.Name} ({typeName})";
-        var item = new NodeItem(displayName);
+        var displayName = string.IsNullOrEmpty(node.Name) ? $"NoName ({typeName})" : $"{node.Name} ({typeName})";
+        var item = new NodeItem(displayName, node);
 
         foreach (var child in node.Children)
         {
