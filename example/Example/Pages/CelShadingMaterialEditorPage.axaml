@@ -5,6 +5,31 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              xmlns:a="https://github.com/CeSun/Aura3D"
             xmlns:acr="clr-namespace:Aura3D.Pipeline.CelShading;assembly=Aura3D.Pipeline.CelShading"
+            xmlns:vm="clr-namespace:Example.ViewModels"
+            x:DataType="vm:CelShadingMaterialEditorViewModel"
              x:Class="Example.Pages.CelShadingMaterialEditorPage">
-    <a:Aura3DView x:TypeArguments="acr:CelShadingPipeline" x:Name="aura3Dview" SceneInitialized="Aura3DView_SceneInitialized" SceneUpdated="Aura3DView_SceneUpdated"></a:Aura3DView>
+  <DockPanel>
+    <!-- Right Panel: World Editor -->
+    <ScrollViewer DockPanel.Dock="Right" Width="280">
+      <StackPanel Spacing="6" Margin="8">
+        <Border Theme="{StaticResource CardBorder}" Padding="10">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="World Outliner" />
+            <TreeView x:Name="NodeTree" ItemsSource="{Binding RootNodes}">
+              <TreeView.ItemTemplate>
+                <TreeDataTemplate ItemsSource="{Binding Children}">
+                  <TextBlock Text="{Binding DisplayName}" FontSize="12" />
+                </TreeDataTemplate>
+              </TreeView.ItemTemplate>
+            </TreeView>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- 3D Viewport -->
+    <a:Aura3DView x:TypeArguments="acr:CelShadingPipeline" x:Name="aura3Dview"
+                  SceneInitialized="Aura3DView_SceneInitialized"
+                  SceneUpdated="Aura3DView_SceneUpdated" />
+  </DockPanel>
 </UserControl>

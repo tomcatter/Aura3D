@@ -6,10 +6,12 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
+using Example.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 
 namespace Example.Pages;
@@ -19,17 +21,19 @@ public partial class CelShadingMaterialEditorPage : UserControl
     DirectionalLight dl;
 
     private CameraController _cameraController;
+    private CelShadingMaterialEditorViewModel? _vm;
 
     public CelShadingMaterialEditorPage()
     {
         InitializeComponent();
         _cameraController = new CameraController(aura3Dview);
-
     }
 
     private void Aura3DView_SceneInitialized(object? sender, Aura3D.Avalonia.InitializedRoutedEventArgs e)
     {
         var view = (Aura3DView)sender;
+
+        _vm = DataContext as CelShadingMaterialEditorViewModel;
 
         var camera = view.MainCamera;
 
@@ -128,10 +132,38 @@ public partial class CelShadingMaterialEditorPage : UserControl
         camera.Position = camera.Position + camera.Up * 2 + camera.Forward * 3;
 
         camera.Position = camera.Position + camera.Forward * 3;
+
+        RefreshNodeTree(view);
     }
 
     private void Aura3DView_SceneUpdated(object? sender, Aura3D.Avalonia.UpdateRoutedEventArgs args)
     {
         dl.RotationDegrees = dl.RotationDegrees + (new Vector3(0, 30, 0) * (float)args.DeltaTime);
+    }
+
+    private void RefreshNodeTree(Aura3DView view)
+    {
+        if (_vm == null || view.Scene == null) return;
+
+        var rootNodes = view.Scene.Nodes.Where(n => n.Parent == null);
+        _vm.RootNodes.Clear();
+        foreach (var node in rootNodes)
+        {
+            _vm.RootNodes.Add(BuildNodeItem(node));
+        }
+    }
+
+    private static NodeItem BuildNodeItem(Node node)
+    {
+        var typeName = node.GetType().Name;
+        var displayName = string.IsNullOrEmpty(node.Name) ? typeName : $"{node.Name} ({typeName})";
+        var item = new NodeItem(displayName);
+
+        foreach (var child in node.Children)
+        {
+            item.Children.Add(BuildNodeItem(child));
+        }
+
+        return item;
     }
 }
