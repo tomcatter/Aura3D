@@ -36,14 +36,21 @@
           <Panel IsVisible="{Binding HasMaterial}">
             <ScrollViewer>
               <StackPanel Spacing="8">
-                <!-- Channels -->
+                <!-- Texture Channels -->
                 <ItemsControl ItemsSource="{Binding Channels}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <Border Theme="{StaticResource CardBorder}" Padding="6" Margin="0,2">
-                        <StackPanel Spacing="2">
+                      <Border Theme="{StaticResource CardBorder}" Padding="6" Margin="0,2"
+                              PointerPressed="ChannelThumbnail_Click" Cursor="Hand">
+                        <StackPanel Spacing="4">
                           <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" />
-                          <TextBlock Text="{Binding TextureInfo}" FontSize="11" Foreground="#AAA" />
+                          <Border Height="48" CornerRadius="4" ClipToBounds="True"
+                                  Background="#333">
+                            <Image Source="{Binding Thumbnail}"
+                                   Stretch="UniformToFill"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                          </Border>
                         </StackPanel>
                       </Border>
                     </DataTemplate>
@@ -55,13 +62,31 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <Border Theme="{StaticResource CardBorder}" Padding="6" Margin="0,2">
-                        <Grid ColumnDefinitions="*,Auto">
-                          <TextBlock Grid.Column="0" Text="{Binding Key}" FontSize="11" />
-                          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                            <TextBlock Text="{Binding Value}" FontSize="11" Foreground="#7EC8E3" />
-                            <TextBlock Text="{Binding TypeName}" FontSize="10" Foreground="#666" />
-                          </StackPanel>
-                        </Grid>
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="{Binding Key}" FontSize="11" Foreground="#AAA" />
+                          <!-- Color editor: click swatch to open popup -->
+                          <Panel IsVisible="{Binding IsColor}">
+                            <Grid ColumnDefinitions="28,*">
+                              <Border Grid.Column="0" Width="28" Height="28" CornerRadius="4"
+                                      Background="{Binding ColorValue}" BorderBrush="#555" BorderThickness="1"
+                                      Cursor="Hand" PointerPressed="ColorSwatch_Click" />
+                              <TextBlock Grid.Column="1" Text="{Binding StringValue}" FontSize="11"
+                                         Foreground="#7EC8E3" VerticalAlignment="Center" Margin="6,0,0,0" />
+                            </Grid>
+                          </Panel>
+                          <!-- Float editor -->
+                          <Panel IsVisible="{Binding IsFloat}">
+                            <TextBox Text="{Binding StringValue}" FontSize="11" />
+                          </Panel>
+                          <!-- Int editor -->
+                          <Panel IsVisible="{Binding IsInt}">
+                            <TextBox Text="{Binding StringValue}" FontSize="11" />
+                          </Panel>
+                          <!-- Other (read-only) -->
+                          <Panel IsVisible="{Binding IsOther}">
+                            <TextBlock Text="{Binding StringValue}" FontSize="11" Foreground="#7EC8E3" />
+                          </Panel>
+                        </StackPanel>
                       </Border>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
