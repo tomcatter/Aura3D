@@ -28,6 +28,7 @@ public class AnimationBlendSpace : IAnimationSampler
         Skeleton = skeleton;
 
         bonesTransform = new Matrix4x4[skeleton.Bones.Count];
+        BoneMatrixBuffer = new BoneMatrixBuffer(Skeleton, this);
 
         for (var i = 0; i < bonesTransform.Length; i++)
         {
@@ -39,6 +40,9 @@ public class AnimationBlendSpace : IAnimationSampler
     /// 获取骨骼数据。
     /// </summary>
     public Skeleton Skeleton { get; private set; }
+
+    /// <inheritdoc />
+    public BoneMatrixBuffer BoneMatrixBuffer { get; }
 
     /// <summary>
     /// 获取或设置是否由外部更新动画。
@@ -114,6 +118,7 @@ public class AnimationBlendSpace : IAnimationSampler
     public void Update(double deltaTime)
     {
         computeBlend(deltaTime);
+        BoneMatrixBuffer.NeedsUpload = true;
     }
 
     private void computeBlend(double deltaTime)

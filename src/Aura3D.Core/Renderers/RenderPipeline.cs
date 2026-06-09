@@ -102,6 +102,7 @@ public abstract partial class RenderPipeline
     /// </summary>
     public GL? gl { get; protected set; }
 
+
     /// <summary>
     /// 获取每个相机渲染时都需要执行的渲染通道列表。
     /// </summary>

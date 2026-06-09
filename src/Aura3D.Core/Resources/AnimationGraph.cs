@@ -14,7 +14,9 @@ public class AnimationGraph : IAnimationSampler
     /// <param name="root">动画图的根节点。</param>
     public AnimationGraph(Skeleton skeleton, AnimationGraphNode root)
     {
+        Skeleton = skeleton;
         bonesTransform = new Matrix4x4[skeleton.Bones.Count];
+        BoneMatrixBuffer = new BoneMatrixBuffer(Skeleton, this);
 
         Root = root;
         currentNode = root;
@@ -28,6 +30,16 @@ public class AnimationGraph : IAnimationSampler
             bonesTransform[i] = currentNode.Sampler.BonesTransform[i];
         }
     }
+
+    /// <summary>
+    /// 获取骨骼数据。
+    /// </summary>
+    public Skeleton Skeleton { get; }
+
+    /// <summary>
+    /// 获取骨骼矩阵 UBO。
+    /// </summary>
+    public BoneMatrixBuffer BoneMatrixBuffer { get; }
 
     /// <summary>
     /// 获取或设置动画图的根节点。
@@ -111,6 +123,7 @@ public class AnimationGraph : IAnimationSampler
             }
         }
 
+        BoneMatrixBuffer.NeedsUpload = true;
     }
 
     /// <summary>

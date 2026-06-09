@@ -113,7 +113,7 @@ public partial class RenderPass
         var shader = new Shader();
 
         shader.Defines = defines;
-        
+
         var definesText = string.Join("\n", defines.Select(d => $"#define {d}"));
 
         var vs = vertexShader.Replace("//{{defines}}", definesText);
@@ -165,6 +165,14 @@ public partial class RenderPass
         {
             var info = gl.GetProgramInfoLog(programId);
             throw new InvalidOperationException($"Shader program link failed: {info}");
+        }
+
+        // GLES 3.0 不支持 shader 内 layout(binding=N)，link 后枚举所有
+        // uniform block 并按索引自动绑定（block 0→binding 0, block 1→binding 1...）
+        gl.GetProgram(programId, GLEnum.ActiveUniformBlocks, out int blockCount);
+        for (uint i = 0; i < blockCount; i++)
+        {
+            gl.UniformBlockBinding(programId, i, i);
         }
 
         gl.DeleteShader(vertex);

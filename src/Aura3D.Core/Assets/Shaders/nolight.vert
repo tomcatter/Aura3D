@@ -1,8 +1,7 @@
-﻿#version 300 es
+#version 300 es
 precision mediump float;
 
-#define BONE_NUMBER 150
-
+#define MAX_BONES 256
 //{{defines}}
 
 layout(location = 0) in vec3 position;
@@ -22,7 +21,9 @@ layout(location = 12) in mat4 normalMatrix;
 
 
 #ifdef SKINNED_MESH
-uniform mat4 BoneMatrices[BONE_NUMBER];
+layout(std140) uniform BoneBlock {
+    mat4 BoneMatrices[MAX_BONES];
+};
 #endif
 
 #ifndef INSTANCED_MESH
@@ -41,25 +42,25 @@ void main()
 	vTexCoord = texCoord;
 
 #ifdef SKINNED_MESH
-	
-	int idx0 = clamp(int(boneIndices.x), 0, BONE_NUMBER - 1);
-    int idx1 = clamp(int(boneIndices.y), 0, BONE_NUMBER - 1);
-    int idx2 = clamp(int(boneIndices.z), 0, BONE_NUMBER - 1);
-    int idx3 = clamp(int(boneIndices.w), 0, BONE_NUMBER - 1);
 
-	float sum = boneWeights.x + boneWeights.y + boneWeights.z + boneWeights.w;
-    vec4 w = (sum > 0.0001) ? boneWeights / sum : vec4(1.0, 0.0, 0.0, 0.0);
+		int idx0 = int(boneIndices.x);
+	    int idx1 = int(boneIndices.y);
+	    int idx2 = int(boneIndices.z);
+	    int idx3 = int(boneIndices.w);
 
-	mat4 skinMatrix = w.x * BoneMatrices[idx0];
-    skinMatrix      += w.y * BoneMatrices[idx1];
-    skinMatrix      += w.z * BoneMatrices[idx2];
-    skinMatrix      += w.w * BoneMatrices[idx3];
+		float sum = boneWeights.x + boneWeights.y + boneWeights.z + boneWeights.w;
+	    vec4 w = (sum > 0.0001) ? boneWeights / sum : vec4(1.0, 0.0, 0.0, 0.0);
 
-	vec4 worldPosition = modelMatrix * skinMatrix * vec4(position, 1.0);
+		mat4 skinMatrix = w.x * BoneMatrices[idx0];
+	    skinMatrix      += w.y * BoneMatrices[idx1];
+	    skinMatrix      += w.z * BoneMatrices[idx2];
+	    skinMatrix      += w.w * BoneMatrices[idx3];
+
+		vec4 worldPosition = modelMatrix * skinMatrix * vec4(position, 1.0);
 
 #else
-	vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+		vec4 worldPosition = modelMatrix * vec4(position, 1.0);
 #endif
 
-	gl_Position = projectionMatrix * viewMatrix * worldPosition;
+		gl_Position = projectionMatrix * viewMatrix * worldPosition;
 }

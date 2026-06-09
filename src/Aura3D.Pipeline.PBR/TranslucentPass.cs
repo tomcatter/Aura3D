@@ -274,21 +274,9 @@ internal class TranslucentPass : RenderPass<PBRDeferredPipeline>
 
         if (mesh.IsSkinnedMesh)
         {
-            var skeleton = mesh.Skeleton;
-            if (mesh.Model.AnimationSampler != null)
-            {
-                for (int i = 0; i < skeleton.Bones.Count; i++)
-                {
-                    UniformMatrix4($"BoneMatrices[{i}]", skeleton.Bones[i].InverseWorldMatrix * mesh.Model.AnimationSampler.BonesTransform[i]);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < skeleton.Bones.Count; i++)
-                {
-                    UniformMatrix4($"BoneMatrices[{i}]", skeleton.Bones[i].InverseWorldMatrix * skeleton.Bones[i].WorldMatrix);
-                }
-            }
+            var boneBuffer = mesh.AnimationSampler?.BoneMatrixBuffer ?? mesh.Skeleton.BoneMatrixBuffer;
+            renderPipeline.EnsureUploaded(boneBuffer);
+            boneBuffer.Bind();
         }
     }
 

@@ -32,6 +32,8 @@ public class AnimationSampler : IAnimationSampler
         this.animation = animation;
         Skeleton = animation.Skeleton!;
 
+        BoneMatrixBuffer = new BoneMatrixBuffer(Skeleton, this);
+
         // Compute the first frame immediately to avoid showing T-pose
         // before the first Update() call.
         processBoneTransform(Skeleton.Root, 0);
@@ -43,6 +45,8 @@ public class AnimationSampler : IAnimationSampler
     protected Animation animation { get; set; }
 
     public IReadOnlyList<Matrix4x4> BonesTransform => bonesTransform;
+
+    public BoneMatrixBuffer BoneMatrixBuffer { get; }
 
     private Matrix4x4[] bonesTransform;
 
@@ -95,6 +99,7 @@ public class AnimationSampler : IAnimationSampler
 
         processBoneTransform(Skeleton.Root, time);
 
+        BoneMatrixBuffer.NeedsUpload = true;
     }
 
     private void processBoneTransform(Bone bone, float time)
