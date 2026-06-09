@@ -38,7 +38,7 @@ public class NoLightPass : RenderPass
 
     public override void Setup()
     {
-        defaultBaseColor.Upload(gl);
+        renderPipeline.EnsureUploaded(defaultBaseColor);
     }
     public override void Render(Camera camera)
     {

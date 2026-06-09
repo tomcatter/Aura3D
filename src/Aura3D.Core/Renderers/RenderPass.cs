@@ -153,6 +153,7 @@ public partial class RenderPass
     public unsafe virtual void RenderMesh(Mesh mesh, Matrix4x4 view, Matrix4x4 projection)
     {
         UniformMatrix4("modelMatrix", mesh.WorldTransform);
+        renderPipeline.EnsureUploaded(mesh.Geometry!);
         gl.BindVertexArray(mesh.Geometry!.Vao);
 
         if (mesh != null && mesh.Material != null && mesh.Material.HasShader == true)
@@ -179,6 +180,7 @@ public partial class RenderPass
 
     public unsafe virtual void RenderInstancedMesh(InstancedMesh instancedMesh, Matrix4x4 view, Matrix4x4 projection)
     {
+        renderPipeline.EnsureUploaded(instancedMesh);
         gl.BindVertexArray(instancedMesh.Vao);
 
         if (instancedMesh.Material != null && instancedMesh.Material.HasShader == true)

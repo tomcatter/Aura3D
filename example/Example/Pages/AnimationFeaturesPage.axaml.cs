@@ -488,8 +488,7 @@ public partial class AnimationFeaturesPage : UserControl
             var fire = new ParticleSystem
             {
                 Name = "TorchFire",
-                MaxParticles = 200,
-                BlendMode = BlendMode.Translucent
+                MaxParticles = 200
             };
             // 放在手柄顶端
             fire.Position = new Vector3(0, 15, 0);
@@ -497,6 +496,7 @@ public partial class AnimationFeaturesPage : UserControl
             // 内焰：亮黄/白色，小而快
             fire.Emitters.Add(new ParticleEmitter
             {
+                BlendMode = BlendMode.Translucent,
                 EmissionRate = 80f,
                 Shape = EmissionShape.Cone,
                 ConeAngle = 10f,
@@ -512,6 +512,7 @@ public partial class AnimationFeaturesPage : UserControl
             // 外焰：橙红，大而慢
             fire.Emitters.Add(new ParticleEmitter
             {
+                BlendMode = BlendMode.Translucent,
                 EmissionRate = 40f,
                 Shape = EmissionShape.Cone,
                 ConeAngle = 15f,

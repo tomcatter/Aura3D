@@ -160,14 +160,12 @@ public class LightPass : RenderPass
     }
     public override void Setup()
     {
-        defaultBaseColor.Upload(gl);
-        defaultNormal.Upload(gl);
+        renderPipeline.EnsureUploaded(defaultBaseColor);
+        renderPipeline.EnsureUploaded(defaultNormal);
     }
 
     public override void Destroy()
     {
-        defaultBaseColor.Destroy(gl);
-        defaultNormal.Destroy(gl);
     }
 
     public override void BeforeRender(Camera camera)

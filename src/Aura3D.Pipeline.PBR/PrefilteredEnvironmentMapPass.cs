@@ -119,7 +119,7 @@ internal class PrefilteredEnvironmentMapPass : RenderPass<PBRDeferredPipeline>
 
             perfilteredEnvMap.SetSize(PREFILTER_WIDTH, PREFILTER_WIDTH);
 
-            perfilteredEnvMap.Upload(gl);
+            renderPipeline.EnsureUploaded(perfilteredEnvMap);
 
             perfilteredEnvMap.SetDepthTexture(TextureFormat.DepthComponent16);
 
@@ -148,6 +148,8 @@ internal class PrefilteredEnvironmentMapPass : RenderPass<PBRDeferredPipeline>
 
 
         UniformInt("environmentMap", 0);
+
+        renderPipeline.EnsureUploaded(iblTexture);
 
         gl.ActiveTexture(TextureUnit.Texture0);
 

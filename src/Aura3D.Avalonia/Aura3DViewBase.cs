@@ -84,6 +84,8 @@ public abstract class Aura3DViewBase : global::Avalonia.OpenGL.Controls.OpenGlCo
             uint height = (uint)Bounds.Height;
             float scale = 1.0f;
 
+            width = Math.Max(width, 1);
+            height = Math.Max(height, 1);
             if (source != null)
             {
                 scale = (float)source.RenderScaling;

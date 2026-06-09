@@ -28,15 +28,6 @@ public class DirectionalLight : Light
         FarPlane = 50
     };
 
-    // public RenderTarget ShadowMapRenderTarget { get; private set; }
-
-    /*
-    public override List<IGpuResource> GetGpuResources()
-    {
-        return [ShadowMapRenderTarget];
-    }
-    */
-
     /// <summary>
     /// 获取或设置辐照度（单位：勒克斯）。
     /// </summary>
