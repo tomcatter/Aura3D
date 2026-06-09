@@ -14,17 +14,17 @@ using System.Numerics;
 
 namespace Example.Pages;
 
-public partial class CelShadingPage : UserControl
+public partial class CelShadingMaterialEditorPage : UserControl
 {
     DirectionalLight dl;
 
     private CameraController _cameraController;
 
-    public CelShadingPage()
+    public CelShadingMaterialEditorPage()
     {
         InitializeComponent();
         _cameraController = new CameraController(aura3Dview);
-        
+
     }
 
     private void Aura3DView_SceneInitialized(object? sender, Aura3D.Avalonia.InitializedRoutedEventArgs e)
@@ -88,14 +88,9 @@ public partial class CelShadingPage : UserControl
         view.AddNode(dl);
 
 
-        // using (var s = AssetLoader.Open(new Uri("avares://Example/Assets/Models/Soldier.glb")))
         using (var s = AssetLoader.Open(new Uri("avares://Example/Assets/Models/NPC_Avatar_Girl_Sword_Nilou.glb")))
         {
-
-            //var (model, animations) = ModelLoader.LoadGlbModelAndAnimations(s);
             var model = ModelLoader.LoadGlbModel(s);
-
-            //model.AnimationSampler = new AnimationSampler(animations.First());
 
             view.AddNode(model);
 
@@ -104,7 +99,6 @@ public partial class CelShadingPage : UserControl
             model.Position += model.Up * 0.5f;
 
             model.Scale = Vector3.One * 2f;
-            // model.Scale = Vector3.One * 0.03f;
             model.RotationDegrees = new Vector3(0, 0, 0);
 
             pl.Position = model.Position + pl.Up * 2 + pl.Left * 2f;
@@ -120,7 +114,6 @@ public partial class CelShadingPage : UserControl
 
         using (var s = AssetLoader.Open(new Uri("avares://Example/Assets/Models/coffee_table_round_01_1k.glb")))
         {
-
             var model = ModelLoader.LoadGlbModel(s);
 
             view.AddNode(model);
