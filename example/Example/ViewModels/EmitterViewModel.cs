@@ -1,5 +1,6 @@
 using Aura3D.Core.Nodes;
 using Aura3D.Core.Resources;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
@@ -40,14 +41,8 @@ public partial class EmitterViewModel : ObservableObject
     [ObservableProperty] private float _velocityZMax = 0.5f;
 
     // Color
-    [ObservableProperty] private int _startColorR = 255;
-    [ObservableProperty] private int _startColorG = 165;
-    [ObservableProperty] private int _startColorB;
-    [ObservableProperty] private int _startColorA = 255;
-    [ObservableProperty] private int _endColorR = 255;
-    [ObservableProperty] private int _endColorG = 50;
-    [ObservableProperty] private int _endColorB;
-    [ObservableProperty] private int _endColorA;
+    [ObservableProperty] private Color _startColor = Color.FromArgb(255, 255, 165, 0);
+    [ObservableProperty] private Color _endColor = Color.FromArgb(0, 255, 50, 0);
 
     // Physics
     [ObservableProperty] private float _gravityY = 1f;
@@ -114,8 +109,8 @@ public partial class EmitterViewModel : ObservableObject
         VelocityXMin = -0.5f; VelocityXMax = 0.5f;
         VelocityYMin = 3; VelocityYMax = 7;
         VelocityZMin = -0.5f; VelocityZMax = 0.5f;
-        StartColorR = 255; StartColorG = 165; StartColorB = 0; StartColorA = 255;
-        EndColorR = 255; EndColorG = 50; EndColorB = 0; EndColorA = 0;
+        StartColor = Color.FromArgb(255, 255, 165, 0);
+        EndColor = Color.FromArgb(0, 255, 50, 0);
         GravityY = 1; Damping = 0.4f;
         RotationMin = 0; RotationMax = 6.28f;
         AngularVelocityMin = -1; AngularVelocityMax = 1;

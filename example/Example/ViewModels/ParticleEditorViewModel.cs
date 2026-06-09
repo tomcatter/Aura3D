@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System;
 using System.Collections.ObjectModel;
 
 namespace Example.ViewModels;
@@ -26,17 +27,29 @@ public partial class ParticleEditorViewModel : ViewModelBase
 
     public IRelayCommand AddEmitterCommand { get; }
     public IRelayCommand DuplicateEmitterCommand { get; }
+    public IRelayCommand ResetViewCommand { get; }
 
     public ParticleEditorViewModel()
     {
         AddEmitterCommand = new RelayCommand(OnAddEmitter);
         DuplicateEmitterCommand = new RelayCommand(OnDuplicateEmitter, () => SelectedEmitter != null);
+        ResetViewCommand = new RelayCommand(OnResetView);
 
         var defaultEmitter = EmitterViewModel.CreateDefault(0);
         WireEmitterDelete(defaultEmitter);
         Emitters = [defaultEmitter];
         SelectedEmitter = defaultEmitter;
     }
+
+    private void OnResetView()
+    {
+        PosX = 0f;
+        PosY = 2f;
+        PosZ = 5f;
+        ViewResetRequested?.Invoke();
+    }
+
+    public event Action? ViewResetRequested;
 
     private void OnAddEmitter()
     {
@@ -81,14 +94,8 @@ public partial class ParticleEditorViewModel : ViewModelBase
         clone.VelocityYMax = SelectedEmitter.VelocityYMax;
         clone.VelocityZMin = SelectedEmitter.VelocityZMin;
         clone.VelocityZMax = SelectedEmitter.VelocityZMax;
-        clone.StartColorR = SelectedEmitter.StartColorR;
-        clone.StartColorG = SelectedEmitter.StartColorG;
-        clone.StartColorB = SelectedEmitter.StartColorB;
-        clone.StartColorA = SelectedEmitter.StartColorA;
-        clone.EndColorR = SelectedEmitter.EndColorR;
-        clone.EndColorG = SelectedEmitter.EndColorG;
-        clone.EndColorB = SelectedEmitter.EndColorB;
-        clone.EndColorA = SelectedEmitter.EndColorA;
+        clone.StartColor = SelectedEmitter.StartColor;
+        clone.EndColor = SelectedEmitter.EndColor;
         clone.GravityY = SelectedEmitter.GravityY;
         clone.Damping = SelectedEmitter.Damping;
         clone.RotationMin = SelectedEmitter.RotationMin;

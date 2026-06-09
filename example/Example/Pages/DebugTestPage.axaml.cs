@@ -7,13 +7,14 @@ using Aura3D.Core.Particles;
 using Aura3D.Core.Resources;
 using Aura3D.Model;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Platform;
 using Example.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Numerics;
+using SDColor = System.Drawing.Color;
 
 namespace Example.Pages;
 
@@ -179,7 +180,7 @@ public partial class DebugTestPage : UserControl
         _dirLight = new DirectionalLight
         {
             RotationDegrees = new Vector3(_vm.DirLightRotX, _vm.DirLightRotY, 0),
-            LightColor = Color.FromArgb(_vm.DirLightColorR, _vm.DirLightColorG, _vm.DirLightColorB),
+            LightColor = ToSystemColor(_vm.DirLightColor),
             Irradiance = _vm.DirLightIrradiance,
             Position = new Vector3(0f, 10.0f, 0.0f),
             CastShadow = true
@@ -194,7 +195,7 @@ public partial class DebugTestPage : UserControl
         _pointLight = new PointLight
         {
             Position = new Vector3(_vm.PointLightX, _vm.PointLightY, _vm.PointLightZ),
-            LightColor = Color.FromArgb(255, _vm.PointLightColorR, _vm.PointLightColorG, _vm.PointLightColorB),
+            LightColor = ToSystemColor(_vm.PointLightColor),
             LuminousIntensity = _vm.PointLightIntensity,
             AttenuationRadius = _vm.PointLightRadius
         };
@@ -205,7 +206,7 @@ public partial class DebugTestPage : UserControl
         {
             Position = new Vector3(_vm.SpotLightX, _vm.SpotLightY, _vm.SpotLightZ),
             RotationDegrees = new Vector3(_vm.SpotLightRotX, _vm.SpotLightRotY, _vm.SpotLightRotZ),
-            LightColor = Color.FromArgb(255, _vm.SpotLightColorR, _vm.SpotLightColorG, _vm.SpotLightColorB),
+            LightColor = ToSystemColor(_vm.SpotLightColor),
             LuminousIntensity = _vm.SpotLightIntensity,
             InnerConeAngleDegree = _vm.SpotLightInnerAngle,
             OuterAngleDegree = _vm.SpotLightOuterAngle,
@@ -229,7 +230,7 @@ public partial class DebugTestPage : UserControl
                     new Channel
                     {
                         Name = "BaseColor",
-                        Texture = Texture.CreateFromColor(Color.DarkGray)
+                        Texture = Texture.CreateFromColor(SDColor.DarkGray)
                     }
                 ]
             }
@@ -246,7 +247,7 @@ public partial class DebugTestPage : UserControl
         // Fire light (local coords)
         var fireLight = new PointLight
         {
-            LightColor = Color.FromArgb(255, 255, 100, 10),
+            LightColor = SDColor.FromArgb(255, 255, 100, 10),
             LuminousIntensity = 800,
             AttenuationRadius = 5f,
             CastShadow = false,
@@ -275,8 +276,8 @@ public partial class DebugTestPage : UserControl
             Velocity = new RangeVector3(new(-0.3f, 2, -0.3f), new(0.3f, 5, 0.3f)),
             StartSize = new RangeFloat(0.6f, 1.2f),
             EndSize = new RangeFloat(0.3f, 0.6f),
-            StartColor = Color.FromArgb(255, 255, 180, 60),
-            EndColor = Color.FromArgb(255, 255, 80, 0),
+            StartColor = SDColor.FromArgb(255, 255, 180, 60),
+            EndColor = SDColor.FromArgb(255, 255, 80, 0),
             Gravity = new Vector3(0, 1.5f, 0),
             Damping = 0.4f,
             BlendMode = BlendMode.Translucent,
@@ -294,8 +295,8 @@ public partial class DebugTestPage : UserControl
             Velocity = new RangeVector3(new(-0.5f, 6, -0.5f), new(0.5f, 10, 0.5f)),
             StartSize = new RangeFloat(0.15f, 0.3f),
             EndSize = new RangeFloat(0.03f, 0.06f),
-            StartColor = Color.FromArgb(180, 255, 200, 50),
-            EndColor = Color.FromArgb(0, 255, 80, 0),
+            StartColor = SDColor.FromArgb(180, 255, 200, 50),
+            EndColor = SDColor.FromArgb(0, 255, 80, 0),
             Gravity = new Vector3(0, 2f, 0),
             Damping = 0.2f,
             BlendMode = BlendMode.Translucent,
@@ -326,8 +327,8 @@ public partial class DebugTestPage : UserControl
                     Velocity = new RangeVector3(new(-4f, 3, -4f), new(4f, 10, 4f)),
                     StartSize = new RangeFloat(2.0f, 2.0f),
                     EndSize = new RangeFloat(2.0f, 2.0f),
-                    StartColor = Color.FromArgb(255, 200, 180, 150),
-                    EndColor = Color.FromArgb(0, 200, 180, 150),
+                    StartColor = SDColor.FromArgb(255, 200, 180, 150),
+                    EndColor = SDColor.FromArgb(0, 200, 180, 150),
                     Rotation = new RangeFloat(0f, MathF.PI * 2),
                     AngularVelocity = new RangeFloat(-12f, 12f),
                     Gravity = new Vector3(0f, -12f, 0f),
@@ -348,8 +349,8 @@ public partial class DebugTestPage : UserControl
                     Velocity = new RangeVector3(new(-1.5f, 0.5f, -1.5f), new(1.5f, 3, 1.5f)),
                     StartSize = new RangeFloat(2.0f, 2.0f),
                     EndSize = new RangeFloat(2.0f, 2.0f),
-                    StartColor = Color.FromArgb(200, 180, 160, 140),
-                    EndColor = Color.FromArgb(0, 180, 160, 140),
+                    StartColor = SDColor.FromArgb(200, 180, 160, 140),
+                    EndColor = SDColor.FromArgb(0, 180, 160, 140),
                     Rotation = new RangeFloat(0f, MathF.PI * 2),
                     AngularVelocity = new RangeFloat(-6f, 6f),
                     Gravity = new Vector3(0f, -6f, 0f),
@@ -502,14 +503,14 @@ public partial class DebugTestPage : UserControl
             _dirLight.Enable = _vm.DirLightEnabled;
             _dirLight.RotationDegrees = new Vector3(_vm.DirLightRotX, _vm.DirLightRotY, 0);
             _dirLight.Irradiance = _vm.DirLightIrradiance;
-            _dirLight.LightColor = Color.FromArgb(_vm.DirLightColorR, _vm.DirLightColorG, _vm.DirLightColorB);
+            _dirLight.LightColor = ToSystemColor(_vm.DirLightColor);
         }
         if (_pointLight != null)
         {
             _pointLight.Enable = _vm.PointLightEnabled;
             _pointLight.Position = new Vector3(_vm.PointLightX, _vm.PointLightY, _vm.PointLightZ);
             _pointLight.LuminousIntensity = _vm.PointLightIntensity;
-            _pointLight.LightColor = Color.FromArgb(255, _vm.PointLightColorR, _vm.PointLightColorG, _vm.PointLightColorB);
+            _pointLight.LightColor = ToSystemColor(_vm.PointLightColor);
             _pointLight.AttenuationRadius = _vm.PointLightRadius;
         }
         if (_spotLight != null)
@@ -518,7 +519,7 @@ public partial class DebugTestPage : UserControl
             _spotLight.Position = new Vector3(_vm.SpotLightX, _vm.SpotLightY, _vm.SpotLightZ);
             _spotLight.RotationDegrees = new Vector3(_vm.SpotLightRotX, _vm.SpotLightRotY, _vm.SpotLightRotZ);
             _spotLight.LuminousIntensity = _vm.SpotLightIntensity;
-            _spotLight.LightColor = Color.FromArgb(255, _vm.SpotLightColorR, _vm.SpotLightColorG, _vm.SpotLightColorB);
+            _spotLight.LightColor = ToSystemColor(_vm.SpotLightColor);
             _spotLight.InnerConeAngleDegree = _vm.SpotLightInnerAngle;
             _spotLight.OuterAngleDegree = _vm.SpotLightOuterAngle;
             _spotLight.AttenuationRadius = _vm.SpotLightRadius;
@@ -599,10 +600,8 @@ public partial class DebugTestPage : UserControl
                 if (_dirLight != null) _dirLight.Irradiance = _vm.DirLightIrradiance;
                 aura3DView.RequestNextFrameRendering();
                 break;
-            case nameof(DebugTestViewModel.DirLightColorR):
-            case nameof(DebugTestViewModel.DirLightColorG):
-            case nameof(DebugTestViewModel.DirLightColorB):
-                if (_dirLight != null) _dirLight.LightColor = Color.FromArgb(_vm.DirLightColorR, _vm.DirLightColorG, _vm.DirLightColorB);
+            case nameof(DebugTestViewModel.DirLightColor):
+                if (_dirLight != null) _dirLight.LightColor = ToSystemColor(_vm.DirLightColor);
                 aura3DView.RequestNextFrameRendering();
                 break;
             case nameof(DebugTestViewModel.PointLightEnabled):
@@ -619,10 +618,8 @@ public partial class DebugTestPage : UserControl
                 if (_pointLight != null) _pointLight.LuminousIntensity = _vm.PointLightIntensity;
                 aura3DView.RequestNextFrameRendering();
                 break;
-            case nameof(DebugTestViewModel.PointLightColorR):
-            case nameof(DebugTestViewModel.PointLightColorG):
-            case nameof(DebugTestViewModel.PointLightColorB):
-                if (_pointLight != null) _pointLight.LightColor = Color.FromArgb(255, _vm.PointLightColorR, _vm.PointLightColorG, _vm.PointLightColorB);
+            case nameof(DebugTestViewModel.PointLightColor):
+                if (_pointLight != null) _pointLight.LightColor = ToSystemColor(_vm.PointLightColor);
                 aura3DView.RequestNextFrameRendering();
                 break;
             case nameof(DebugTestViewModel.PointLightRadius):
@@ -649,10 +646,8 @@ public partial class DebugTestPage : UserControl
                 if (_spotLight != null) _spotLight.LuminousIntensity = _vm.SpotLightIntensity;
                 aura3DView.RequestNextFrameRendering();
                 break;
-            case nameof(DebugTestViewModel.SpotLightColorR):
-            case nameof(DebugTestViewModel.SpotLightColorG):
-            case nameof(DebugTestViewModel.SpotLightColorB):
-                if (_spotLight != null) _spotLight.LightColor = Color.FromArgb(255, _vm.SpotLightColorR, _vm.SpotLightColorG, _vm.SpotLightColorB);
+            case nameof(DebugTestViewModel.SpotLightColor):
+                if (_spotLight != null) _spotLight.LightColor = ToSystemColor(_vm.SpotLightColor);
                 aura3DView.RequestNextFrameRendering();
                 break;
             case nameof(DebugTestViewModel.SpotLightInnerAngle):
@@ -745,6 +740,9 @@ public partial class DebugTestPage : UserControl
         _vm.PickInfo = $"[{typeName}]{skinnedTag} {result.Node.Name}{instanceInfo} | "
             + $"Dist: {result.Distance:F2} | ({result.WorldPosition.X:F2}, {result.WorldPosition.Y:F2}, {result.WorldPosition.Z:F2})";
     }
+
+    private static System.Drawing.Color ToSystemColor(Avalonia.Media.Color c) =>
+        System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B);
 
     // ─── Per-Frame Update ────────────────────────────────────
 

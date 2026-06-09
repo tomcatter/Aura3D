@@ -1,6 +1,7 @@
-using System;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System;
 
 namespace Example.ViewModels;
 
@@ -67,13 +68,7 @@ public partial class DebugTestViewModel : ViewModelBase
     private float _dirLightIrradiance = 80000f;
 
     [ObservableProperty]
-    private int _dirLightColorR = 80;
-
-    [ObservableProperty]
-    private int _dirLightColorG = 80;
-
-    [ObservableProperty]
-    private int _dirLightColorB = 80;
+    private Color _dirLightColor = Color.FromArgb(255, 80, 80, 80);
 
     [ObservableProperty]
     private bool _pointLightEnabled = true;
@@ -91,13 +86,7 @@ public partial class DebugTestViewModel : ViewModelBase
     private float _pointLightIntensity = 5000f;
 
     [ObservableProperty]
-    private int _pointLightColorR = 255;
-
-    [ObservableProperty]
-    private int _pointLightColorG = 80;
-
-    [ObservableProperty]
-    private int _pointLightColorB = 80;
+    private Color _pointLightColor = Color.FromArgb(255, 255, 80, 80);
 
     [ObservableProperty]
     private float _pointLightRadius = 10f;
@@ -127,13 +116,7 @@ public partial class DebugTestViewModel : ViewModelBase
     private float _spotLightIntensity = 10000f;
 
     [ObservableProperty]
-    private int _spotLightColorR = 80;
-
-    [ObservableProperty]
-    private int _spotLightColorG = 255;
-
-    [ObservableProperty]
-    private int _spotLightColorB = 80;
+    private Color _spotLightColor = Color.FromArgb(255, 80, 255, 80);
 
     [ObservableProperty]
     private float _spotLightInnerAngle = 10f;

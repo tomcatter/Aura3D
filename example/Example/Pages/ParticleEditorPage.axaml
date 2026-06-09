@@ -83,6 +83,8 @@
                     </StackPanel>
                   </StackPanel>
                 </Border>
+                <Button Command="{Binding ResetViewCommand}" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center" FontWeight="Bold" FontSize="11">Reset View</Button>
               </StackPanel>
             </ScrollViewer>
           </Border>
@@ -249,19 +251,13 @@
                       <Border Theme="{StaticResource CardBorder}" Padding="6" IsVisible="{Binding IsBillboard}">
                         <StackPanel Spacing="3">
                           <TextBlock FontSize="12" FontWeight="Bold" Text="Color"/>
-                          <TextBlock Text="Start (RGBA):" FontSize="10"/>
-                          <StackPanel Orientation="Horizontal" Spacing="2">
-                            <TextBox Text="{Binding StartColorR}" Width="32" FontSize="10"/>
-                            <TextBox Text="{Binding StartColorG}" Width="32" FontSize="10"/>
-                            <TextBox Text="{Binding StartColorB}" Width="32" FontSize="10"/>
-                            <TextBox Text="{Binding StartColorA}" Width="32" FontSize="10"/>
+                          <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="Start:" FontSize="10" VerticalAlignment="Center"/>
+                            <ColorPicker Color="{Binding StartColor}"/>
                           </StackPanel>
-                          <TextBlock Text="End (RGBA):" FontSize="10"/>
-                          <StackPanel Orientation="Horizontal" Spacing="2">
-                            <TextBox Text="{Binding EndColorR}" Width="32" FontSize="10"/>
-                            <TextBox Text="{Binding EndColorG}" Width="32" FontSize="10"/>
-                            <TextBox Text="{Binding EndColorB}" Width="32" FontSize="10"/>
-                            <TextBox Text="{Binding EndColorA}" Width="32" FontSize="10"/>
+                          <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="End:" FontSize="10" VerticalAlignment="Center"/>
+                            <ColorPicker Color="{Binding EndColor}"/>
                           </StackPanel>
                         </StackPanel>
                       </Border>

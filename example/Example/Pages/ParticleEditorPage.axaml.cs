@@ -44,6 +44,7 @@ public partial class ParticleEditorPage : UserControl
         if (_vm == null) return;
 
         _vm.PropertyChanged += OnSystemPropertyChanged;
+        _vm.ViewResetRequested += OnViewReset;
 
         foreach (var evm in _vm.Emitters)
             evm.PropertyChanged += OnEmitterPropertyChanged;
@@ -149,8 +150,8 @@ public partial class ParticleEditorPage : UserControl
                 new(evm.VelocityXMax, evm.VelocityYMax, evm.VelocityZMax)),
             StartSize = new RangeFloat(evm.StartSizeMin, evm.StartSizeMax),
             EndSize = new RangeFloat(evm.EndSizeMin, evm.EndSizeMax),
-            StartColor = Color.FromArgb(evm.StartColorA, evm.StartColorR, evm.StartColorG, evm.StartColorB),
-            EndColor = Color.FromArgb(evm.EndColorA, evm.EndColorR, evm.EndColorG, evm.EndColorB),
+            StartColor = System.Drawing.Color.FromArgb(evm.StartColor.A, evm.StartColor.R, evm.StartColor.G, evm.StartColor.B),
+            EndColor = System.Drawing.Color.FromArgb(evm.EndColor.A, evm.EndColor.R, evm.EndColor.G, evm.EndColor.B),
             Rotation = new RangeFloat(evm.RotationMin, evm.RotationMax),
             AngularVelocity = new RangeFloat(evm.AngularVelocityMin, evm.AngularVelocityMax),
             Gravity = new Vector3(0, evm.GravityY, 0),
@@ -289,5 +290,12 @@ public partial class ParticleEditorPage : UserControl
         _vm.DetailText = $"Particles: {pc}  |  Emitters: {_vm.Emitters.Count}  |  Pos: ({_vm.PosX:F1}, {_vm.PosY:F1}, {_vm.PosZ:F1})";
 
         aura3DView.RequestNextFrameRendering();
+    }
+
+    private void OnViewReset()
+    {
+        var view = aura3DView;
+        view.MainCamera.Position = new Vector3(0, 5, 15);
+        view.MainCamera.LookAt(new Vector3(0, 2, 0));
     }
 }
