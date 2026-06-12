@@ -41,7 +41,7 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <Border Theme="{StaticResource CardBorder}" Padding="6" Margin="0,2"
-                              PointerPressed="ChannelThumbnail_Click" Cursor="Hand">
+                              Tapped="ChannelThumbnail_Click" Cursor="Hand">
                         <StackPanel Spacing="4">
                           <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" />
                           <Border Height="48" CornerRadius="4" ClipToBounds="True"
@@ -64,14 +64,17 @@
                       <Border Theme="{StaticResource CardBorder}" Padding="6" Margin="0,2">
                         <StackPanel Spacing="4">
                           <TextBlock Text="{Binding Key}" FontSize="11" Foreground="#AAA" />
-                          <!-- Color editor: click swatch to open popup -->
+                          <!-- Color editor -->
                           <Panel IsVisible="{Binding IsColor}">
-                            <Grid ColumnDefinitions="28,*">
-                              <Border Grid.Column="0" Width="28" Height="28" CornerRadius="4"
-                                      Background="{Binding ColorValue}" BorderBrush="#555" BorderThickness="1"
-                                      Cursor="Hand" PointerPressed="ColorSwatch_Click" />
-                              <TextBlock Grid.Column="1" Text="{Binding StringValue}" FontSize="11"
-                                         Foreground="#7EC8E3" VerticalAlignment="Center" Margin="6,0,0,0" />
+                            <Grid ColumnDefinitions="14,60,14,60,14,60,14,60">
+                              <TextBlock Grid.Column="0" Text="R" FontSize="10" VerticalAlignment="Center" />
+                              <TextBox  Grid.Column="1" Text="{Binding RText}" FontSize="11" />
+                              <TextBlock Grid.Column="2" Text="G" FontSize="10" VerticalAlignment="Center" />
+                              <TextBox  Grid.Column="3" Text="{Binding GText}" FontSize="11" />
+                              <TextBlock Grid.Column="4" Text="B" FontSize="10" VerticalAlignment="Center" />
+                              <TextBox  Grid.Column="5" Text="{Binding BText}" FontSize="11" />
+                              <TextBlock Grid.Column="6" Text="A" FontSize="10" VerticalAlignment="Center" />
+                              <TextBox  Grid.Column="7" Text="{Binding AText}" FontSize="11" />
                             </Grid>
                           </Panel>
                           <!-- Float editor -->

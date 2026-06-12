@@ -8,7 +8,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
-using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Platform.Storage;
@@ -19,7 +18,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using AvaloniaVector = Avalonia.Vector;
 
 namespace Example.Pages;
@@ -202,7 +200,7 @@ public partial class CelShadingMaterialEditorPage : UserControl
         }
     }
 
-    private async void ChannelThumbnail_Click(object? sender, PointerPressedEventArgs e)
+    private async void ChannelThumbnail_Click(object? sender, RoutedEventArgs e)
     {
         if (_vm?.CurrentMaterial == null) return;
 
@@ -286,107 +284,6 @@ public partial class CelShadingMaterialEditorPage : UserControl
         catch
         {
             return null;
-        }
-    }
-
-    private async void ColorSwatch_Click(object? sender, PointerPressedEventArgs e)
-    {
-        if (sender is not Border border || border.DataContext is not ParameterItem param) return;
-
-        var c = param.ColorValue;
-
-        var rBox = new TextBox { Text = (c.R / 255f).ToString("F3"), Width = 60, FontSize = 11 };
-        var gBox = new TextBox { Text = (c.G / 255f).ToString("F3"), Width = 60, FontSize = 11 };
-        var bBox = new TextBox { Text = (c.B / 255f).ToString("F3"), Width = 60, FontSize = 11 };
-        var aBox = new TextBox { Text = (c.A / 255f).ToString("F3"), Width = 60, FontSize = 11 };
-
-        var preview = new Border
-        {
-            Width = 60, Height = 30, CornerRadius = new CornerRadius(4),
-            Background = new SolidColorBrush(c), BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1)
-        };
-
-        void UpdatePreview()
-        {
-            if (float.TryParse(rBox.Text, out var r) && float.TryParse(gBox.Text, out var g) &&
-                float.TryParse(bBox.Text, out var b) && float.TryParse(aBox.Text, out var a))
-            {
-                preview.Background = new SolidColorBrush(Color.FromArgb(
-                    (byte)(Math.Clamp(a, 0, 1) * 255),
-                    (byte)(Math.Clamp(r, 0, 1) * 255),
-                    (byte)(Math.Clamp(g, 0, 1) * 255),
-                    (byte)(Math.Clamp(b, 0, 1) * 255)));
-            }
-        }
-
-        rBox.TextChanged += (_, _) => UpdatePreview();
-        gBox.TextChanged += (_, _) => UpdatePreview();
-        bBox.TextChanged += (_, _) => UpdatePreview();
-        aBox.TextChanged += (_, _) => UpdatePreview();
-
-        var btnPanel = new StackPanel
-        {
-            Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
-            Children =
-            {
-                new Button { Content = "Cancel", Width = 70, IsCancel = true },
-                new Button { Content = "OK", Width = 70, IsDefault = true, Name = "BtnOk" }
-            }
-        };
-
-        var dialog = new Window
-        {
-            Title = $"Edit Color - {param.Key}",
-            Width = 260, Height = 200,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            CanResize = false,
-            Content = new StackPanel
-            {
-                Margin = new Thickness(12), Spacing = 8,
-                Children =
-                {
-                    new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8, Children = { preview } },
-                    new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 4,
-                        Children = { new TextBlock { Text = "R", Width = 14, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center, FontSize = 11 }, rBox } },
-                    new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 4,
-                        Children = { new TextBlock { Text = "G", Width = 14, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center, FontSize = 11 }, gBox } },
-                    new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 4,
-                        Children = { new TextBlock { Text = "B", Width = 14, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center, FontSize = 11 }, bBox } },
-                    new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 4,
-                        Children = { new TextBlock { Text = "A", Width = 14, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center, FontSize = 11 }, aBox } },
-                    btnPanel
-                }
-            }
-        };
-
-        var okBtn = (Button)btnPanel.Children[1];
-        var tcs = new TaskCompletionSource<bool>();
-        okBtn.Click += (_, _) => tcs.TrySetResult(true);
-        dialog.Closing += (_, _) => tcs.TrySetResult(false);
-
-        var owner = TopLevel.GetTopLevel(this) as Window;
-        if (owner != null)
-            await dialog.ShowDialog(owner);
-        else
-        {
-            dialog.Show();
-            await tcs.Task;
-        }
-
-        var confirmed = await tcs.Task;
-        dialog.Close();
-
-        if (!confirmed) return;
-
-        if (float.TryParse(rBox.Text, out var nr) && float.TryParse(gBox.Text, out var ng) &&
-            float.TryParse(bBox.Text, out var nb) && float.TryParse(aBox.Text, out var na))
-        {
-            param.ColorValue = Color.FromArgb(
-                (byte)(Math.Clamp(na, 0, 1) * 255),
-                (byte)(Math.Clamp(nr, 0, 1) * 255),
-                (byte)(Math.Clamp(ng, 0, 1) * 255),
-                (byte)(Math.Clamp(nb, 0, 1) * 255));
         }
     }
 
