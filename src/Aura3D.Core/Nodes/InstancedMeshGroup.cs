@@ -305,16 +305,6 @@ public class InstancedMeshGroup : Node
         BuildIfNeeded();
     }
 
-    public override List<Resources.IGpuResource> GetGpuResources()
-    {
-        var list = new List<Resources.IGpuResource>();
-        foreach (var group in _groups)
-        {
-            list.AddRange(group.GetGpuResources());
-        }
-        return list;
-    }
-
     // ========================================================================
     // Build internals
     // ========================================================================

@@ -22,7 +22,6 @@ public class Mesh : Node, IOctreeObject
         {
             if (material == value) return;
             material = value;
-            RefreshGpuResources();
         }
     }
 
@@ -60,38 +59,11 @@ public class Mesh : Node, IOctreeObject
                 return;
 
             geometry = value;
-            RefreshGpuResources();
 
             UpdateWorldBoundingBox();
 
             OnBoundingBoxChanged?.Invoke(this);
         }
-    }
-
-
-    /// <summary>
-    /// 获取当前网格使用的 GPU 资源列表。
-    /// </summary>
-    /// <returns>GPU 资源列表。</returns>
-    public override List<IGpuResource> GetGpuResources()
-    {
-        var list = new List<IGpuResource>();
-
-        if (Geometry != null)
-            list.Add(Geometry);
-
-        if (Material != null)
-        {
-            list.Add(Material);
-            foreach(var channel in Material.Channels)
-            {
-                if (channel.Texture != null && channel.Texture is IGpuResource gpuResource)
-                {
-                    list.Add(gpuResource);
-                }
-            }
-        }
-        return list;
     }
 
     /// <summary>

@@ -17,6 +17,8 @@ public class ParticlePass : RenderPass
     public float DefaultParticleSize { get; set; } = 1.0f;
     public float GlobalAlpha { get; set; } = 1.0f;
 
+    private readonly ParticleQuadGeometry _quadGeometry = new();
+
     public ParticlePass(RenderPipeline renderPipeline) : base(renderPipeline)
     {
         ShaderName = nameof(ParticlePass);
@@ -206,7 +208,9 @@ public class ParticlePass : RenderPass
             if (em.Particles != null && em.GpuBuffer != null)
             {
                 em.GpuBuffer.SetParticleData(em.Particles, em.ActiveCount);
-                em.GpuBuffer.Upload(gl!);
+                em.GpuBuffer.QuadGeometry = _quadGeometry;
+                renderPipeline.EnsureUploaded(_quadGeometry);
+                renderPipeline.EnsureUploaded(em.GpuBuffer);
                 em.GpuBuffer.Draw(gl!);
             }
         }

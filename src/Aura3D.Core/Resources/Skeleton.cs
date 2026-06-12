@@ -28,6 +28,20 @@ public class Skeleton
     private Dictionary<string, int>? _boneIndexCache;
 
     /// <summary>
+    /// 静态绑定位姿的骨骼矩阵 UBO（懒创建）。
+    /// 当网格有 <see cref="IAnimationSampler"/> 时优先使用采样器的缓冲区。
+    /// </summary>
+    private BoneMatrixBuffer? _boneMatrixBuffer;
+    public BoneMatrixBuffer BoneMatrixBuffer
+    {
+        get
+        {
+            _boneMatrixBuffer ??= new BoneMatrixBuffer(this, null);
+            return _boneMatrixBuffer;
+        }
+    }
+
+    /// <summary>
     /// 获取骨骼名称到索引的映射。首次访问时构建缓存。
     /// </summary>
     /// <returns>骨骼名称到索引的字典</returns>

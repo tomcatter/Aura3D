@@ -18,6 +18,8 @@
     <PackageReference Include="Irihi.Ursa" />
     <PackageReference Include="Irihi.Ursa.Themes.Semi" />
     <PackageReference Include="Semi.Avalonia" />
+    <PackageReference Include="Avalonia.Controls.ColorPicker" />
+    <PackageReference Include="Semi.Avalonia.ColorPicker" />
   </ItemGroup>
 
   <ItemGroup>

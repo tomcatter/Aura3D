@@ -18,7 +18,9 @@
     <PackageVersion Include="Irihi.Ursa" Version="2.0.0-rc1" />
     <PackageVersion Include="Irihi.Ursa.Themes.Semi" Version="2.0.0-rc1" />
     <PackageVersion Include="OneOf" Version="3.0.271" />
-    <PackageVersion Include="Semi.Avalonia" Version="12.0.0" />
+    <PackageVersion Include="Semi.Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Controls.ColorPicker" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Semi.Avalonia.ColorPicker" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Silk.NET" Version="2.22.0" />
     <PackageVersion Include="Silk.NET.Assimp" Version="2.22.0" />
     <PackageVersion Include="Silk.NET.Core" Version="2.23.0" />

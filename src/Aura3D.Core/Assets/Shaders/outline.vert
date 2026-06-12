@@ -1,10 +1,8 @@
 #version 300 es
 precision mediump float;
 
+#define MAX_BONES 256
 //{{defines}}
-
-#define BONE_NUMBER 100
-
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 texCoord;
@@ -17,7 +15,9 @@ layout(location = 5) in vec3 bitangent;
 layout(location = 6) in vec4 boneIndices;
 layout(location = 7) in vec4 boneWeights;
 
-uniform mat4 BoneMatrices[BONE_NUMBER];
+layout(std140) uniform BoneBlock {
+    mat4 BoneMatrices[MAX_BONES];
+};
 
 #endif
 
@@ -43,7 +43,7 @@ void main()
 
     vec3 T = normalize(mat3(normalMatrix) * tangent);
     vec3 B = normalize(mat3(normalMatrix) * bitangent);
-    vec3 N = normalize(mat3(normalMatrix) * normal); 
+    vec3 N = normalize(mat3(normalMatrix) * normal);
 	mat3 TBN = mat3(T, B, N);
 	vTBN = TBN;
 	vNormal =  N;
@@ -52,58 +52,50 @@ void main()
 
 #ifdef SKINNED_MESH
 
-		
-	int idx0 = clamp(int(boneIndices.x), 0, BONE_NUMBER - 1);
-    int idx1 = clamp(int(boneIndices.y), 0, BONE_NUMBER - 1);
-    int idx2 = clamp(int(boneIndices.z), 0, BONE_NUMBER - 1);
-    int idx3 = clamp(int(boneIndices.w), 0, BONE_NUMBER - 1);
+		int idx0 = int(boneIndices.x);
+	    int idx1 = int(boneIndices.y);
+	    int idx2 = int(boneIndices.z);
+	    int idx3 = int(boneIndices.w);
 
-	float sum = boneWeights.x + boneWeights.y + boneWeights.z + boneWeights.w;
-    vec4 w = (sum > 0.0001) ? boneWeights / sum : vec4(1.0, 0.0, 0.0, 0.0);
+		float sum = boneWeights.x + boneWeights.y + boneWeights.z + boneWeights.w;
+	    vec4 w = (sum > 0.0001) ? boneWeights / sum : vec4(1.0, 0.0, 0.0, 0.0);
 
-	mat4 skinMatrix = w.x * BoneMatrices[idx0];
-    skinMatrix      += w.y * BoneMatrices[idx1];
-    skinMatrix      += w.z * BoneMatrices[idx2];
-    skinMatrix      += w.w * BoneMatrices[idx3];
+		mat4 skinMatrix = w.x * BoneMatrices[idx0];
+	    skinMatrix      += w.y * BoneMatrices[idx1];
+	    skinMatrix      += w.z * BoneMatrices[idx2];
+	    skinMatrix      += w.w * BoneMatrices[idx3];
 
-	vec4 worldPosition = modelMatrix * skinMatrix * vec4(positionOS, 1.0);
-	vec4 worldPosition_Offset2 = modelMatrix * skinMatrix * vec4(positionOS_Offset2, 1.0);
+		vec4 worldPosition = modelMatrix * skinMatrix * vec4(positionOS, 1.0);
+		vec4 worldPosition_Offset2 = modelMatrix * skinMatrix * vec4(positionOS_Offset2, 1.0);
 
 #else
-	vec4 worldPosition = modelMatrix * vec4(positionOS, 1.0);
-	vec4 worldPosition_Offset2 = modelMatrix * vec4(positionOS_Offset2, 1.0); 
+		vec4 worldPosition = modelMatrix * vec4(positionOS, 1.0);
+		vec4 worldPosition_Offset2 = modelMatrix * vec4(positionOS_Offset2, 1.0);
 #endif
-	
 
-	vec3 normalPrj = mat3(normalPrjMatrix) * normal;
-	vec3 normalNormalPrj = normalize(normalPrj);
+		vec3 normalPrj = mat3(normalPrjMatrix) * normal;
+		vec3 normalNormalPrj = normalize(normalPrj);
 
-	vec4 outVertex = projectionMatrix * viewMatrix * worldPosition;
-	vec4 outVertex_Offset2 = projectionMatrix * viewMatrix * worldPosition_Offset2;
+		vec4 outVertex = projectionMatrix * viewMatrix * worldPosition;
+		vec4 outVertex_Offset2 = projectionMatrix * viewMatrix * worldPosition_Offset2;
 
-	vec3 normalOffset1 = normalNormalPrj.xyz * outlineWidth * 0.001 * outVertex.w;
-	// normalOffset1.z = 0.00001f;
+		vec3 normalOffset1 = normalNormalPrj.xyz * outlineWidth * 0.001 * outVertex.w;
 
+		vec3 normalOffset2 = (outVertex_Offset2 - outVertex).xyz;
 
-	vec3 normalOffset2 = (outVertex_Offset2 - outVertex).xyz;
+		float len1 = length(normalOffset1);
+		float len2 = length(normalOffset2);
 
-	float len1 = length(normalOffset1);
-	float len2 = length(normalOffset2);
+		if (len1 < len2) {
+			outVertex.xyz += normalOffset1;
+			debugLineColor = vec3(1.0f, 0.0f, 0.0f);
+		}
+		else {
+			outVertex.xyz += normalOffset2;
+			debugLineColor = vec3(0.0f, 1.0f, 0.0f);
+		}
 
-	if (len1 < len2) {
-		outVertex.xyz += normalOffset1;
-		debugLineColor = vec3(1.0f, 0.0f, 0.0f);
-	} 
-	else {
-		// normalOffset2.z = 0.00001f;
-		outVertex.xyz += normalOffset2;
-		debugLineColor = vec3(0.0f, 1.0f, 0.0f);
-
-	}
-
-	//outVertex.xyz += normalOffset1;
-
-	vFragPosition = worldPosition.xyz;
-	gl_Position = outVertex;
+		vFragPosition = worldPosition.xyz;
+		gl_Position = outVertex;
 
 }

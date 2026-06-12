@@ -1,57 +1,17 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Numerics;
+using System;
+using System.Collections.ObjectModel;
 
 namespace Example.ViewModels;
 
 public partial class ParticleEditorViewModel : ViewModelBase
 {
-    // Emitter params
-    [ObservableProperty] private int _maxParticles = 50000;
-    [ObservableProperty] private float _emissionRate = 500f;
-    [ObservableProperty] private int _shapeIndex;
-    [ObservableProperty] private float _shapeSizeX = 2f;
-    [ObservableProperty] private float _shapeSizeY = 2f;
-    [ObservableProperty] private float _shapeSizeZ = 2f;
-    [ObservableProperty] private float _coneAngle = 30f;
+    // Emitter collection
+    [ObservableProperty] private ObservableCollection<EmitterViewModel> _emitters = [];
+    [ObservableProperty] private EmitterViewModel? _selectedEmitter;
 
-    // Lifetime & size
-    [ObservableProperty] private float _lifetimeMin = 0.5f;
-    [ObservableProperty] private float _lifetimeMax = 2.0f;
-    [ObservableProperty] private float _startSizeMin = 0.1f;
-    [ObservableProperty] private float _startSizeMax = 0.5f;
-    [ObservableProperty] private float _endSizeMin = 0.01f;
-    [ObservableProperty] private float _endSizeMax = 0.1f;
-
-    // Velocity
-    [ObservableProperty] private float _velocityXMin = -0.5f;
-    [ObservableProperty] private float _velocityXMax = 0.5f;
-    [ObservableProperty] private float _velocityYMin = 3f;
-    [ObservableProperty] private float _velocityYMax = 7f;
-    [ObservableProperty] private float _velocityZMin = -0.5f;
-    [ObservableProperty] private float _velocityZMax = 0.5f;
-
-    // Color
-    [ObservableProperty] private int _startColorR = 255;
-    [ObservableProperty] private int _startColorG = 165;
-    [ObservableProperty] private int _startColorB;
-    [ObservableProperty] private int _startColorA = 255;
-    [ObservableProperty] private int _endColorR = 255;
-    [ObservableProperty] private int _endColorG = 50;
-    [ObservableProperty] private int _endColorB;
-    [ObservableProperty] private int _endColorA;
-
-    // Physics
-    [ObservableProperty] private float _gravityY = 1f;
-    [ObservableProperty] private float _damping = 0.4f;
-
-    // Rotation
-    [ObservableProperty] private float _rotationMin;
-    [ObservableProperty] private float _rotationMax = 6.28f;
-    [ObservableProperty] private float _angularVelocityMin = -1f;
-    [ObservableProperty] private float _angularVelocityMax = 1f;
-
-    // Position
+    // System-level position
     [ObservableProperty] private float _posX;
     [ObservableProperty] private float _posY = 2f;
     [ObservableProperty] private float _posZ = 5f;
@@ -65,32 +25,101 @@ public partial class ParticleEditorViewModel : ViewModelBase
     [ObservableProperty] private double _fpsBarWidth;
     [ObservableProperty] private string _fpsBarColor = "#6BCB77";
 
-    public IRelayCommand ResetCommand { get; }
+    public IRelayCommand AddEmitterCommand { get; }
+    public IRelayCommand DuplicateEmitterCommand { get; }
+    public IRelayCommand ResetViewCommand { get; }
 
     public ParticleEditorViewModel()
     {
-        ResetCommand = new RelayCommand(OnReset);
+        AddEmitterCommand = new RelayCommand(OnAddEmitter);
+        DuplicateEmitterCommand = new RelayCommand(OnDuplicateEmitter, () => SelectedEmitter != null);
+        ResetViewCommand = new RelayCommand(OnResetView);
+
+        var defaultEmitter = EmitterViewModel.CreateDefault(0);
+        WireEmitterDelete(defaultEmitter);
+        Emitters = [defaultEmitter];
+        SelectedEmitter = defaultEmitter;
     }
 
-    private void OnReset()
+    private void OnResetView()
     {
-        MaxParticles = 50000;
-        EmissionRate = 500;
-        ShapeIndex = 0;
-        ShapeSizeX = 2; ShapeSizeY = 2; ShapeSizeZ = 2;
-        ConeAngle = 30;
-        LifetimeMin = 0.5f; LifetimeMax = 2.0f;
-        StartSizeMin = 0.1f; StartSizeMax = 0.5f;
-        EndSizeMin = 0.01f; EndSizeMax = 0.1f;
-        VelocityXMin = -0.5f; VelocityXMax = 0.5f;
-        VelocityYMin = 3; VelocityYMax = 7;
-        VelocityZMin = -0.5f; VelocityZMax = 0.5f;
-        StartColorR = 255; StartColorG = 165; StartColorB = 0; StartColorA = 255;
-        EndColorR = 255; EndColorG = 50; EndColorB = 0; EndColorA = 0;
-        GravityY = 1; Damping = 0.4f;
-        RotationMin = 0; RotationMax = 6.28f;
-        AngularVelocityMin = -1; AngularVelocityMax = 1;
-        PosX = 0; PosY = 2; PosZ = 5;
-        MinFps = int.MaxValue; MaxFps = 0; AvgFps = 0;
+        PosX = 0f;
+        PosY = 2f;
+        PosZ = 5f;
+        ViewResetRequested?.Invoke();
+    }
+
+    public event Action? ViewResetRequested;
+
+    private void OnAddEmitter()
+    {
+        var emitter = EmitterViewModel.CreateDefault(Emitters.Count);
+        WireEmitterDelete(emitter);
+        Emitters.Add(emitter);
+        SelectedEmitter = emitter;
+        RefreshCommands();
+    }
+
+    private void OnRemoveEmitter(EmitterViewModel emitter)
+    {
+        var index = Emitters.IndexOf(emitter);
+        Emitters.RemoveAt(index);
+        if (Emitters.Count > 0)
+            SelectedEmitter = Emitters[System.Math.Max(0, index - 1)];
+        else
+            SelectedEmitter = null;
+        RefreshCommands();
+    }
+
+    private void OnDuplicateEmitter()
+    {
+        if (SelectedEmitter == null) return;
+        var clone = EmitterViewModel.CreateDefault(Emitters.Count);
+        clone.MaxParticles = SelectedEmitter.MaxParticles;
+        clone.EmissionRate = SelectedEmitter.EmissionRate;
+        clone.ShapeIndex = SelectedEmitter.ShapeIndex;
+        clone.ShapeSizeX = SelectedEmitter.ShapeSizeX;
+        clone.ShapeSizeY = SelectedEmitter.ShapeSizeY;
+        clone.ShapeSizeZ = SelectedEmitter.ShapeSizeZ;
+        clone.ConeAngle = SelectedEmitter.ConeAngle;
+        clone.LifetimeMin = SelectedEmitter.LifetimeMin;
+        clone.LifetimeMax = SelectedEmitter.LifetimeMax;
+        clone.StartSizeMin = SelectedEmitter.StartSizeMin;
+        clone.StartSizeMax = SelectedEmitter.StartSizeMax;
+        clone.EndSizeMin = SelectedEmitter.EndSizeMin;
+        clone.EndSizeMax = SelectedEmitter.EndSizeMax;
+        clone.VelocityXMin = SelectedEmitter.VelocityXMin;
+        clone.VelocityXMax = SelectedEmitter.VelocityXMax;
+        clone.VelocityYMin = SelectedEmitter.VelocityYMin;
+        clone.VelocityYMax = SelectedEmitter.VelocityYMax;
+        clone.VelocityZMin = SelectedEmitter.VelocityZMin;
+        clone.VelocityZMax = SelectedEmitter.VelocityZMax;
+        clone.StartColor = SelectedEmitter.StartColor;
+        clone.EndColor = SelectedEmitter.EndColor;
+        clone.GravityY = SelectedEmitter.GravityY;
+        clone.Damping = SelectedEmitter.Damping;
+        clone.RotationMin = SelectedEmitter.RotationMin;
+        clone.RotationMax = SelectedEmitter.RotationMax;
+        clone.AngularVelocityMin = SelectedEmitter.AngularVelocityMin;
+        clone.AngularVelocityMax = SelectedEmitter.AngularVelocityMax;
+        WireEmitterDelete(clone);
+        Emitters.Add(clone);
+        SelectedEmitter = clone;
+        RefreshCommands();
+    }
+
+    private void WireEmitterDelete(EmitterViewModel emitter)
+    {
+        emitter.SetDeleteAction(() => OnRemoveEmitter(emitter));
+    }
+
+    private void RefreshCommands()
+    {
+        DuplicateEmitterCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnSelectedEmitterChanged(EmitterViewModel? value)
+    {
+        RefreshCommands();
     }
 }

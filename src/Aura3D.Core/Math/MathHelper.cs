@@ -8,6 +8,9 @@ namespace Aura3D.Core.Math;
 /// </summary>
 public static class MathHelper
 {
+    public const float DegreeToRad = MathF.PI / 180;
+    public const float RadToDegree = 180 / MathF.PI;
+
     /// <summary>
     /// 将角度转换为弧度
     /// </summary>
@@ -15,7 +18,7 @@ public static class MathHelper
     /// <returns>对应的弧度值</returns>
     public static float DegreeToRadians(this float degree)
     {
-        return (MathF.PI / 180) * degree;
+        return degree * DegreeToRad;
     }
     /// <summary>
     /// 将弧度转换为角度
@@ -24,7 +27,7 @@ public static class MathHelper
     /// <returns>对应的角度值</returns>
     public static float RadiansToDegree(this float radians)
     {
-        return radians / (MathF.PI / 180);
+        return radians * RadToDegree;
     }
 
     /// <summary>
@@ -35,10 +38,7 @@ public static class MathHelper
     public static Vector3 ToEulerAngles(this Quaternion q)
     {
         float pitch = MathF.Asin(2 * (q.W * q.X - q.Y * q.Z));
-
-        float yaw = MathF.Atan2(2 * (q.W * q.Y + q.X * q.Z),
-                                      1 - 2 * (q.X * q.X + q.Y * q.Y));
-
+        float yaw = MathF.Atan2(2 * (q.W * q.Y + q.X * q.Z), 1 - 2 * (q.X * q.X + q.Y * q.Y));
         float roll = MathF.Atan2(2 * (q.W * q.Z + q.X * q.Y), 1 - 2 * (q.X * q.X + q.Z * q.Z));
 
         return new Vector3(pitch, yaw, roll);
@@ -143,7 +143,7 @@ public static class MathHelper
     /// </summary>
     /// <param name="vector4">四维向量</param>
     /// <returns>二维向量</returns>
-    public static Vector2 XY (this Vector4 vector4)
+    public static Vector2 XY(this Vector4 vector4)
     {
         return new Vector2(vector4.X, vector4.Y);
     }
@@ -181,6 +181,7 @@ public static class MathHelper
         var vector = new Vector3(1, 0, 0);
         return Vector3.Transform(vector, m.RotationMatrix4x4());
     }
+
     /// <summary>
     /// 获取矩阵的上方向向量
     /// </summary>
@@ -191,6 +192,7 @@ public static class MathHelper
         var vector = new Vector3(0, 1, 0);
         return Vector3.Transform(vector, m.RotationMatrix4x4());
     }
+
     /// <summary>
     /// 将四维向量转换为颜色
     /// </summary>
@@ -200,6 +202,7 @@ public static class MathHelper
     {
         return Color.FromArgb((int)(vector4.W * 255), (int)(vector4.X * 255), (int)(vector4.Y * 255), (int)(vector4.Z * 255));
     }
+
     /// <summary>
     /// 将颜色转换为四维向量
     /// </summary>
@@ -226,10 +229,41 @@ public static class MatrixHelper
     public static Matrix4x4 CreateTransform(Vector3 position, Quaternion rotation, Vector3 scale)
     {
 
-        var positionMatrix = Matrix4x4.CreateTranslation(position);
-        var rotationMatrix = Matrix4x4.CreateFromQuaternion(rotation);
-        var scaleMatrix = Matrix4x4.CreateScale(scale);
-        return scaleMatrix * rotationMatrix * positionMatrix;
+        // 1. 预计算四元数常用项（减少重复计算）
+        float x = rotation.X, y = rotation.Y, z = rotation.Z, w = rotation.W;
+        float xx = x * x, yy = y * y, zz = z * z;
+        float xy = x * y, xz = x * z, yz = y * z;
+        float wx = w * x, wy = w * y, wz = w * z;
+
+        // 2. 预取缩放值
+        float sx = scale.X, sy = scale.Y, sz = scale.Z;
+
+        // 3. 直接构建最终矩阵（核心：旋转×缩放 合并计算 + 平移）
+        Matrix4x4 result = default;
+
+        // 旋转 + 缩放 合并行（无乘法，直接公式）
+        result.M11 = (1 - 2 * (yy + zz)) * sx;
+        result.M12 = (2 * (xy + wz)) * sx;
+        result.M13 = (2 * (xz - wy)) * sx;
+        result.M14 = 0;
+
+        result.M21 = (2 * (xy - wz)) * sy;
+        result.M22 = (1 - 2 * (xx + zz)) * sy;
+        result.M23 = (2 * (yz + wx)) * sy;
+        result.M24 = 0;
+
+        result.M31 = (2 * (xz + wy)) * sz;
+        result.M32 = (2 * (yz - wx)) * sz;
+        result.M33 = (1 - 2 * (xx + yy)) * sz;
+        result.M34 = 0;
+
+        // 平移（直接赋值）
+        result.M41 = position.X;
+        result.M42 = position.Y;
+        result.M43 = position.Z;
+        result.M44 = 1;
+
+        return result;
     }
 
 

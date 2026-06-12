@@ -52,7 +52,6 @@ public class CelLightPass : RenderPass
         VertexShader = ShaderResource.MeshVert;
         FragmentShader = ShaderResource.CelFrag;
         rampTexture = TextureLoader.LoadTexture(ShaderResource.CelRamp2);
-        renderPipeline.AddGpuResource(rampTexture);
     }
 
     public override void BeforeRender(Camera camera)
@@ -327,21 +326,9 @@ public class CelLightPass : RenderPass
 
         if (mesh.IsSkinnedMesh)
         {
-            var skeleton = mesh.Skeleton;
-            if (mesh.Model.AnimationSampler != null)
-            {
-                for (int i = 0; i < skeleton.Bones.Count; i++)
-                {
-                    UniformMatrix4($"BoneMatrices[{i}]", skeleton.Bones[i].InverseWorldMatrix * mesh.Model.AnimationSampler.BonesTransform[i]);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < skeleton.Bones.Count; i++)
-                {
-                    UniformMatrix4($"BoneMatrices[{i}]", skeleton.Bones[i].InverseWorldMatrix * skeleton.Bones[i].WorldMatrix);
-                }
-            }
+            var boneBuffer = mesh.AnimationSampler?.BoneMatrixBuffer ?? mesh.Skeleton.BoneMatrixBuffer;
+            renderPipeline.EnsureUploaded(boneBuffer);
+            boneBuffer.Bind();
         }
 
         base.RenderMesh(mesh, view, projection);

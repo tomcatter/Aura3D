@@ -101,7 +101,7 @@ public class ShadowMapPass : RenderPass
             if (rt == null)
             {
                 rt = new RenderTarget().SetDepthTexture(TextureFormat.DepthComponent24).SetSize(1024, 1024);
-                rt.Upload(gl);
+                renderPipeline.EnsureUploaded(rt);
                 spotLight.SetPipelineGpuResource("ShadowMapRenderTarget", rt);
             }
 
@@ -185,7 +185,6 @@ public class ShadowMapPass : RenderPass
                     csmData.FboId = gl.GenFramebuffer();
 
                     directionalLight.SetPipelineGpuResource(nameof(CsmShadowData), csmData);
-                    renderPipeline.AddGpuResource(csmData);
                 }
 
                 // 更新每帧变化的级联数据
@@ -236,6 +235,7 @@ public class ShadowMapPass : RenderPass
                 var oldRt = directionalLight.GetPipelineGpuResource<RenderTarget>("ShadowMapRenderTarget");
                 if (oldRt != null)
                 {
+                    renderPipeline.GpuResources.Remove(oldRt);
                     oldRt.Destroy(gl);
                     directionalLight.RemovePipelineGpuResource("ShadowMapRenderTarget");
                 }
@@ -256,7 +256,7 @@ public class ShadowMapPass : RenderPass
                 if (rt == null)
                 {
                     rt = new RenderTarget().SetDepthTexture(TextureFormat.DepthComponent24).SetSize(DefaultShadowMapRes, DefaultShadowMapRes);
-                    rt.Upload(gl);
+                    renderPipeline.EnsureUploaded(rt);
                     directionalLight.SetPipelineGpuResource("ShadowMapRenderTarget", rt);
                 }
 
@@ -350,21 +350,9 @@ public class ShadowMapPass : RenderPass
 
         if (mesh.IsSkinnedMesh)
         {
-            var skeleton = mesh.Skeleton;
-            if (mesh.Model.AnimationSampler != null)
-            {
-                for (int i = 0; i < skeleton.Bones.Count; i++)
-                {
-                    UniformMatrix4($"BoneMatrices[{i}]", skeleton.Bones[i].InverseWorldMatrix * mesh.Model.AnimationSampler.BonesTransform[i]);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < skeleton.Bones.Count; i++)
-                {
-                    UniformMatrix4($"BoneMatrices[{i}]", skeleton.Bones[i].InverseWorldMatrix * skeleton.Bones[i].WorldMatrix);
-                }
-            }
+            var boneBuffer = mesh.AnimationSampler?.BoneMatrixBuffer ?? mesh.Skeleton.BoneMatrixBuffer;
+            renderPipeline.EnsureUploaded(boneBuffer);
+            boneBuffer.Bind();
         }
         base.RenderMesh(mesh, view, projection);
     }
